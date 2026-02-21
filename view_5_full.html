@@ -3,6 +3,7 @@
 <head>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;">
 <script src="config.js"></script>
+<script src="question_bank.js"></script>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Карта тестирования + ПСИ — Инферит ИТМен</title>
@@ -87,6 +88,10 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
 .good{outline:2px solid rgba(16,185,129,.35)}
 .warn{outline:2px solid rgba(245,158,11,.35)}
 .bad{ outline:2px solid rgba(244,63,94,.35)}
+
+
+.bar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:6px}
+.bar>span{display:block;height:100%;width:0%;background:rgba(255,0,0,.65)}
 
 /* Tables */
 .table-wrap{overflow:auto;border:1px solid #e5e7eb;border-radius:14px;background:#fff}
@@ -408,10 +413,109 @@ body.no-kpi .kpiBar{display:none !important;}
     <div class="value mono" id="probIndex">—%</div>
     <div class="small" id="probLabel">—</div>
   </div>
+
+
+  <div class="kpiBar" style="margin-top:8px">
+    <div class="kpiGroupTitle">Риск и готовность</div>
+
+    <div class="stat" id="kPilotReady">
+      <div class="label">Pilot Readiness Index</div>
+      <div class="value mono" id="pilotReady">—%</div>
+      <div class="small" id="pilotReadyLabel">—</div>
+    </div>
+
+    <div class="stat" id="kMainProblem">
+      <div class="label">Основная проблема</div>
+      <div class="value" id="mainProblem">—</div>
+      <div class="small" id="mainProblemHint">—</div>
+    </div>
+
+    <div class="stat" id="kModules">
+      <div class="label">Рекомендуемая конфигурация</div>
+      <div class="value" id="recModules">—</div>
+      <div class="small">Автоматически по порогам риска.</div>
+    </div>
+
+    <div class="stat" id="kDemo">
+      <div class="label">Приоритет демо</div>
+      <div class="value" id="demoFocus">—</div>
+      <div class="small" id="demoFocusHint">—</div>
+    </div>
+  </div>
 </div>
   </header>
 
   <div class="grid">
+
+  <div class="card" id="riskHeatmapCard">
+    <h2>Heatmap по зонам риска (автоматически)</h2>
+    <div class="small">Формула по зоне: Σ(Вес×Ответ) / Σ(Вес зоны). Ответ: Да=0, Частично=0.5, Нет=1.</div>
+    <div class="hr"></div>
+
+    <div class="row">
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <b>Серые зоны (охват / архитектура)</b>
+          <span class="mono" id="riskGreyPct">—%</span>
+        </div>
+        <div class="bar"><span id="riskGreyBar"></span></div>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <b>Лицензионный риск</b>
+          <span class="mono" id="riskLicPct">—%</span>
+        </div>
+        <div class="bar"><span id="riskLicBar"></span></div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <b>Операционная неэффективность / ручной труд</b>
+          <span class="mono" id="riskOpsPct">—%</span>
+        </div>
+        <div class="bar"><span id="riskOpsBar"></span></div>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <b>Управляемость / отсутствие истории</b>
+          <span class="mono" id="riskGovPct">—%</span>
+        </div>
+        <div class="bar"><span id="riskGovBar"></span></div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <h3>Стоимость бездействия (₽/год)</h3>
+    <div class="row">
+      <div class="stat" style="box-shadow:none">
+        <div class="label">Лицензии (ПО)</div>
+        <div class="value mono" id="coiLic">—</div>
+        <div class="small">Бюджет лицензий × % неиспользуемого ПО</div>
+      </div>
+      <div class="stat" style="box-shadow:none">
+        <div class="label">Простои</div>
+        <div class="value mono" id="coiDown">—</div>
+        <div class="small">Часы простоя × Стоимость часа</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="stat" style="box-shadow:none">
+        <div class="label">Ручной труд</div>
+        <div class="value mono" id="coiManual">—</div>
+        <div class="small">Кол-во ИТ × зарплата × % ручных операций</div>
+      </div>
+      <div class="stat" style="box-shadow:none">
+        <div class="label">Итого</div>
+        <div class="value mono" id="coiTotal">—</div>
+        <div class="small">Сумма 3 компонентов</div>
+      </div>
+    </div>
+  </div>
+
 
   <div class="card" id="cLevelBlock" style="display:none">
     <h2>C-level вывод (авто)</h2>
@@ -1264,6 +1368,135 @@ function createScoreRow(tbody,item,type){
   updateDot();
 }
 
+
+function _normKey(s){
+  return String(s||"").trim().toLowerCase().replace(/ё/g,"е")
+    .replace(/\s+/g," ")
+    .replace(/[“”"'`]/g,"")
+    .replace(/[^0-9a-zа-я .\-_/():,?]+/g,"");
+}
+
+function _getBank(){
+  return (window.ITMEN_QUESTION_BANK)||{};
+}
+
+function computeHeatmapFromMaturity(){
+  const bank=_getBank();
+  const zones = {
+    "Серые зоны (охват / архитектура)": {w:0, s:0},
+    "Лицензионный риск": {w:0, s:0},
+    "Операционная неэффективность / ручной труд": {w:0, s:0},
+    "Управляемость / отсутствие истории": {w:0, s:0},
+  };
+
+  function handleRows(rows){
+    rows.forEach(tr=>{
+      const labelCell = tr.children?.[0];
+      const labelText = labelCell ? labelCell.textContent.replace(/\s+/g," ").trim() : "";
+      const key=_normKey(labelText);
+      const meta = bank[key];
+      if(!meta) return;
+
+      const sel=tr.querySelector("select");
+      const v = (sel && sel.value!=="") ? Number(sel.value) : null;
+      if(v===null || Number.isNaN(v)) return;
+
+      // v: 0 Нет, 1 Частично, 2 Да
+      const answerRisk = (v===2)?0 : (v===1)?0.5 : 1;
+      const w = Number(meta.w)||1;
+      const zone = meta.zone;
+      if(!zones[zone]) zones[zone] = {w:0,s:0};
+      zones[zone].w += w;
+      zones[zone].s += w*answerRisk;
+    });
+  }
+
+  handleRows([ ...document.querySelectorAll("#techTbody tr") ]);
+  handleRows([ ...document.querySelectorAll("#procTbody tr") ]);
+
+  const out = {};
+  let totW=0, totS=0;
+  Object.keys(zones).forEach(z=>{
+    const Zw=zones[z].w;
+    const Zs=zones[z].s;
+    const risk = (Zw>0) ? (Zs/Zw) : null;
+    out[z] = risk; // 0..1
+    if(risk!==null){
+      totW += Zw;
+      totS += Zs;
+    }
+  });
+  out.__overall = (totW>0) ? (totS/totW) : null;
+
+  // main problem = max risk
+  let maxZ=null, maxV=-1;
+  Object.entries(out).forEach(([z,v])=>{
+    if(z==="__overall" || v===null) return;
+    if(v>maxV){maxV=v; maxZ=z;}
+  });
+  out.__mainZone = maxZ;
+  out.__mainRisk = (maxV>=0)?maxV:null;
+
+  return out;
+}
+
+function decideModules(r){
+  // thresholds are in percent
+  const grey = r["Серые зоны (охват / архитектура)"];
+  const lic  = r["Лицензионный риск"];
+  const ops  = r["Операционная неэффективность / ручной труд"];
+  const gov  = r["Управляемость / отсутствие истории"];
+
+  const mods=[];
+  if(grey!==null && grey*100 >= 40) mods.push("Базовый");
+  if(lic!==null  && lic*100  >= 30) mods.push("Призма");
+  if(gov!==null  && gov*100  >= 40) mods.push("Гибкая модель");
+  if(ops!==null  && ops*100  >= 50) mods.push("Обогащение");
+  return mods.length ? mods : ["—"];
+}
+
+function decideDemo(mainZone){
+  switch(mainZone){
+    case "Серые зоны (охват / архитектура)":
+      return {title:"Агрегация/охват", hint:"Начать с единого источника правды и покрытия сегментов."};
+    case "Лицензионный риск":
+      return {title:"Призма (лицензии)", hint:"Начать с нормализации ПО и контроля лицензионных рисков."};
+    case "Операционная неэффективность / ручной труд":
+      return {title:"Автоматизация", hint:"Начать со снижения ручного труда и ускорения обновления данных."};
+    case "Управляемость / отсутствие истории":
+      return {title:"История/управляемость", hint:"Начать с истории изменений и управляемости (аудит/ответственность)."};
+    default:
+      return {title:"—", hint:"Заполни ответы в 2.1/2.2 — появится сценарий."};
+  }
+}
+
+function _fmtRub(n){
+  if(n===null || n===undefined || Number.isNaN(n)) return "—";
+  try{
+    return Math.round(n).toLocaleString("ru-RU");
+  }catch(e){
+    return String(Math.round(n));
+  }
+}
+
+function computeCOIBreakdown(){
+  const licBudget = _num("licBudget") || 0;
+  const unusedPct = _num("unusedPct") || 0;
+  const downtimeHours = _num("downtimeHours") || 0;
+  const costPerHour = _num("costPerHour") || 0;
+  const itCount = _num("itCount") || 0;
+  const salary = _num("salary") || 0;
+  const manualPct = _num("manualPct") || 0;
+
+  const licLoss = licBudget * (unusedPct/100);
+  const downLoss = downtimeHours * costPerHour;
+  const manualLoss = itCount * salary * 12 * (manualPct/100);
+
+  const total = licLoss + downLoss + manualLoss;
+  return {licLoss, downLoss, manualLoss, total};
+}
+
+
 function ensureBaseTables(){
   const techTb=document.getElementById("techTbody");
   const procTb=document.getElementById("procTbody");
@@ -1998,6 +2231,79 @@ const riskIndex = (riskAnswered.length>0)
   setText("psi2Label", isFinite(psi2) ? (psi2>=75 ? "Зелёная зона" : (psi2>=45 ? "Жёлтая зона" : "Красная зона")) : "—");
   try{ paintIf("kPSI", Number.isFinite(psi2)?psi2:NaN, true); }catch(_e){}
   try{ renderBenchHints(); }catch(_e){}
+
+
+  // ==== Heatmap / Pilot Readiness / Modules / Demo / COI breakdown ====
+  try{
+    const hm = computeHeatmapFromMaturity();
+    const g = hm["Серые зоны (охват / архитектура)"];
+    const l = hm["Лицензионный риск"];
+    const o = hm["Операционная неэффективность / ручной труд"];
+    const v = hm["Управляемость / отсутствие истории"];
+    const overall = hm.__overall;
+
+    function setBar(pctId, barId, val){
+      const el=document.getElementById(pctId);
+      const bar=document.getElementById(barId);
+      if(!el || !bar) return;
+      if(val===null){ el.textContent="—%"; bar.style.width="0%"; return; }
+      const p=Math.max(0, Math.min(100, Math.round(val*100)));
+      el.textContent=p+"%";
+      bar.style.width=p+"%";
+    }
+    setBar("riskGreyPct","riskGreyBar",g);
+    setBar("riskLicPct","riskLicBar",l);
+    setBar("riskOpsPct","riskOpsBar",o);
+    setBar("riskGovPct","riskGovBar",v);
+
+    // Pilot readiness
+    const prEl=document.getElementById("pilotReady");
+    const prLab=document.getElementById("pilotReadyLabel");
+    if(prEl){
+      if(overall===null){ prEl.textContent="—%"; prLab && (prLab.textContent="Заполни зрелость (2.1/2.2)"); }
+      else{
+        const pr = Math.max(0, Math.min(100, Math.round((1-overall)*100)));
+        prEl.textContent = pr+"%";
+        if(prLab){
+          prLab.textContent = (pr<50) ? "Пилот сложный" : (pr<70) ? "Пилот средний" : "Быстрый пилот";
+        }
+      }
+    }
+
+    // Main problem
+    const mp=document.getElementById("mainProblem");
+    const mph=document.getElementById("mainProblemHint");
+    if(mp){
+      mp.textContent = hm.__mainZone || "—";
+      if(mph){
+        mph.textContent = (hm.__mainZone && hm.__mainRisk!==null) ? ("Риск: "+Math.round(hm.__mainRisk*100)+"%") : "Заполни зрелость (2.1/2.2)";
+      }
+    }
+
+    // Modules
+    const mods=decideModules(hm);
+    const rm=document.getElementById("recModules");
+    if(rm) rm.textContent = mods.join(" + ");
+
+    // Demo focus
+    const df=decideDemo(hm.__mainZone);
+    const dfe=document.getElementById("demoFocus");
+    const dff=document.getElementById("demoFocusHint");
+    if(dfe) dfe.textContent=df.title;
+    if(dff) dff.textContent=df.hint;
+
+    // COI breakdown
+    const coi = computeCOIBreakdown();
+    const coiLic=document.getElementById("coiLic");
+    const coiDown=document.getElementById("coiDown");
+    const coiManual=document.getElementById("coiManual");
+    const coiTotal=document.getElementById("coiTotal");
+    coiLic && (coiLic.textContent=_fmtRub(coi.licLoss));
+    coiDown && (coiDown.textContent=_fmtRub(coi.downLoss));
+    coiManual && (coiManual.textContent=_fmtRub(coi.manualLoss));
+    coiTotal && (coiTotal.textContent=_fmtRub(coi.total));
+  }catch(e){ console.warn("heatmap/calc failed", e); }
+
 
 }catch(e){ console.error('recalc tail error', e); }
 // Required fields gate (PDF)
@@ -3275,7 +3581,7 @@ function buildSheetPayloadExact(){
   ];
   kpiIds.forEach(id=>{
     const raw=_val(id);
-    out[id] = (id.endsWith("Label") || id==="psi2Label" || id==="readyLabel" || id==="probLabel" || id==="benchProfileLabel")
+    out[id] = (id.endsWith("Label") || id==="psi2Label" || id==="readyLabel" || id==="probLabel" || id==="benchProfileLabel" || id==="mainProblem" || id==="recModules" || id==="demoFocus")
       ? raw
       : _numFromText(raw);
   });
