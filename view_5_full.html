@@ -267,6 +267,10 @@ body.no-kpi .kpiBar{display:none !important;}
 .kpiModal .sect p, .kpiModal .sect li{margin:0;color:#334155;font-size:13px;line-height:1.5}
 .kpiModal .sect ul{margin:8px 0 0 18px}
 .kpiModal .note{margin-top:10px;color:#64748b;font-size:12px}
+
+/* demo plan list */
+.miniList{margin:6px 0 0 18px; padding:0;}
+.miniList li{margin:4px 0;}
 .kpi-clickable{cursor:pointer;user-select:none}
 .kpi-clickable:active{transform:translateY(1px)}
 </style>
@@ -1430,6 +1434,7 @@ function computeHeatmapFromMaturity(){
     "Операционная неэффективность / ручной труд": {w:0, s:0},
     "Управляемость / отсутствие истории": {w:0, s:0},
   };
+  const contribs = [];
 
   function handleRows(rows){
     rows.forEach(tr=>{
@@ -1453,6 +1458,17 @@ function computeHeatmapFromMaturity(){
       if(!zones[zone]) zones[zone] = {w:0,s:0};
       zones[zone].w += w;
       zones[zone].s += w*answerRisk;
+
+      // contribution for demo plan
+      contribs.push({
+        zone,
+        w,
+        a: answerRisk,
+        c: w*answerRisk,
+        prio: Number(meta.prio)||99,
+        module: meta.module||"",
+        q: meta.q||labelText
+      });
     });
   }
 
@@ -1481,6 +1497,7 @@ function computeHeatmapFromMaturity(){
   });
   out.__mainZone = maxZ;
   out.__mainRisk = (maxV>=0)?maxV:null;
+  out.__contribs = contribs;
 
   return out;
 }
@@ -1513,6 +1530,45 @@ function decideDemo(mainZone){
     default:
       return {title:"—", hint:"Заполни ответы в 2.1/2.2 — появится сценарий."};
   }
+}
+
+function _escHtml(s){
+  return (s||"").replace(/[&<>\"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+}
+
+function buildDemoPlan(hm){
+  const contribs = (hm && hm.__contribs) ? hm.__contribs.slice() : [];
+  if(!contribs.length){
+    return {title:"—", html:"<div class='small'>Заполни ответы в 2.1/2.2 — появится план демо.</div>"};
+  }
+  contribs.sort((x,y)=> (y.c - x.c) || (x.prio - y.prio));
+  const mainZone = hm.__mainZone || null;
+  const base = decideDemo(mainZone);
+
+  const topMain = mainZone ? contribs.filter(x=>x.zone===mainZone && x.c>0).slice(0,6) : [];
+  const topAll  = contribs.filter(x=>x.c>0).slice(0,10);
+
+  function cleanQ(q){
+    return (q||"")
+      .replace(/^\s*[TP]\s*\d+\s*[\.)]\s*/i, "")
+      .replace(/^\s*\d+\s*[\.)]\s*/, "")
+      .trim();
+  }
+  function li(x){
+    const mod = x.module ? `<b>${_escHtml(x.module)}</b>` : `<b>Функционал</b>`;
+    const q   = _escHtml(cleanQ(x.q||""));
+    const pct = Math.round(x.c*100);
+    return `<li>${mod}: ${q} <span class='small'>(вклад ~${pct}%)</span></li>`;
+  }
+
+  let html = `<div class='small'>${_escHtml(base.hint)}</div>`;
+  if(topMain.length){
+    html += `<div class='small' style='margin-top:10px'>Топ демо по основной зоне:</div><ul class='miniList'>${topMain.map(li).join("")}</ul>`;
+  }
+  if(topAll.length){
+    html += `<div class='small' style='margin-top:10px'>Также стоит показать:</div><ul class='miniList'>${topAll.map(li).join("")}</ul>`;
+  }
+  return {title: base.title, html};
 }
 
 function _fmtRub(n){
@@ -2358,12 +2414,12 @@ const riskIndex = (riskAnswered.length>0)
     const rm=document.getElementById("recModules");
     if(rm) rm.textContent = mods.join(" + ");
 
-    // Demo focus
-    const df=decideDemo(hm.__mainZone);
+    // Demo focus (top functions)
+    const dp=buildDemoPlan(hm);
     const dfe=document.getElementById("demoFocus");
     const dff=document.getElementById("demoFocusHint");
-    if(dfe) dfe.textContent=df.title;
-    if(dff) dff.textContent=df.hint;
+    if(dfe) dfe.textContent=dp.title;
+    if(dff) dff.innerHTML=dp.html;
 
     // COI breakdown
     const coi = computeCOIBreakdown();
@@ -4480,14 +4536,14 @@ const run = debounce(async ()=>{
 
 <!-- KPI Explain Modal -->
 <div class="kpiModal" id="kpiModal" aria-hidden="true">
-  <div class="backdrop" data-kpi-close="1"></div>
+  <div class="backdrop" data-kpi-close="1" onclick="kpiModalClose()"></div>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="kpiModalTitle">
     <div class="head">
       <div>
         <div class="title" id="kpiModalTitle">Индекс</div>
         <div class="sub" id="kpiModalSub"></div>
       </div>
-      <button class="closeBtn" id="kpiModalClose" aria-label="Закрыть">✕</button>
+      <button class="closeBtn" id="kpiModalClose" aria-label="Закрыть" onclick="kpiModalClose()">✕</button>
     </div>
     <div class="body">
       <div class="sect">

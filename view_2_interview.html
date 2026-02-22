@@ -3611,14 +3611,14 @@ const run = debounce(async ()=>{
 
 <!-- KPI Explain Modal -->
 <div class="kpiModal" id="kpiModal" aria-hidden="true">
-  <div class="backdrop" data-kpi-close="1"></div>
+  <div class="backdrop" data-kpi-close="1" onclick="kpiModalClose()"></div>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="kpiModalTitle">
     <div class="head">
       <div>
         <div class="title" id="kpiModalTitle">Индекс</div>
         <div class="sub" id="kpiModalSub"></div>
       </div>
-      <button class="closeBtn" id="kpiModalClose" aria-label="Закрыть">✕</button>
+      <button class="closeBtn" id="kpiModalClose" aria-label="Закрыть" onclick="kpiModalClose()">✕</button>
     </div>
     <div class="body">
       <div class="sect">
