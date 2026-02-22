@@ -1550,6 +1550,18 @@ function ensureBaseTables(){
   TECH.forEach(x=>createScoreRow(techTb,x,"tech"));
   PROC.forEach(x=>createScoreRow(procTb,x,"proc"));
   RISK.forEach(x=>createScoreRow(riskTb,x,"risk"));
+
+  // IMPORTANT: these maturity selects feed Heatmap/Pilot Readiness.
+  // Rows are created dynamically, so we must bind recalc after creation.
+  try{
+    [...techTb.querySelectorAll('select,input,textarea'),
+     ...procTb.querySelectorAll('select,input,textarea'),
+     ...riskTb.querySelectorAll('select,input,textarea')]
+      .forEach(el=>{
+        el.addEventListener('change', recalc, {passive:true});
+        el.addEventListener('input', debounce(recalc, 120), {passive:true});
+      });
+  }catch(_e){}
 }
 
 function addReqRow(data){
