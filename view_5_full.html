@@ -1563,10 +1563,10 @@ function buildDemoPlan(hm){
 
   let html = `<div class='small'>${_escHtml(base.hint)}</div>`;
   if(topMain.length){
-    html += `<div class='small' style='margin-top:10px'>Топ демо по основной зоне:</div><ul class='miniList'>${topMain.map(li).join("")}</ul>`;
+    html += `<div class='small' style='margin-top:10px'>Топ демо по основной зоне:</div><ul class='miniList'>${topMain.map((x,i)=>li(x,i)).join("")}</ul>`;
   }
   if(topAll.length){
-    html += `<div class='small' style='margin-top:10px'>Также стоит показать:</div><ul class='miniList'>${topAll.map(li).join("")}</ul>`;
+    html += `<div class='small' style='margin-top:10px'>Также стоит показать:</div><ul class='miniList'>${topAll.map((x,i)=>li(x,i)).join("")}</ul>`;
   }
   return {title: base.title, html};
 }
