@@ -79,6 +79,8 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
 
 /* Make the "Риск и готовность" block always 2 columns (desktop/tablet) */
 .kpiBar.riskReady{grid-template-columns:repeat(2, minmax(0,1fr))}
+/* Ensure the nested riskReady grid spans full width of the outer KPI grid */
+.kpiBar > .kpiBar.riskReady{grid-column:1 / -1; width:100%}
 .kpiGroupTitle{grid-column:1 / -1}
 .stat{
   background:var(--field);
@@ -1399,7 +1401,25 @@ function _normZone(z){
 }
 
 function _getBank(){
-  return (window.ITMEN_QUESTION_BANK)||{};
+  // Return expanded bank with multiple key forms to avoid mismatches
+  // between question text in UI (often without numbering) and keys in the bank.
+  if(window.__ITMEN_BANK_EXPANDED) return window.__ITMEN_BANK_EXPANDED;
+  const base = (window.ITMEN_QUESTION_BANK)||{};
+  const exp = {};
+  try{
+    Object.entries(base).forEach(([k,v])=>{
+      // keep original key
+      exp[String(k)] = v;
+      // add normalized-without-numbering key
+      const nk = _normKey(k);
+      if(nk) exp[nk] = v;
+      // add extra variant: strip only leading "t1."/"p1." from already normalized strings
+      const nk2 = nk.replace(/^[tp]\s*\d+\s*[\.)\-:\s]+/i, "").trim();
+      if(nk2) exp[nk2] = v;
+    });
+  }catch(_e){}
+  window.__ITMEN_BANK_EXPANDED = exp;
+  return exp;
 }
 
 function computeHeatmapFromMaturity(){
