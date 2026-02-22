@@ -424,25 +424,25 @@ body.no-kpi .kpiBar{display:none !important;}
   <div class="kpiBar riskReady" style="margin-top:8px">
     <div class="kpiGroupTitle">Риск и готовность</div>
 
-    <div class="stat" id="kPilotReady">
+    <div class="stat clickable" id="kPilotReady" data-detail="pilot">
       <div class="label">Pilot Readiness Index</div>
       <div class="value mono" id="pilotReady">—%</div>
       <div class="small" id="pilotReadyLabel">—</div>
     </div>
 
-    <div class="stat" id="kMainProblem">
+    <div class="stat clickable" id="kMainProblem" data-detail="problem">
       <div class="label">Основная проблема</div>
       <div class="value" id="mainProblem">—</div>
       <div class="small" id="mainProblemHint">—</div>
     </div>
 
-    <div class="stat" id="kModules">
+    <div class="stat clickable" id="kModules" data-detail="modules">
       <div class="label">Рекомендуемая конфигурация</div>
       <div class="value" id="recModules">—</div>
       <div class="small">Автоматически по порогам риска.</div>
     </div>
 
-    <div class="stat" id="kDemo">
+    <div class="stat clickable" id="kDemo" data-detail="demo">
       <div class="label">Приоритет демо</div>
       <div class="value" id="demoFocus">—</div>
       <div class="small" id="demoFocusHint">—</div>
@@ -1524,11 +1524,22 @@ function _fmtRub(n){
   }
 }
 
+// Safe numeric reader (value/text -> number)
+function _num(id){
+  const el=document.getElementById(id);
+  if(!el) return NaN;
+  const raw=("value" in el) ? (el.value??"") : (el.textContent??"");
+  const s=_numFromText(raw);
+  const n=parseFloat(String(s).replace(",","."));
+  return Number.isFinite(n)?n:NaN;
+}
+
 function computeCOIBreakdown(){
   const licBudget = _num("licBudget") || 0;
   const unusedPct = _num("unusedPct") || 0;
   const downtimeHours = _num("downtimeHours") || 0;
-  const costPerHour = _num("costPerHour") || 0;
+  // In UI input is "downtimeCost". Keep backward-compat with "costPerHour".
+  const costPerHour = _num("downtimeCost") || _num("costPerHour") || 0;
   const itCount = _num("itCount") || 0;
   const salary = _num("salary") || 0;
   const manualPct = _num("manualPct") || 0;
@@ -3251,6 +3262,59 @@ const KPI_META = {
         <li><b>70–100%</b>: можно строить продвинутые сценарии (предиктивная аналитика, автополитики).</li>
       </ul>`
   }
+  ,
+
+  // --- Risk & Readiness (auto) ---
+  kPilotReady: {
+    title: "Pilot Readiness Index",
+    sub: "Индекс готовности к пилоту (1 − средний риск по зонам) × 100",
+    what: "Показывает, насколько «легко» пройти пилот: чем ниже риск по ключевым зонам (данные/архитектура, лицензии, ручной труд, управляемость), тем выше готовность.",
+    how: "Сначала считаем риск по 4 зонам: Σ(Вес×Ответ) / Σ(Вес зоны), где Ответ: Да=0, Частично=0.5, Нет=1. Далее берём среднее по зонам и считаем Ready = (1 − RiskAvg) × 100.",
+    impact: "Используется, чтобы быстро классифицировать пилот: <50 — сложный (нужны подготовительные работы), 50–70 — средний, 70+ — быстрый.",
+    doHtml: `
+      <ul>
+        <li><b>&lt;50%</b>: сначала закрываем 1–2 самые красные зоны (минимальный контур данных/доступов), затем пилот.</li>
+        <li><b>50–70%</b>: пилот возможен, но фиксируем границы (охват, сроки) и критерии успеха.</li>
+        <li><b>70%+</b>: можно идти в пилот уверенно и расширять охват.</li>
+      </ul>`
+  },
+  kMainProblem: {
+    title: "Основная проблема",
+    sub: "Зона риска с максимальным вкладом",
+    what: "Это «главная причина боли» по модели: где риск максимальный — туда и бьём демо/пилот в первую очередь.",
+    how: "Берём максимальную из 4 зон риска (серые зоны / лицензии / ручной труд / управляемость).",
+    impact: "Позволяет не распыляться: показывать 1 главный сценарий демо и собрать пилот вокруг него.",
+    doHtml: `
+      <div class="small">Подсказка: зона риска = Σ(Вес×Ответ) / Σ(Вес зоны). Чем ближе к 100%, тем сильнее боль.</div>
+      <ul style="margin-top:8px">
+        <li><b>Серые зоны</b> → начать с агрегации/охвата и единой картины.</li>
+        <li><b>Лицензии</b> → начать с Призмы (нормализация ПО, контроль лицензий).</li>
+        <li><b>Ручной труд</b> → начать с автоматизации и сокращения ручных операций.</li>
+        <li><b>Управляемость</b> → начать с истории/ответственности и дисциплины изменений.</li>
+      </ul>`
+  },
+  kModules: {
+    title: "Рекомендуемая конфигурация",
+    sub: "Автоматически по порогам риска",
+    what: "Подбирает набор модулей ИТМен под профиль боли клиента, чтобы пилот и демо были релевантны.",
+    how: "Сравниваем риск по зонам с порогами (вшиты): Серые зоны≥40% → Базовый; Лицензии≥30% → Призма; Управляемость≥40% → Гибкая модель; Ручной труд≥50% → Обогащение.",
+    impact: "Снижает вероятность «показали не то» и ускоряет согласование пилота.",
+    doHtml: `<div class="small">Это рекомендация для старта. Дальше можно расширять конфигурацию по мере подключения источников и уточнения требований.</div>`
+  },
+  kDemo: {
+    title: "Приоритет демо",
+    sub: "Стартовый сценарий демо по главной зоне риска",
+    what: "Определяет, с какого сценария демо начать, чтобы быстро «попасть в боль» и закрепить ценность.",
+    how: "Сценарий выбирается по зоне с максимальным риском (см. «Основная проблема»).",
+    impact: "Увеличивает конверсию демо → пилот, потому что первые 5–10 минут показывают именно то, за что клиент готов платить.",
+    doHtml: `
+      <ul>
+        <li><b>Серые зоны</b>: показать агрегацию источников → единая картина → coverage/freshness.</li>
+        <li><b>Лицензии</b>: показать нормализацию ПО → соответствие → экономия на лицензиях.</li>
+        <li><b>Ручной труд</b>: показать автоматизацию отчётов/сверок → снижение ручных операций.</li>
+        <li><b>Управляемость</b>: показать историю изменений → ответственность → контроль изменений.</li>
+      </ul>`
+  }
 };
 
 function kpiModalOpen(kpiId){
@@ -3309,31 +3373,33 @@ function kpiModalClose(){
 }
 
 function setupKpiExplain(){
-  const bar = document.querySelector(".kpiBar");
-  if(!bar) return;
+  const bars = document.querySelectorAll(".kpiBar");
+  if(!bars || !bars.length) return;
 
-  // make KPI cards clearly clickable
-  bar.querySelectorAll(".stat[id]").forEach(el=>{
-    el.classList.add("kpi-clickable");
-    el.setAttribute("role","button");
-    el.setAttribute("tabindex","0");
-    el.setAttribute("aria-label","Открыть описание индекса");
-  });
+  bars.forEach(bar=>{
+    // make KPI cards clearly clickable
+    bar.querySelectorAll(".stat[id]").forEach(el=>{
+      el.classList.add("kpi-clickable");
+      el.setAttribute("role","button");
+      el.setAttribute("tabindex","0");
+      el.setAttribute("aria-label","Открыть описание" );
+    });
 
-  // robust click/tap delegation
-  bar.addEventListener("click", (e)=>{
-    const stat = e.target.closest(".stat[id]");
-    if(!stat) return;
-    kpiModalOpen(stat.id);
-  });
+    // robust click/tap delegation
+    bar.addEventListener("click", (e)=>{
+      const stat = e.target.closest(".stat[id]");
+      if(!stat) return;
+      kpiModalOpen(stat.id);
+    });
 
-  // keyboard open (Enter/Space)
-  bar.addEventListener("keydown",(e)=>{
-    if(e.key !== "Enter" && e.key !== " ") return;
-    const stat = e.target.closest?.(".stat[id]");
-    if(!stat) return;
-    e.preventDefault();
-    kpiModalOpen(stat.id);
+    // keyboard open (Enter/Space)
+    bar.addEventListener("keydown",(e)=>{
+      if(e.key !== "Enter" && e.key !== " ") return;
+      const stat = e.target.closest?.(".stat[id]");
+      if(!stat) return;
+      e.preventDefault();
+      kpiModalOpen(stat.id);
+    });
   });
 
   // hover open (only on devices that support hover)
@@ -4269,7 +4335,8 @@ async function gsSearch(q){
 
     const __memCache = new Map();
 const LS_KEY = "itmen_gs_search_cache_v1";
-const LS_TTL_MS = 6 * 60 * 60 * 1000; // 6h
+// Keep TTL small so new companies appear quickly in suggestions.
+const LS_TTL_MS = 5 * 60 * 1000; // 5 min
 
 function lsLoad(){
   try{
@@ -4309,6 +4376,13 @@ function cacheSet(q, data){
   }
   lsSave(__lsCache);
 }
+
+// Expose cache reset (used after SAVE)
+function cacheClear(){
+  try{ __memCache.clear(); }catch(_e){}
+  try{ __lsCache = {}; localStorage.removeItem(LS_KEY); }catch(_e){}
+}
+try{ window.__itmenCompanyCacheClear = cacheClear; }catch(_e){}
 
 const run = debounce(async ()=>{
   const qRaw = String(input.value || "").trim();
@@ -4594,7 +4668,12 @@ function syncToGoogleSheets(){
     form.appendChild(inp);
   }
   inp.value = JSON.stringify(payload);
-  try{ form.submit(); console.log("✅ Sheets sync sent (form-post)"); }
+  try{ 
+    form.submit();
+    // After SAVE, clear company suggestions cache so new names appear immediately.
+    try{ window.__itmenCompanyCacheClear && window.__itmenCompanyCacheClear(); }catch(_e){}
+    console.log("✅ Sheets sync sent (form-post)"); 
+  }
   catch(e){ console.error("❌ Sheets sync failed (form-post)", e); }
 }
 /* === end override === */
