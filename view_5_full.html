@@ -1435,8 +1435,11 @@ function computeHeatmapFromMaturity(){
     rows.forEach(tr=>{
       const labelCell = tr.children?.[0];
       const labelText = labelCell ? labelCell.textContent.replace(/\s+/g," ").trim() : "";
+      // Prefer stable code keys like T1/P3 (text may differ slightly between bank and UI)
+      const mCode = labelText.match(/^\s*([TP])\s*(\d+)\s*[\.)]/i);
+      const codeKey = mCode ? (mCode[1].toLowerCase()+mCode[2]) : null;
       const key=_normKey(labelText);
-      const meta = bank[key];
+      const meta = (codeKey && bank[codeKey]) ? bank[codeKey] : bank[key];
       if(!meta) return;
 
       const sel=tr.querySelector("select");
