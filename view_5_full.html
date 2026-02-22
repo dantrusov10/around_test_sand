@@ -1466,6 +1466,7 @@ function computeHeatmapFromMaturity(){
         a: answerRisk,
         c: w*answerRisk,
         prio: Number(meta.prio)||99,
+        func: meta.func || "",
         module: meta.module||"",
         q: meta.q||labelText
       });
@@ -1554,11 +1555,10 @@ function buildDemoPlan(hm){
       .replace(/^\s*\d+\s*[\.)]\s*/, "")
       .trim();
   }
-  function li(x){
-    const mod = x.module ? `<b>${_escHtml(x.module)}</b>` : `<b>Функционал</b>`;
-    const q   = _escHtml(cleanQ(x.q||""));
-    const pct = Math.round(x.c*100);
-    return `<li>${mod}: ${q} <span class='small'>(вклад ~${pct}%)</span></li>`;
+  function li(x, idx){
+    const pr = (idx!==undefined && idx!==null) ? (idx+1) : "";
+    const func = (x.func && String(x.func).trim()) ? String(x.func).trim() : cleanQ(x.q||"");
+    return `<li><b>Приоритет ${pr}</b>: ${_escHtml(func)}</li>`;
   }
 
   let html = `<div class='small'>${_escHtml(base.hint)}</div>`;
