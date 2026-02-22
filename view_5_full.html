@@ -76,6 +76,10 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
   margin-top:10px;
 }
 @media(max-width:1100px){.kpiBar{grid-template-columns:repeat(2, minmax(0,1fr))}}
+
+/* Make the "Риск и готовность" block always 2 columns (desktop/tablet) */
+.kpiBar.riskReady{grid-template-columns:repeat(2, minmax(0,1fr))}
+.kpiGroupTitle{grid-column:1 / -1}
 .stat{
   background:var(--field);
   border:1px solid var(--border);
@@ -415,7 +419,7 @@ body.no-kpi .kpiBar{display:none !important;}
   </div>
 
 
-  <div class="kpiBar" style="margin-top:8px">
+  <div class="kpiBar riskReady" style="margin-top:8px">
     <div class="kpiGroupTitle">Риск и готовность</div>
 
     <div class="stat" id="kPilotReady">
@@ -1370,10 +1374,28 @@ function createScoreRow(tbody,item,type){
 
 
 function _normKey(s){
-  return String(s||"").trim().toLowerCase().replace(/ё/g,"е")
-    .replace(/\s+/g," ")
+  // Normalize question label to match keys in question_bank.js
+  // Bank keys do NOT contain numbering like "T1." / "P3." etc.
+  let x = String(s||"").replace(/\s+/g," ").trim();
+  // strip leading numbering markers: "T1.", "P10.", "1)", "1.", "2.1" etc.
+  x = x.replace(/^(?:[TPА-ЯA-Z]{0,2}\s*)?\d+(?:[\.:]\d+)*[\.)\.:\-\s]+/i, "");
+  // strip leading "T"/"P" with digits if still present
+  x = x.replace(/^[TP]\s*\d+\s*[\.)\.:\-\s]+/i, "");
+  return x.toLowerCase().replace(/ё/g,"е")
     .replace(/[“”"'`]/g,"")
-    .replace(/[^0-9a-zа-я .\-_/():,?]+/g,"");
+    .replace(/\s+/g," ")
+    .replace(/[^0-9a-zа-я .\-_/():,?]+/g,"")
+    .trim();
+}
+
+function _normZone(z){
+  const v = String(z||"").trim().toLowerCase();
+  if(!v) return "";
+  if(v.includes("лицен")) return "Лицензионный риск";
+  if(v.includes("руч") || v.includes("операц")) return "Операционная неэффективность / ручной труд";
+  if(v.includes("истор") || v.includes("управ")) return "Управляемость / отсутствие истории";
+  // default -> grey
+  return "Серые зоны (охват / архитектура)";
 }
 
 function _getBank(){
@@ -1404,7 +1426,7 @@ function computeHeatmapFromMaturity(){
       // v: 0 Нет, 1 Частично, 2 Да
       const answerRisk = (v===2)?0 : (v===1)?0.5 : 1;
       const w = Number(meta.w)||1;
-      const zone = meta.zone;
+      const zone = _normZone(meta.zone);
       if(!zones[zone]) zones[zone] = {w:0,s:0};
       zones[zone].w += w;
       zones[zone].s += w*answerRisk;
