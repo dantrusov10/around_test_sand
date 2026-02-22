@@ -2364,10 +2364,11 @@ async function syncToGoogleSheets(reason){
 
 document.getElementById("btnExportXlsx")?.addEventListener("click", exportExcel);
 
-// Пересчитать = пересчитать + синхронизировать в Google Sheets
-document.getElementById("btnRecalc").addEventListener("click", ()=>syncToGoogleSheets("recalc"));
+// Пересчитать = только пересчитать (НЕ сохраняем автоматически)
+document.getElementById("btnRecalc").addEventListener("click", ()=>{ try{ recalc(); }catch(e){ console.warn("recalc() failed", e); } });
 
-document.getElementById("btnPrint").addEventListener("click", ()=>window.print());
+// Печать / Сохранить в PDF = синхронизируем в Google Sheets
+document.getElementById("btnPrint").addEventListener("click", ()=>{ try{ syncToGoogleSheets("pdf"); }catch(e){ console.warn("syncToGoogleSheets failed", e); } window.print(); });
 
 document.getElementById("btnCLevel").addEventListener("click", ()=>{
   try{

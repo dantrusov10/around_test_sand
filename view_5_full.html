@@ -1971,6 +1971,10 @@ function paintIf(id, pct, isPct){
 function recalc(){
   let recover = NaN; // prevent TDZ (used before computed)
 
+  // During reverse-sync (loading from Google Sheets) we dispatch many change/input
+  // events. Recalc must stay safe and MUST NOT trigger any automatic save.
+  window.__ITMEN_IS_LOADING = window.__ITMEN_IS_LOADING === true;
+
   console.log("recalc() clicked", new Date().toISOString());
   try{ applyQuickSynthetics(); }catch(e){}
 
@@ -2282,7 +2286,8 @@ const riskIndex = (riskAnswered.length>0)
     psi2 = valid.reduce((a,p)=>a + p.v*p.w,0) / sumW;
     psi2 = Math.round(clamp(psi2, 0, 100));
 
-    if(core.length) psi2 = Math.round(core.reduce((a,b)=>a+b,0)/core.length);
+    // NOTE: legacy variable `core` was undefined and broke recalc, which prevented
+    // Heatmap/Pilot Readiness from updating.
   }
   setText("psi2Score", isFinite(psi2) ? `${psi2}%` : "—%");
   setText("psi2Label", isFinite(psi2) ? (psi2>=75 ? "Зелёная зона" : (psi2>=45 ? "Жёлтая зона" : "Красная зона")) : "—");
@@ -2783,14 +2788,16 @@ async function syncToGoogleSheets(reason){
 
 document.getElementById("btnExportXlsx")?.addEventListener("click", exportExcel);
 
-// Пересчитать = пересчитать + синхронизировать в Google Sheets
+// Пересчитать = только пересчитать (НЕ сохраняем автоматически)
 document.getElementById("btnRecalc").addEventListener("click", ()=>{
   try{ recalc(); }catch(e){ console.warn("recalc() failed", e); }
-  // Save snapshot after recalculation
-  try{ syncToGoogleSheets("recalc"); }catch(e){ console.warn("syncToGoogleSheets failed", e); }
 });
 
-document.getElementById("btnPrint").addEventListener("click", ()=>window.print());
+// Печать / Сохранить в PDF = синхронизируем в Google Sheets (как в вашей логике)
+document.getElementById("btnPrint").addEventListener("click", ()=>{
+  try{ syncToGoogleSheets("pdf"); }catch(e){ console.warn("syncToGoogleSheets failed", e); }
+  window.print();
+});
 
 document.getElementById("btnCLevel").addEventListener("click", ()=>{
   try{
@@ -4043,6 +4050,10 @@ async function gsSearch(q){
 
   function applyPayload(payload){
     if(!payload || typeof payload !== "object") return;
+
+    // Guard: while we are applying data from Sheets, we must avoid any
+    // auto-save triggers and reduce noisy intermediate recalcs.
+    window.__ITMEN_IS_LOADING = true;
     // normalize legacy/alt keys coming from Sheets / Apps Script
     try{
       const p = payload;
@@ -4207,6 +4218,9 @@ async function gsSearch(q){
     }catch(e){
       console.warn("applyPayload maturity/risk fill failed", e);
     }
+
+    // done
+    window.__ITMEN_IS_LOADING = false;
 
   }
 
