@@ -58,15 +58,22 @@
     @media (min-width:1101px){
       .wrap{padding-left:360px}
     }
-  </style>
+  
+#benchBadge,#benchTransparencyCard,#benchDetails,#benchProfileLabel{display:none!important;}
+
+.dockLoadBtn{border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer}
+.dockLoadBtn:hover{filter:brightness(0.98)}
+.dockTop{display:flex;gap:10px;align-items:center}
+</style>
 </head>
 <body>
   <div class="quickDock">
     <div class="card pad">
       <div class="dockTitle">Быстрый вход</div>
-      <div class="dockSearchWrap">
+      <div class="dockSearchWrap dockTop">
         <div class="dockIcon">🔎</div>
         <input id="dockCompany" class="dockSearch" placeholder="Введите компанию" autocomplete="off"/>
+        <button id="dockLoadBtn" class="dockLoadBtn" type="button" title="Загрузить">Загрузить</button>
       </div>
       <div id="dockSuggest" class="dockSuggest"></div>
 
