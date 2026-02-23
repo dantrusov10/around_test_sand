@@ -24,6 +24,25 @@
 *{box-sizing:border-box}
 body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
 .container{max-width:1180px;margin:22px auto;padding:0 14px} /* fixed too-wide */
+
+/* ===== QuickDock (left, on all pages) ===== */
+.quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
+.quickDock .card{box-shadow:0 18px 50px rgba(15,23,42,.12)}
+.dockTitle{font-weight:950;font-size:14px;margin:0 0 10px}
+.dockSearchWrap{position:relative}
+.dockIcon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.7}
+.dockSearch{width:100%;border:1px solid rgba(15,23,42,.12);background:#f2f4f8;padding:11px 12px 11px 38px;border-radius:12px;outline:none;font-size:14px}
+.dockSuggest{margin-top:8px;border:1px solid rgba(15,23,42,.12);border-radius:12px;overflow:hidden;display:none;background:#fff}
+.dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}
+.dockItem:first-child{border-top:none}
+.dockItem b{display:block}
+.toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.tool{padding:12px;border:1px solid rgba(15,23,42,.12);border-radius:14px;background:#fff;display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:inherit}
+.tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
+.tName{font-weight:900;font-size:13px;line-height:1.15}
+.tDesc{font-size:12px;color:var(--muted);margin-top:3px}
+@media (max-width:1100px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
+@media (min-width:1101px){.container{padding-left:360px}}
 header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
 h1{font-size:20px;margin:0}
 .sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.35;max-width:920px}
@@ -272,7 +291,8 @@ body.no-kpi .kpiBar{display:none !important;}
 .miniList{margin:6px 0 0 18px; padding:0;}
 .miniList li{margin:4px 0;}
 /* Demo plan (compact) */
-#demoFocusHint{max-height: 240px; overflow:auto; padding-right:6px;}
+/* No inner scrollbars: top-3 + раскрывашка keeps card tidy */
+#demoFocusHint{padding-right:2px;}
 .demoIntro{font-size:12px; opacity:.85; margin-bottom:8px;}
 .demoSectionTitle{font-size:12px; font-weight:600; margin-top:8px;}
 .demoList{margin:6px 0 0 0; padding:0; list-style:none;}
@@ -280,7 +300,16 @@ body.no-kpi .kpiBar{display:none !important;}
 .demoList .prio{font-weight:700; white-space:nowrap; font-size:12px;}
 .demoList .func{font-size:12px; line-height:1.25;}
 .demoDetails{margin-top:6px;}
-.demoDetails summary{cursor:pointer; font-size:12px; opacity:.9; user-select:none;}
+.demoDetails summary{
+  cursor:pointer; font-size:12px; user-select:none;
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 10px; border-radius:999px;
+  border:1px solid rgba(15,23,42,.12);
+  background:rgba(255,255,255,.85);
+}
+.demoDetails summary::-webkit-details-marker{display:none}
+.demoDetails summary:after{content:"▾"; opacity:.75; transform:translateY(-1px)}
+.demoDetails[open] summary:after{content:"▴"}
 .demoDetails[open] summary{margin-bottom:6px;}
 .kpi-clickable{cursor:pointer;user-select:none}
 .kpi-clickable:active{transform:translateY(1px)}
@@ -329,6 +358,27 @@ body.no-kpi .kpiBar{display:none !important;}
 
 </head>
 <body class="view-full">
+  <div class="quickDock">
+    <div class="card pad">
+      <div class="dockTitle">Быстрый вход</div>
+      <div class="dockSearchWrap">
+        <div class="dockIcon">🔎</div>
+        <input id="dockCompany" class="dockSearch" placeholder="Введите компанию" autocomplete="off"/>
+      </div>
+      <div id="dockSuggest" class="dockSuggest"></div>
+
+      <div style="height:12px"></div>
+      <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
+      <div class="toolGrid">
+        <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+        <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+        <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+        <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+        <a class="tool" href="view_4_psi.html"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+        <a class="tool" href="view_5_full.html"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+      </div>
+    </div>
+  </div>
 <div class="container">
   <header >
     <div>
@@ -4839,6 +4889,97 @@ function syncToGoogleSheets(){
       console.warn('openCompanyVersionsModal failed', e);
     }
   }
+</script>
+
+<script>
+  // QuickDock (search + link company param)
+  (function(){
+    const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
+    const dockCompany = document.getElementById('dockCompany');
+    const dockSuggest = document.getElementById('dockSuggest');
+    if(!dockCompany) return;
+
+    function jsonp(url, timeoutMs=15000){
+      return new Promise((resolve, reject)=>{
+        const cb = 'cb_' + Math.random().toString(36).slice(2);
+        const s = document.createElement('script');
+        const t = setTimeout(()=>{ cleanup(); reject(new Error('JSONP timeout')); }, timeoutMs);
+        function cleanup(){
+          clearTimeout(t);
+          try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
+          if(s.parentNode) s.parentNode.removeChild(s);
+        }
+        window[cb] = (data)=>{ cleanup(); resolve(data); };
+        const sep = url.includes('?') ? '&' : '?';
+        s.src = url + sep + 'callback=' + encodeURIComponent(cb);
+        s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
+        document.body.appendChild(s);
+      });
+    }
+
+    function getCompanyFromUrl(){
+      try{ return (new URL(location.href)).searchParams.get('company') || ''; }catch(e){ return ''; }
+    }
+    function setCompanyInLinks(company){
+      const qs = company ? ('?company='+encodeURIComponent(company)) : '';
+      document.querySelectorAll('.quickDock a.tool').forEach(a=>{
+        const href = a.getAttribute('href') || '';
+        if(!href || href.startsWith('http')) return;
+        const clean = href.split('?')[0];
+        a.setAttribute('href', clean + qs);
+      });
+    }
+
+    const initial = getCompanyFromUrl();
+    dockCompany.value = initial;
+    setCompanyInLinks(initial);
+
+    let timer=null;
+    dockCompany.addEventListener('input', ()=>{
+      clearTimeout(timer);
+      const q = dockCompany.value.trim();
+      setCompanyInLinks(q);
+      if(q.length < 3){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
+      timer = setTimeout(()=>runSearch(q), 250);
+    });
+
+    dockCompany.addEventListener('keydown', (ev)=>{
+      if(ev.key === 'Enter'){
+        const c = dockCompany.value.trim();
+        const u = new URL(location.href);
+        if(c) u.searchParams.set('company', c); else u.searchParams.delete('company');
+        location.href = u.toString();
+      }
+    });
+
+    async function runSearch(q){
+      if(!WEBAPP_URL) return;
+      try{
+        const data = await jsonp(WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=10');
+        const items = (data && data.ok && Array.isArray(data.items)) ? data.items : [];
+        if(!items.length){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
+        dockSuggest.innerHTML = items.map(it=>{
+          const name = (it.company||'').replaceAll('"','&quot;');
+          const meta = it.timestamp ? ('<span style="color:#6b7280;font-size:12px">обновлено: '+String(it.timestamp).replaceAll('<','&lt;')+'</span>') : '';
+          return '<div class="dockItem" data-company="'+name+'"><b>'+name+'</b>'+meta+'</div>';
+        }).join('');
+        dockSuggest.style.display='block';
+        dockSuggest.querySelectorAll('.dockItem').forEach(el=>{
+          el.addEventListener('click', ()=>{
+            const c = el.getAttribute('data-company')||'';
+            dockSuggest.style.display='none';
+            dockCompany.value = c;
+            setCompanyInLinks(c);
+            const u = new URL(location.href);
+            u.searchParams.set('company', c);
+            location.href = u.toString();
+          });
+        });
+      }catch(e){
+        dockSuggest.style.display='none';
+      }
+    }
+  })();
 </script>
 
 

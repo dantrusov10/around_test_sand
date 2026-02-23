@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;">
+  <script src="config.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Требования к продукту — Инферит ИТМен</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;--card:#fff;--text:#0b1220;--muted:#5b6475;--line:rgba(15,23,42,.12);
+      --shadow:0 12px 30px rgba(15,23,42,.06);--radius:16px;--accent:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; background:var(--bg); color:var(--text)}
+    a{color:inherit; text-decoration:none}
+    .wrap{max-width:1280px;margin:24px auto;padding:0 16px 40px}
+    .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .pad{padding:14px}
+    h1{margin:0;font-size:18px;font-weight:950}
+    .sub{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.35}
+
+    /* Table */
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 8px}
+    .btn{appearance:none;border:none;background:var(--accent);color:#fff;padding:10px 12px;border-radius:12px;font-weight:900;cursor:pointer}
+    .btn.ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .tableWrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
+    table{border-collapse:collapse;width:100%;min-width:920px}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(15,23,42,.06);text-align:left;font-size:13px;vertical-align:top}
+    th{font-size:12px;color:var(--muted);font-weight:900;background:#fafbff;position:sticky;top:0}
+    td textarea, td select{width:100%;border:1px solid var(--line);border-radius:12px;background:#f2f4f8;padding:10px;font-size:13px}
+    td textarea{min-height:72px;resize:vertical}
+
+    /* Status */
+    .status{display:none;margin-top:10px;font-size:12px;color:#0ea5e9}
+
+    /* QuickDock */
+    .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
+    .quickDock .card{box-shadow:0 18px 50px rgba(15,23,42,.12)}
+    .dockTitle{font-weight:950;font-size:14px;margin:0 0 10px}
+    .dockSearchWrap{position:relative}
+    .dockIcon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.7}
+    .dockSearch{width:100%;border:1px solid var(--line);background:#f2f4f8;padding:11px 12px 11px 38px;border-radius:12px;outline:none;font-size:14px}
+    .dockSuggest{margin-top:8px;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:none;background:#fff}
+    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}
+    .dockItem:first-child{border-top:none}
+    .dockItem b{display:block}
+    .toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+    .tool{padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;gap:10px;align-items:flex-start}
+    .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
+    .tName{font-weight:900;font-size:13px;line-height:1.15}
+    .tDesc{font-size:12px;color:var(--muted);margin-top:3px}
+
+    @media (max-width:1100px){
+      .quickDock{position:static;width:auto;margin:0 0 14px}
+    }
+    @media (min-width:1101px){
+      .wrap{padding-left:360px}
+    }
+  </style>
+</head>
+<body>
+  <div class="quickDock">
+    <div class="card pad">
+      <div class="dockTitle">Быстрый вход</div>
+      <div class="dockSearchWrap">
+        <div class="dockIcon">🔎</div>
+        <input id="dockCompany" class="dockSearch" placeholder="Введите компанию" autocomplete="off"/>
+      </div>
+      <div id="dockSuggest" class="dockSuggest"></div>
+
+      <div style="height:12px"></div>
+      <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
+      <div class="toolGrid">
+        <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы и риски</div><div class="tDesc">борд итогов</div></div></a>
+        <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+        <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Требования к пилоту</div><div class="tDesc">раздел 4</div></div></a>
+        <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Требования к продукту</div><div class="tDesc">раздел 6</div></div></a>
+        <a class="tool" href="view_4_psi.html"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+        <a class="tool" href="view_5_full.html"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё целиком</div></div></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="card pad">
+      <h1>Требования к продукту</h1>
+      <div class="sub">Фиксируем требования к продукту (roadmap/оценка). При сохранении данные не стирают остальные разделы: мы берём последнюю запись из Google Sheets и обновляем только блок 6.</div>
+
+      <div class="btns">
+        <button class="btn" id="btnSave">Сохранить в Google Sheets</button>
+        <button class="btn ghost" id="btnAdd">+ Добавить требование</button>
+        <button class="btn ghost" id="btnClear">Очистить</button>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:54px">№</th>
+              <th style="min-width:260px">Бизнес требование</th>
+              <th style="min-width:340px">Функциональное требование</th>
+              <th style="width:160px">Тип</th>
+              <th style="width:140px">Обязат.</th>
+              <th style="width:220px">Возможность</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div id="status" class="status">—</div>
+    </div>
+  </div>
+
+<script>
+  const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
+
+  function jsonp(url, timeoutMs=15000){
+    return new Promise((resolve, reject)=>{
+      const cb = "cb_" + Math.random().toString(36).slice(2);
+      const s = document.createElement('script');
+      const t = setTimeout(()=>{ cleanup(); reject(new Error('JSONP timeout')); }, timeoutMs);
+      function cleanup(){
+        clearTimeout(t);
+        try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
+        if(s.parentNode) s.parentNode.removeChild(s);
+      }
+      window[cb] = (data)=>{ cleanup(); resolve(data); };
+      const sep = url.includes('?') ? '&' : '?';
+      s.src = url + sep + 'callback=' + encodeURIComponent(cb);
+      s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
+      document.body.appendChild(s);
+    });
+  }
+
+  function setStatus(msg, ok=true){
+    const el = document.getElementById('status');
+    el.style.display = 'block';
+    el.style.color = ok ? '#16a34a' : '#ef4444';
+    el.textContent = msg;
+  }
+
+  const TYPES = ["Тех","Проц","Интеграция","Безопасность","Отчет","Другое"];
+  const MUST = ["Да","Нет"];
+  const FEAS = ["Есть","Частично","Нет"];
+
+  const tbody = document.getElementById('tbody');
+  let loadedBase = null; // full payload from last record
+  let loadedCompany = "";
+
+  function rowTpl(i, r={}){
+    const typeOpts = ['<option value=""></option>'].concat(TYPES.map(x=>`<option ${r.type===x?'selected':''}>${x}</option>`)).join('');
+    const mustOpts = ['<option value=""></option>'].concat(MUST.map(x=>`<option ${r.must===x?'selected':''}>${x}</option>`)).join('');
+    const feasOpts = ['<option value=""></option>'].concat(FEAS.map(x=>`<option ${r.feas===x?'selected':''}>${x}</option>`)).join('');
+    return `\
+      <tr>\
+        <td>${i+1}</td>\
+        <td><textarea data-k="biz">${(r.biz||'').replaceAll('\\n','\n')}</textarea></td>\
+        <td><textarea data-k="func">${(r.func||'').replaceAll('\\n','\n')}</textarea></td>\
+        <td><select data-k="type">${typeOpts}</select></td>\
+        <td><select data-k="must">${mustOpts}</select></td>\
+        <td><select data-k="feas">${feasOpts}</select></td>\
+      </tr>`;
+  }
+
+  function render(rows){
+    tbody.innerHTML = rows.map((r,i)=>rowTpl(i,r)).join('');
+  }
+
+  function collect(){
+    const out = [];
+    [...tbody.querySelectorAll('tr')].forEach(tr=>{
+      const biz = tr.querySelector('[data-k="biz"]').value.trim();
+      const func = tr.querySelector('[data-k="func"]').value.trim();
+      const type = tr.querySelector('[data-k="type"]').value;
+      const must = tr.querySelector('[data-k="must"]').value;
+      const feas = tr.querySelector('[data-k="feas"]').value;
+      if(!biz && !func && !type && !must && !feas) return;
+      out.push({biz, func, type, must, feas});
+    });
+    return out;
+  }
+
+  function getCompanyFromUrl(){
+    const u = new URL(location.href);
+    return (u.searchParams.get('company')||'').trim();
+  }
+
+  async function loadCompany(company){
+    if(!WEBAPP_URL) { setStatus('GS_WEBAPP_URL пустой. Проверь config.js', false); return; }
+    if(!company) return;
+
+    setStatus('Загружаю последнюю запись…', true);
+    const data = await jsonp(WEBAPP_URL + '?action=get&company=' + encodeURIComponent(company));
+    if(!data || !data.ok || !data.payload){ setStatus('Не удалось загрузить данные (action=get)', false); return; }
+
+    const p = data.payload;
+    const parsed = p._payload_parsed && typeof p._payload_parsed === 'object' ? p._payload_parsed : null;
+    loadedBase = parsed || { company: (p.company||company) };
+    loadedCompany = (p.company || company);
+
+    const pr = loadedBase.productRequirements || loadedBase.prodRequirements || loadedBase.prodreq || [];
+    render(Array.isArray(pr) ? pr : []);
+    setStatus('✅ Загружено: ' + loadedCompany);
+  }
+
+  async function save(){
+    if(!WEBAPP_URL) { setStatus('GS_WEBAPP_URL пустой. Проверь config.js', false); return; }
+    const company = loadedCompany || getCompanyFromUrl();
+    if(!company){ setStatus('Сначала выбери компанию', false); return; }
+
+    const prod = collect();
+
+    // Merge into last loaded payload (so we don't wipe other sections)
+    const base = loadedBase && typeof loadedBase === 'object' ? JSON.parse(JSON.stringify(loadedBase)) : { company };
+    base.company = company;
+    base.productRequirements = prod;
+
+    const baseNoPayload = JSON.parse(JSON.stringify(base));
+    delete baseNoPayload.payload;
+
+    // For sheet columns: store full JSON into `payload`
+    const toSheet = {
+      company,
+      payload: JSON.stringify(baseNoPayload),
+      _upsert: false
+    };
+
+    setStatus('⏫ Сохраняю в Google Sheets…', true);
+    await fetch(WEBAPP_URL + (WEBAPP_URL.includes('?')?'&':'?') + 'action=save', {
+      method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(toSheet)
+    });
+    setStatus('✅ Отправлено в Google Sheets');
+  }
+
+  // Buttons
+  document.getElementById('btnAdd').addEventListener('click', ()=>{
+    const rows = collect();
+    rows.push({});
+    render(rows);
+  });
+  document.getElementById('btnClear').addEventListener('click', ()=>render([]));
+  document.getElementById('btnSave').addEventListener('click', ()=>save().catch(e=>setStatus('Ошибка сохранения: '+(e?.message||e), false)));
+
+  // Dock search
+  const dockCompany = document.getElementById('dockCompany');
+  const dockSuggest = document.getElementById('dockSuggest');
+  let dockTimer=null;
+
+  dockCompany.value = getCompanyFromUrl();
+
+  dockCompany.addEventListener('input', ()=>{
+    clearTimeout(dockTimer);
+    const q = dockCompany.value.trim();
+    if(q.length < 3){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
+    dockTimer = setTimeout(()=>dockSearch(q), 250);
+  });
+
+  async function dockSearch(q){
+    if(!WEBAPP_URL) return;
+    const data = await jsonp(WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=10');
+    const items = (data && data.ok && Array.isArray(data.items)) ? data.items : [];
+    if(!items.length){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
+    dockSuggest.innerHTML = items.map(it=>`<div class="dockItem" data-company="${(it.company||'').replaceAll('"','&quot;')}"><b>${it.company||''}</b><span style="color:var(--muted);font-size:12px">${it.timestamp?('обновлено: '+it.timestamp):''}</span></div>`).join('');
+    dockSuggest.style.display='block';
+    dockSuggest.querySelectorAll('.dockItem').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const c = el.getAttribute('data-company')||'';
+        dockSuggest.style.display='none';
+        dockCompany.value = c;
+        const u = new URL(location.href);
+        u.searchParams.set('company', c);
+        location.href = u.toString();
+      });
+    });
+  }
+
+  // Initial load
+  const initialCompany = getCompanyFromUrl();
+  if(initialCompany){ loadCompany(initialCompany).catch(e=>setStatus('Ошибка загрузки: '+(e?.message||e), false)); }
+  else render([]);
+</script>
+</body>
+</html>
