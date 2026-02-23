@@ -3,7 +3,7 @@
 // IMPORTANT:
 // Put your *current* Apps Script WebApp /exec URL here after each deployment.
 // Example:
-// window.GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwbrfWknpKxNhMLSvadmOYImOPTPwOQVUYbZ1rdw359e4aq1srw7MRDlHEzfkLiQS_Jyg/exec";
+// window.GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwtBLKDLp9Okdlm0EvcUAWb5COpdHya3YTnkJJ7Vxp7uZkuIFtFi3WFgQKnum3vPdQyeA/exec";
 // SANDBOX v3
 window.GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwtBLKDLp9Okdlm0EvcUAWb5COpdHya3YTnkJJ7Vxp7uZkuIFtFi3WFgQKnum3vPdQyeA/exec";
 
