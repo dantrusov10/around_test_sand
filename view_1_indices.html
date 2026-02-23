@@ -23,7 +23,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
-.container{max-width:1180px;margin:22px auto;padding:0 14px} /* fixed too-wide */
+.container{max-width:1480px;margin:22px auto;padding:0 14px} /* fixed too-wide */
 
 /* ===== QuickDock (left, on all pages) ===== */
 .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
@@ -41,7 +41,7 @@ body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:va
 .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
 .tName{font-weight:900;font-size:13px;line-height:1.15}
 .tDesc{font-size:12px;color:var(--muted);margin-top:3px}
-@media (max-width:1100px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
+@media (max-width:1480px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
 @media (min-width:1101px){.container{padding-left:360px}}
 header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
 h1{font-size:20px;margin:0}
@@ -94,7 +94,7 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
   gap:10px;
   margin-top:10px;
 }
-@media(max-width:1100px){.kpiBar{grid-template-columns:repeat(2, minmax(0,1fr))}}
+@media(max-width:1480px){.kpiBar{grid-template-columns:repeat(2, minmax(0,1fr))}}
 .stat{
   background:var(--field);
   border:1px solid var(--border);
@@ -254,6 +254,8 @@ body.no-kpi .kpiBar{display:none !important;}
       text-transform: uppercase;
     }
     
+
+.benchWrap{display:none!important;}
 </style>
 
 <style id="kpi-modal-css">
@@ -450,9 +452,109 @@ body.no-kpi .kpiBar{display:none !important;}
     <div class="small" id="probLabel">—</div>
   </div>
 </div>
-  </header>
+  
+  <div class="kpiBar riskReady" style="margin-top:8px">
+    <div class="kpiGroupTitle">Риск и готовность</div>
+
+    <div class="stat clickable" id="kPilotReady" data-detail="pilot">
+      <div class="label">Pilot Readiness Index</div>
+      <div class="value mono" id="pilotReady">—%</div>
+      <div class="small" id="pilotReadyLabel">—</div>
+    </div>
+
+    <div class="stat clickable" id="kMainProblem" data-detail="problem">
+      <div class="label">Основная проблема</div>
+      <div class="value" id="mainProblem">—</div>
+      <div class="small" id="mainProblemHint">—</div>
+    </div>
+
+    <div class="stat clickable" id="kModules" data-detail="modules">
+      <div class="label">Рекомендуемая конфигурация</div>
+      <div class="value" id="recModules">—</div>
+      <div class="small">Автоматически по порогам риска.</div>
+    </div>
+
+    <div class="stat clickable" id="kDemo" data-detail="demo">
+      <div class="label">Приоритет демо</div>
+      <div class="value" id="demoFocus">—</div>
+      <div class="small" id="demoFocusHint">—</div>
+    </div>
+  </div>
+
+</header>
 
   <div class="grid">
+
+  <div class="card" id="riskHeatmapCard">
+    <h2>Heatmap по зонам риска (автоматически)</h2>
+    <div class="small">Формула по зоне: Σ(Вес×Ответ) / Σ(Вес зоны). Ответ: Да=0, Частично=0.5, Нет=1.</div>
+    <div class="hr"></div>
+
+    <div class="row">
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <b>Серые зоны (охват / архитектура)</b>
+          <span class="mono" id="riskGreyPct">—%</span>
+        </div>
+        <div class="bar"><span id="riskGreyBar"></span></div>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <b>Лицензионный риск</b>
+          <span class="mono" id="riskLicPct">—%</span>
+        </div>
+        <div class="bar"><span id="riskLicBar"></span></div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <b>Операционная неэффективность / ручной труд</b>
+          <span class="mono" id="riskOpsPct">—%</span>
+        </div>
+        <div class="bar"><span id="riskOpsBar"></span></div>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <b>Управляемость / отсутствие истории</b>
+          <span class="mono" id="riskCtrlPct">—%</span>
+        </div>
+        <div class="bar"><span id="riskCtrlBar"></span></div>
+      </div>
+    </div>
+
+    <div class="hr" style="margin-top:14px"></div>
+    <h3 style="margin:0 0 8px">Стоимость бездействия (₽/год)</h3>
+    <div class="row">
+      <div class="stat">
+        <div class="label">Лицензии (ПО)</div>
+        <div class="value mono" id="coiLic">—</div>
+        <div class="small">Бюджет лицензий × % неиспользуемого ПО</div>
+      </div>
+      <div class="stat">
+        <div class="label">Простои</div>
+        <div class="value mono" id="coiDown">—</div>
+        <div class="small">Часы простоя × Стоимость часа</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="stat">
+        <div class="label">Ручной труд</div>
+        <div class="value mono" id="coiManual">—</div>
+        <div class="small">Кол-во IT × зарплата × % ручных операций</div>
+      </div>
+      <div class="stat">
+        <div class="label">Итого</div>
+        <div class="value mono" id="coiTotal">—</div>
+        <div class="small">Сумма 3 компонентов</div>
+      </div>
+    </div>
+  </div>
+
+
 
   <div class="card" id="cLevelBlock" style="display:none">
     <h2>C-level вывод (авто)</h2>
@@ -3660,6 +3762,185 @@ function lsLoad(){
     const obj = JSON.parse(raw);
     return (obj && typeof obj === "object") ? obj : {};
   }catch(e){ return {}; }
+// Update derived risk blocks from loaded payload
+try{ updateRiskFromPayload(payload); }catch(e){}
+
+}
+function _normKey(s){
+  return String(s||"").trim().toLowerCase()
+    .replace(/ё/g,"е")
+    .replace(/\s+/g," ")
+    .replace(/\u00a0/g," ")
+    .trim();
+}
+function _toRiskFromScore(v){
+  // score: 0=нет, 1=частично, 2=есть => risk: 1, 0.5, 0
+  const n = Number(v);
+  if(isNaN(n)) return null;
+  if(n<=0) return 1;
+  if(n===1) return 0.5;
+  return 0;
+}
+function updateRiskFromPayload(payload){
+  const bank = window.ITMEN_QUESTION_BANK || {};
+  const zones = {
+    "Серые зоны (охват / архитектура)": {w:0, s:0},
+    "Лицензионный риск": {w:0, s:0},
+    "Операционная неэффективность / ручной труд": {w:0, s:0},
+    "Управляемость / отсутствие истории": {w:0, s:0},
+  };
+  const contribs = [];
+
+  function pushItem(label, score){
+    const key = _normKey(label);
+    const meta = bank[key];
+    if(!meta || !meta.zone) return;
+    const r = _toRiskFromScore(score);
+    if(r===null) return;
+    const w = Number(meta.w||1);
+    const z = meta.zone;
+    if(!zones[z]) return;
+    zones[z].w += w;
+    zones[z].s += w*r;
+    if(r>0){
+      contribs.push({zone:z, c:w*r, func:meta.func||"", prio:meta.prio||99, q:meta.q||label});
+    }
+  }
+
+  // TECH 01..10
+  for(let i=1;i<=10;i++){
+    const k = String(i).padStart(2,"0");
+    pushItem(payload[`tech_${k}_label`], payload[`tech_${k}_score`]);
+  }
+  // PROC 01..10
+  for(let i=1;i<=10;i++){
+    const k = String(i).padStart(2,"0");
+    pushItem(payload[`proc_${k}_label`], payload[`proc_${k}_score`]);
+  }
+
+  // Compute per-zone % (0..100)
+  let totalW=0, totalS=0;
+  let mainZone=null, mainVal=-1;
+  for(const [z,obj] of Object.entries(zones)){
+    totalW += obj.w;
+    totalS += obj.s;
+    const pct = obj.w ? (obj.s/obj.w) : 0;
+    if(pct>mainVal){ mainVal=pct; mainZone=z; }
+  }
+  const overall = totalW ? (totalS/totalW) : 0;
+  const pilotReady = Math.max(0, Math.min(1, 1-overall));
+  // labels
+  const prPct = Math.round(pilotReady*100);
+  const prLabel = prPct<50 ? "Пилот сложный" : (prPct<70 ? "Пилот средний" : "Пилот быстрый");
+
+  // Decide config
+  const zPct = (name)=> zones[name].w ? (zones[name].s/zones[name].w) : 0;
+  const grey = zPct("Серые зоны (охват / архитектура)");
+  const lic  = zPct("Лицензионный риск");
+  const ops  = zPct("Операционная неэффективность / ручной труд");
+  const ctrl = zPct("Управляемость / отсутствие истории");
+
+  const mods=[];
+  if(grey>=0.40) mods.push("Базовый");
+  if(lic>=0.30) mods.push("Призма");
+  if(ctrl>=0.40) mods.push("Гибкая модель");
+  if(ops>=0.50) mods.push("Обогащение");
+  const modulesText = mods.length ? mods.join(" + ") : "—";
+
+  // Demo focus
+  const focusMap = {
+    "Серые зоны (охват / архитектура)": {title:"Агрегация/охват", hint:"Начать с единого источника правды и покрытия сегментов."},
+    "Лицензионный риск": {title:"Призма (лицензии)", hint:"Начать с нормализации ПО и контроля лицензионных рисков."},
+    "Операционная неэффективность / ручной труд": {title:"Автоматизация", hint:"Начать с автоматизации сбора/актуализации и снижения ручных операций."},
+    "Управляемость / отсутствие истории": {title:"История/управляемость", hint:"Начать с истории изменений и управляемости процессов."},
+  };
+  const demoBase = focusMap[mainZone] || {title:"—", hint:"—"};
+
+  // Render demo lists (unique by func)
+  function pickFunc(x){
+    const f = (x.func && String(x.func).trim()) ? String(x.func).trim() : String(x.q||"").trim();
+    return f.replace(/\s+/g," ").replace(/[.。]\s*$/,"").trim();
+  }
+  const seen=new Set(); const uniq=[];
+  contribs.sort((a,b)=> (b.c-a.c) || ((a.prio||99)-(b.prio||99)));
+  for(const x of contribs){
+    const f=pickFunc(x);
+    const k=f.toLowerCase();
+    if(!f || seen.has(k)) continue;
+    seen.add(k);
+    uniq.push({func:f, c:x.c, zone:x.zone});
+  }
+  const mainList = uniq.filter(x=>x.zone===mainZone).slice(0,3);
+  const extraList = uniq.filter(x=>x.zone!==mainZone).slice(0,6);
+
+  const demoHtml = (()=> {
+    let h = `<div class="demoIntro">${_escHtml(demoBase.hint)}</div>`;
+    if(mainList.length){
+      h += `<div class="demoSectionTitle">Топ демо по основной зоне</div><ul class="demoList">`+
+        mainList.map((x,i)=>`<li><span class="prio">Приоритет ${i+1}</span><span class="func">${_escHtml(x.func)}</span></li>`).join("")+
+        `</ul>`;
+    }
+    const extraCount = extraList.length;
+    if(extraCount){
+      h += `<details class="demoDetails"><summary class="demoSummary">Показать ещё (${extraCount})</summary><div class="demoExtra">`+
+        `<div class="demoSectionTitle" style="margin-top:10px">Также стоит показать</div><ul class="demoList">`+
+        extraList.map((x,i)=>`<li><span class="prio">Приоритет ${i+1}</span><span class="func">${_escHtml(x.func)}</span></li>`).join("")+
+        `</ul></div></details>`;
+    }
+    return h;
+  })();
+
+  // Apply to UI
+  function setPct(id,p){ const el=document.getElementById(id); if(el) el.textContent = Math.round(p*100)+"%"; }
+  function setBar(id,p){ const el=document.getElementById(id); if(el) el.style.width = Math.round(p*100)+"%"; }
+
+  setPct("riskGreyPct", grey); setBar("riskGreyBar", grey);
+  setPct("riskLicPct", lic); setBar("riskLicBar", lic);
+  setPct("riskOpsPct", ops); setBar("riskOpsBar", ops);
+  setPct("riskCtrlPct", ctrl); setBar("riskCtrlBar", ctrl);
+
+  const pr=document.getElementById("pilotReady"); if(pr) pr.textContent = prPct+"%";
+  const prl=document.getElementById("pilotReadyLabel"); if(prl) prl.textContent = prLabel;
+
+  const mp=document.getElementById("mainProblem"); if(mp) mp.textContent = (mainZone||"—").replace(/^.*?\s\(/,"").replace(/\).*$/,"");
+  const mph=document.getElementById("mainProblemHint"); if(mph) mph.textContent = "Риск: "+Math.round(mainVal*100)+"%";
+
+  const rm=document.getElementById("recModules"); if(rm) rm.textContent = modulesText;
+
+  const df=document.getElementById("demoFocus"); if(df) df.textContent = demoBase.title;
+  const dfh=document.getElementById("demoFocusHint"); if(dfh) dfh.textContent = demoBase.hint;
+
+  // Modal details
+  const modalTitle=document.getElementById("kpiModalTitle");
+  const modalBody=document.getElementById("kpiModalBody");
+  window.__kpiDetails = {
+    pilot: {title:"Pilot Readiness Index", html:`<div class="small">Готовность к пилоту = 1 − средний риск (по всем зонам).<br><b>${prPct}%</b> — ${_escHtml(prLabel)}</div>`},
+    problem: {title:"Основная проблема", html:`<div class="small"><b>${_escHtml(mainZone||"—")}</b><br>Риск: ${Math.round(mainVal*100)}%</div>`},
+    modules: {title:"Рекомендуемая конфигурация", html:`<div class="small">Пороги:<br>Серые зоны ≥40% → Базовый<br>Лицензионный риск ≥30% → Призма<br>Управляемость ≥40% → Гибкая модель<br>Ручной труд ≥50% → Обогащение</div><div style="margin-top:8px"><b>${_escHtml(modulesText)}</b></div>`},
+    demo: {title:`Приоритет демо: ${_escHtml(demoBase.title)}`, html: demoHtml}
+  };
+
+  // COI
+  const licBudget = Number(payload.licBudget||0);
+  const unusedPct = Number(payload.unusedPct||0)/100;
+  const downtimeHours = Number(payload.downtimeHours||0);
+  const downtimeCost = Number(payload.downtimeCost||0);
+  const itCount = Number(payload.itCount||0);
+  const salary = Number(payload.salary||0);
+  const manualPct = Number(payload.manualPct||0)/100;
+
+  const coiLic = licBudget * unusedPct;
+  const coiDown = downtimeHours * downtimeCost;
+  const coiManual = itCount * salary * manualPct * 12; // monthly to yearly
+  const coiTotal = coiLic + coiDown + coiManual;
+
+  function rub(x){ 
+    try{ return (Math.round(x)).toLocaleString("ru-RU")+" ₽"; }catch(_){ return String(Math.round(x))+" ₽"; }
+  }
+  const el1=document.getElementById("coiLic"); if(el1) el1.textContent=rub(coiLic);
+  const el2=document.getElementById("coiDown"); if(el2) el2.textContent=rub(coiDown);
+  const el3=document.getElementById("coiManual"); if(el3) el3.textContent=rub(coiManual);
+  const el4=document.getElementById("coiTotal"); if(el4) el4.textContent=rub(coiTotal);
 }
 function lsSave(obj){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(obj)); }catch(e){}
@@ -4063,6 +4344,38 @@ function syncToGoogleSheets(){
       }catch(e){ dockSuggest.style.display='none'; }
     }
   })();
+
+// AUTOLOAD_COMPANY
+(function(){
+  const u=new URL(location.href);
+  const c=(u.searchParams.get('company')||'').trim();
+  if(!c) return;
+  // Try to load latest row for this company via search+get
+  const dock=document.getElementById('dockCompany');
+  if(dock) dock.value=c;
+  try{
+    if(typeof loadCompanyByName==='function') { loadCompanyByName(c); return; }
+  }catch(e){}
+  try{
+    // fallback: use search endpoint and take newest row
+    const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(c) + '&limit=20';
+    jsonp(url).then(res=>{
+      const items = (res && (res.items||res.results||res.data)) || [];
+      const list = Array.isArray(items)?items:[];
+      if(!list.length) return;
+      // pick newest by row/timestamp
+      list.sort((a,b)=> (Number(b.row||b.r||0)-Number(a.row||a.r||0)) || String(b.timestamp||b.ts||'').localeCompare(String(a.timestamp||a.ts||'')) );
+      const row = list[0].row || list[0].r;
+      if(!row) return;
+      const gurl = WEBAPP_URL + '?action=get&row=' + encodeURIComponent(row);
+      return jsonp(gurl);
+    }).then(data=>{
+      const payload = (data && (data.payload || data.data || data.item && data.item.payload)) || null;
+      if(payload && typeof applyPayload==='function') applyPayload(payload);
+      if(typeof recalc==='function') try{recalc();}catch(e){}
+    }).catch(()=>{});
+  }catch(e){}
+})();
 </script>
 
 <div id="globalLoader" aria-hidden="true">

@@ -197,7 +197,9 @@
     .miniRow{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:6px}
     .miniStat{font-size:12px; color:var(--muted)}
     .miniStat b{color:var(--text)}
-  </style>
+  
+.benchWrap{display:none!important;}
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -574,11 +576,11 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
     }
     function pickLatestPerCompany(data){
       // Prefer server-provided arrays if present
-      const cand = data.latestByCompany || data.latest_by_company || data.perCompany || data.companiesLatest || data.company_latest || data.companies_latest;
+      const cand = data.latestByCompany || data.latest_by_company || data.perCompany || data.companiesLatest || data.company_latest || data.companies_latest || data.latest_records || data.latestRecords;
       if(Array.isArray(cand) && cand.length) return cand;
 
       // Fallback: if server sends raw runs list, group by company+timestamp
-      const runs = data.runs || data.items || data.rows || data.all || data.data;
+      const runs = (Array.isArray(data.runs)?data.runs:null) || data.items || data.rows || data.all || data.data || data.latest_records || data.latestRecords;
       if(Array.isArray(runs) && runs.length){
         const m = new Map();
         for(const r of runs){
