@@ -2931,11 +2931,13 @@ function setupKpiExplain(){
   });
 
   // robust click/tap delegation
-  bar.addEventListener("click", (e)=>{
-    const stat = e.target.closest(".stat[id]");
-    if(!stat) return;
-    kpiModalOpen(stat.id);
-  });
+  bar.addEventListener("click",(e)=>{
+      // Prevent KPI modal from opening when user interacts with expandable lists / controls inside cards
+      if(e?.target?.tagName==="SUMMARY" || e?.target?.closest?.("details.demoDetails")) return;
+      const stat = e.target.closest(".stat[id]");
+      if(!stat) return;
+      kpiModalOpen(stat.id);
+    });
 
   // keyboard open (Enter/Space)
   bar.addEventListener("keydown",(e)=>{
