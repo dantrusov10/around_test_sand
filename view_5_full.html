@@ -271,6 +271,17 @@ body.no-kpi .kpiBar{display:none !important;}
 /* demo plan list */
 .miniList{margin:6px 0 0 18px; padding:0;}
 .miniList li{margin:4px 0;}
+/* Demo plan (compact) */
+#demoFocusHint{max-height: 240px; overflow:auto; padding-right:6px;}
+.demoIntro{font-size:12px; opacity:.85; margin-bottom:8px;}
+.demoSectionTitle{font-size:12px; font-weight:600; margin-top:8px;}
+.demoList{margin:6px 0 0 0; padding:0; list-style:none;}
+.demoList li{display:flex; gap:8px; align-items:flex-start; margin:6px 0;}
+.demoList .prio{font-weight:700; white-space:nowrap; font-size:12px;}
+.demoList .func{font-size:12px; line-height:1.25;}
+.demoDetails{margin-top:6px;}
+.demoDetails summary{cursor:pointer; font-size:12px; opacity:.9; user-select:none;}
+.demoDetails[open] summary{margin-bottom:6px;}
 .kpi-clickable{cursor:pointer;user-select:none}
 .kpi-clickable:active{transform:translateY(1px)}
 </style>
@@ -1542,12 +1553,12 @@ function buildDemoPlan(hm){
   if(!contribs.length){
     return {title:"—", html:"<div class='small'>Заполни ответы в 2.1/2.2 — появится план демо.</div>"};
   }
-  contribs.sort((x,y)=> (y.c - x.c) || (x.prio - y.prio));
+
+  // Sort by impact (w×answer) then by explicit priority (lower=more important)
+  contribs.sort((x,y)=> (y.c - x.c) || ((x.prio||99) - (y.prio||99)));
+
   const mainZone = hm.__mainZone || null;
   const base = decideDemo(mainZone);
-
-  const topMain = mainZone ? contribs.filter(x=>x.zone===mainZone && x.c>0).slice(0,6) : [];
-  const topAll  = contribs.filter(x=>x.c>0).slice(0,10);
 
   function cleanQ(q){
     return (q||"")
@@ -1555,19 +1566,71 @@ function buildDemoPlan(hm){
       .replace(/^\s*\d+\s*[\.)]\s*/, "")
       .trim();
   }
-  function li(x, idx){
-    const pr = (idx!==undefined && idx!==null) ? (idx+1) : "";
-    const func = (x.func && String(x.func).trim()) ? String(x.func).trim() : cleanQ(x.q||"");
-    return `<li><b>Приоритет ${pr}</b>: ${_escHtml(func)}</li>`;
+  function pickFunc(x){
+    const f = (x.func && String(x.func).trim()) ? String(x.func).trim() : cleanQ(x.q||"");
+    // Normalize: collapse whitespace, remove trailing dots
+    return f.replace(/\s+/g," ").replace(/[.。]\s*$/,"").trim();
   }
 
-  let html = `<div class='small'>${_escHtml(base.hint)}</div>`;
-  if(topMain.length){
-    html += `<div class='small' style='margin-top:10px'>Топ демо по основной зоне:</div><ul class='miniList'>${topMain.map((x,i)=>li(x,i)).join("")}</ul>`;
+  // Deduplicate by functional description (same function may map to multiple questions)
+  function uniqueByFunc(list){
+    const seen=new Set();
+    const out=[];
+    for(const x of list){
+      const f=pickFunc(x);
+      if(!f) continue;
+      const key=f.toLowerCase();
+      if(seen.has(key)) continue;
+      seen.add(key);
+      out.push({...x, __func:f});
+    }
+    return out;
   }
-  if(topAll.length){
-    html += `<div class='small' style='margin-top:10px'>Также стоит показать:</div><ul class='miniList'>${topAll.map((x,i)=>li(x,i)).join("")}</ul>`;
+
+  const inMainZone = mainZone ? contribs.filter(x=>x.zone===mainZone && x.c>0) : [];
+  const allPositive = contribs.filter(x=>x.c>0);
+
+  const topMainUnique = uniqueByFunc(inMainZone);
+  const topAllUnique  = uniqueByFunc(allPositive);
+
+  // Remove items already shown in main list from "also show"
+  const mainKeys = new Set(topMainUnique.map(x=>x.__func.toLowerCase()));
+  const alsoUnique = topAllUnique.filter(x=>!mainKeys.has(x.__func.toLowerCase()));
+
+  function li(x, idx){
+    const pr = (idx!==undefined && idx!==null) ? (idx+1) : "";
+    return `<li><span class="prio">Приоритет ${pr}</span><span class="func">${_escHtml(x.__func || pickFunc(x))}</span></li>`;
   }
+
+  // UI: keep it compact — show top 3, rest in <details>
+  const mainTop = topMainUnique.slice(0,3);
+  const mainRest = topMainUnique.slice(3,10); // cap
+
+  const alsoTop = alsoUnique.slice(0,3);
+  const alsoRest = alsoUnique.slice(3,10); // cap
+
+  let html = `<div class="demoIntro">${_escHtml(base.hint)}</div>`;
+
+  if(mainTop.length){
+    html += `<div class="demoSectionTitle">Топ демо по основной зоне</div>
+      <ul class="demoList">${mainTop.map((x,i)=>li(x,i)).join("")}</ul>`;
+    if(mainRest.length){
+      html += `<details class="demoDetails"><summary>Показать ещё (${mainRest.length})</summary>
+        <ul class="demoList">${mainRest.map((x,i)=>li(x,i+mainTop.length)).join("")}</ul>
+      </details>`;
+    }
+  }
+
+  if(alsoTop.length){
+    html += `<div class="demoSectionTitle" style="margin-top:10px">Также стоит показать</div>
+      <ul class="demoList">${alsoTop.map((x,i)=>li(x,i)).join("")}</ul>`;
+    if(alsoRest.length){
+      html += `<details class="demoDetails"><summary>Показать ещё (${alsoRest.length})</summary>
+        <ul class="demoList">${alsoRest.map((x,i)=>li(x,i+alsoTop.length)).join("")}</ul>
+      </details>`;
+    }
+  }
+
   return {title: base.title, html};
 }
 
