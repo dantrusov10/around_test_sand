@@ -238,6 +238,7 @@
           <div class="miniRow" style="margin-top:8px">
             <a class="btn ghost" id="openIndicesBtn" href="view_1_indices.html">Индексы</a>
             <a class="btn ghost" id="openReqBtn" href="view_3_requirements.html">Требования</a>
+            <a class="btn ghost" id="openProdBtn" href="view_3b_product.html">Продукт</a>
             <a class="btn ghost" id="openPsiBtn" href="view_4_psi.html">ПСИ</a>
           </div>
         </div>
@@ -248,6 +249,7 @@
           <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы и риски</div><div class="tDesc">борд итогов</div></div></a>
           <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью (1–3)</div><div class="tDesc">быстро/глубоко</div></div></a>
           <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Требования к пилоту</div><div class="tDesc">раздел 4</div></div></a>
+          <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Требования к продукту</div><div class="tDesc">раздел 6</div></div></a>
           <a class="tool" href="view_4_psi.html"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
           <a class="tool" href="view_5_full.html"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё целиком</div></div></a>
         </div>
@@ -500,6 +502,7 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
         document.getElementById("openInterviewBtn").href = "view_2_interview.html"+qs;
         document.getElementById("openIndicesBtn").href = "view_1_indices.html"+qs;
         document.getElementById("openReqBtn").href = "view_3_requirements.html"+qs;
+        document.getElementById("openProdBtn").href = "view_3b_product.html"+qs;
         document.getElementById("openPsiBtn").href = "view_4_psi.html"+qs;
 
         miniCRM.style.display="block";
