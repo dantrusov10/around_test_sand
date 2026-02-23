@@ -244,6 +244,12 @@ body.no-kpi .kpiBar{display:none !important;}
 
 
 .benchWrap{display:none!important;}
+
+#benchBadge,#benchTransparencyCard,#benchDetails,#benchProfileLabel{display:none!important;}
+
+.dockLoadBtn{border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer}
+.dockLoadBtn:hover{filter:brightness(0.98)}
+.dockTop{display:flex;gap:10px;align-items:center}
 </style>
 
 <style id="kpi-modal-css">
@@ -316,9 +322,10 @@ body.no-kpi .kpiBar{display:none !important;}
   <div class="quickDock">
     <div class="card pad">
       <div class="dockTitle">Быстрый вход</div>
-      <div class="dockSearchWrap">
+      <div class="dockSearchWrap dockTop">
         <div class="dockIcon">🔎</div>
         <input id="dockCompany" class="dockSearch" placeholder="Введите компанию" autocomplete="off"/>
+        <button id="dockLoadBtn" class="dockLoadBtn" type="button" title="Загрузить">Загрузить</button>
       </div>
       <div id="dockSuggest" class="dockSuggest"></div>
 
@@ -358,16 +365,10 @@ body.no-kpi .kpiBar{display:none !important;}
           <option value="deep">Глубокий</option>
         </select>
       </label>
-      <label style="display:grid;gap:6px;font-size:12px;min-width:220px">Данные / бенчмарки
-        <input id="benchMode" type="hidden" value="client">
-        <span id="benchBadge" class="pill" style="margin-left:10px;display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);font-weight:800">
-          <span>🔵 Бенчмарки: <span id="benchCount">0</span></span>
-          <span class="small" id="benchProfileLabel" style="opacity:.85"></span>
-        </span>
-      </label>
+      <input id="benchMode" type="hidden" value="client">
+<div id="reqStatus" style="align-self:end;color:#b91c1c;font-size:12px;display:none;max-width:260px;line-height:1.2"></div>
 
-      <div id="reqStatus" style="align-self:end;color:#b91c1c;font-size:12px;display:none;max-width:260px;line-height:1.2"></div>
-
+      <button class="btn ghost" id="btnLoadCompany">Подгрузить</button>
       <button class="btn" id="btnRecalc">Пересчитать</button>
 <button class="btn ghost" id="btnPrint">Печать / PDF</button>
       <button class="btn ghost" id="btnExportXlsx">Выгрузить Excel</button>
@@ -2107,13 +2108,15 @@ function apply(data){
   set("finNote",f.note);
 
   // requirements
-  document.getElementById("reqTbody").innerHTML="";
+  const __reqTb=document.getElementById("reqTbody");
+  if(__reqTb) __reqTb.innerHTML="";
   (data.requirements||[]).forEach(r=>addReqRow(r));
   // product requirements
   const prTb=document.getElementById("prodReqTbody");
   if(prTb){ prTb.innerHTML=""; (data.productRequirements||[]).forEach(r=>addProdReqRow(r)); }
   // psi
-  document.getElementById("psiTbody").innerHTML="";
+  const __psiTb=document.getElementById("psiTbody");
+  if(__psiTb) __psiTb.innerHTML="";
   (data.psi||[]).forEach(r=>addPsiRow(r));
   const p=data.pilot||{};
   set("pilotGoal",p.goal); set("pilotTasks_removed",p.tasks); set("pilotKpi_removed",p.kpi); set("pilotScope",p.scope);
@@ -2453,14 +2456,17 @@ document.getElementById("btnHideCLevel").addEventListener("click", ()=>{
 document.getElementById("btnAddReq").addEventListener("click", ()=>addReqRow());
 if(document.getElementById("btnAddProdReq")) document.getElementById("btnAddProdReq").addEventListener("click", ()=>addProdReqRow());
 document.getElementById("btnClearReq").addEventListener("click", ()=>{
-  if(confirm("Очистить все требования?")){ document.getElementById("reqTbody").innerHTML=""; recalc(); }
+  if(confirm("Очистить все требования?")){ const __reqTb=document.getElementById("reqTbody");
+  if(__reqTb) __reqTb.innerHTML=""; recalc(); }
 });
 if(document.getElementById("btnClearProdReq")) document.getElementById("btnClearProdReq").addEventListener("click", ()=>{
-  if(confirm("Очистить все требования к продукту?")){ document.getElementById("prodReqTbody").innerHTML=""; recalc(); }
+  if(confirm("Очистить все требования к продукту?")){ const __prodTb=document.getElementById("prodReqTbody");
+  if(__prodTb) __prodTb.innerHTML=""; recalc(); }
 });
 document.getElementById("btnAddPsi").addEventListener("click", ()=>addPsiRow());
 document.getElementById("btnClearPsi").addEventListener("click", ()=>{
-  if(confirm("Очистить все сценарии ПСИ?")){ document.getElementById("psiTbody").innerHTML=""; recalc(); }
+  if(confirm("Очистить все сценарии ПСИ?")){ const __psiTb=document.getElementById("psiTbody");
+  if(__psiTb) __psiTb.innerHTML=""; recalc(); }
 });
 
 ensureBaseTables();
@@ -4002,6 +4008,8 @@ function syncToGoogleSheets(){
         location.href = u.toString();
       }
     });
+    const dockLoadBtn = document.getElementById('dockLoadBtn');
+    if(dockLoadBtn){ dockLoadBtn.addEventListener('click', ()=>{ const ev = new KeyboardEvent('keydown',{key:'Enter'}); dockCompany.dispatchEvent(ev); }); }
     async function runSearch(q){
       if(!WEBAPP_URL) return;
       try{
