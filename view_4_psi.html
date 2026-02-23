@@ -23,7 +23,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
-.container{max-width:1180px;margin:22px auto;padding:0 14px} /* fixed too-wide */
+.container{max-width:1480px;margin:22px auto;padding:0 14px} /* fixed too-wide */
 
 /* ===== QuickDock (left, on all pages) ===== */
 .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
@@ -41,7 +41,7 @@ body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:va
 .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
 .tName{font-weight:900;font-size:13px;line-height:1.15}
 .tDesc{font-size:12px;color:var(--muted);margin-top:3px}
-@media (max-width:1100px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
+@media (max-width:1480px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
 @media (min-width:1101px){.container{padding-left:360px}}
 header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
 h1{font-size:20px;margin:0}
@@ -94,7 +94,7 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
   gap:10px;
   margin-top:10px;
 }
-@media(max-width:1100px){.kpiBar{grid-template-columns:repeat(2, minmax(0,1fr))}}
+@media(max-width:1480px){.kpiBar{grid-template-columns:repeat(2, minmax(0,1fr))}}
 .stat{
   background:var(--field);
   border:1px solid var(--border);
@@ -242,6 +242,8 @@ body.view-psi #cardPassport .row:not(:first-of-type){ display:none !important; }
 /* === View flags === */
 body.no-kpi .kpiBar{display:none !important;}
 
+
+.benchWrap{display:none!important;}
 </style>
 
 <style id="kpi-modal-css">
@@ -4026,6 +4028,38 @@ function syncToGoogleSheets(){
       }catch(e){ dockSuggest.style.display='none'; }
     }
   })();
+
+// AUTOLOAD_COMPANY
+(function(){
+  const u=new URL(location.href);
+  const c=(u.searchParams.get('company')||'').trim();
+  if(!c) return;
+  // Try to load latest row for this company via search+get
+  const dock=document.getElementById('dockCompany');
+  if(dock) dock.value=c;
+  try{
+    if(typeof loadCompanyByName==='function') { loadCompanyByName(c); return; }
+  }catch(e){}
+  try{
+    // fallback: use search endpoint and take newest row
+    const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(c) + '&limit=20';
+    jsonp(url).then(res=>{
+      const items = (res && (res.items||res.results||res.data)) || [];
+      const list = Array.isArray(items)?items:[];
+      if(!list.length) return;
+      // pick newest by row/timestamp
+      list.sort((a,b)=> (Number(b.row||b.r||0)-Number(a.row||a.r||0)) || String(b.timestamp||b.ts||'').localeCompare(String(a.timestamp||a.ts||'')) );
+      const row = list[0].row || list[0].r;
+      if(!row) return;
+      const gurl = WEBAPP_URL + '?action=get&row=' + encodeURIComponent(row);
+      return jsonp(gurl);
+    }).then(data=>{
+      const payload = (data && (data.payload || data.data || data.item && data.item.payload)) || null;
+      if(payload && typeof applyPayload==='function') applyPayload(payload);
+      if(typeof recalc==='function') try{recalc();}catch(e){}
+    }).catch(()=>{});
+  }catch(e){}
+})();
 </script>
 
 <div id="globalLoader" aria-hidden="true">

@@ -23,7 +23,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
-.container{max-width:1180px;margin:22px auto;padding:0 14px} /* fixed too-wide */
+.container{max-width:1480px;margin:22px auto;padding:0 14px} /* fixed too-wide */
 
 /* ===== QuickDock (left, on all pages) ===== */
 .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
@@ -41,7 +41,7 @@ body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:va
 .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
 .tName{font-weight:900;font-size:13px;line-height:1.15}
 .tDesc{font-size:12px;color:var(--muted);margin-top:3px}
-@media (max-width:1100px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
+@media (max-width:1480px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
 @media (min-width:1101px){.container{padding-left:360px}}
 header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
 h1{font-size:20px;margin:0}
@@ -94,7 +94,7 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
   gap:10px;
   margin-top:10px;
 }
-@media(max-width:1100px){.kpiBar{grid-template-columns:repeat(2, minmax(0,1fr))}}
+@media(max-width:1480px){.kpiBar{grid-template-columns:repeat(2, minmax(0,1fr))}}
 
 /* Make the "Риск и готовность" block always 2 columns (desktop/tablet) */
 .kpiBar.riskReady{grid-template-columns:repeat(2, minmax(0,1fr))}
@@ -264,6 +264,14 @@ body.no-kpi .kpiBar{display:none !important;}
       text-transform: uppercase;
     }
     
+
+body{overflow-x:hidden;}
+.demoSummary{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(15,23,42,.12);border-radius:999px;background:#fff;cursor:pointer;user-select:none;}
+.demoSummary::marker{display:none;}
+.demoDetails[open] .demoSummary{background:#f8fafc;}
+.demoExtra{margin-top:8px;}
+
+.benchWrap{display:none!important;}
 </style>
 
 <style id="kpi-modal-css">
@@ -1652,36 +1660,34 @@ function buildDemoPlan(hm){
     return `<li><span class="prio">Приоритет ${pr}</span><span class="func">${_escHtml(x.__func || pickFunc(x))}</span></li>`;
   }
 
-  // UI: keep it compact — show top 3, rest in <details>
-  const mainTop = topMainUnique.slice(0,3);
-  const mainRest = topMainUnique.slice(3,10); // cap
+  // UI: show only TOP by main zone. Everything else is under one "Показать ещё".
+const mainTop = topMainUnique.slice(0,3);
+const mainMore = topMainUnique.slice(3,10); // cap
+const alsoMore = alsoUnique.slice(0,10);    // cap
 
-  const alsoTop = alsoUnique.slice(0,3);
-  const alsoRest = alsoUnique.slice(3,10); // cap
+let html = `<div class="demoIntro">${_escHtml(base.hint)}</div>`;
 
-  let html = `<div class="demoIntro">${_escHtml(base.hint)}</div>`;
+if(mainTop.length){
+  html += `<div class="demoSectionTitle">Топ демо по основной зоне</div>
+    <ul class="demoList">${mainTop.map((x,i)=>li(x,i)).join("")}</ul>`;
+}
 
-  if(mainTop.length){
-    html += `<div class="demoSectionTitle">Топ демо по основной зоне</div>
-      <ul class="demoList">${mainTop.map((x,i)=>li(x,i)).join("")}</ul>`;
-    if(mainRest.length){
-      html += `<details class="demoDetails"><summary>Показать ещё (${mainRest.length})</summary>
-        <ul class="demoList">${mainRest.map((x,i)=>li(x,i+mainTop.length)).join("")}</ul>
-      </details>`;
-    }
+const extraCount = (mainMore.length + alsoMore.length);
+if(extraCount){
+  html += `<details class="demoDetails"><summary class="demoSummary">Показать ещё (${extraCount})</summary>
+    <div class="demoExtra">`;
+  if(mainMore.length){
+    html += `<div class="demoSectionTitle" style="margin-top:8px">Ещё по основной зоне</div>
+      <ul class="demoList">${mainMore.map((x,i)=>li(x,i+mainTop.length)).join("")}</ul>`;
   }
-
-  if(alsoTop.length){
+  if(alsoMore.length){
     html += `<div class="demoSectionTitle" style="margin-top:10px">Также стоит показать</div>
-      <ul class="demoList">${alsoTop.map((x,i)=>li(x,i)).join("")}</ul>`;
-    if(alsoRest.length){
-      html += `<details class="demoDetails"><summary>Показать ещё (${alsoRest.length})</summary>
-        <ul class="demoList">${alsoRest.map((x,i)=>li(x,i+alsoTop.length)).join("")}</ul>
-      </details>`;
-    }
+      <ul class="demoList">${alsoMore.map((x,i)=>li(x,i+mainTop.length+mainMore.length)).join("")}</ul>`;
   }
+  html += `</div></details>`;
+}
 
-  return {title: base.title, html};
+return {title: base.title, html};
 }
 
 function _fmtRub(n){
