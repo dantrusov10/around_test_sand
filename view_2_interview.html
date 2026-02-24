@@ -243,6 +243,29 @@ body.view-psi #cardPassport .virt-wrapper,
 body.view-psi #cardPassport .virt-hint,
 body.view-psi #cardPassport .row:not(:first-of-type){ display:none !important; }
 
+/* Hide extended passport fields on focused pages */
+body.view-indices #passportExtra,
+body.view-req #passportExtra,
+body.view-product #passportExtra,
+body.view-psi #passportExtra{ display:none !important; }
+
+/* Hide KPI bar + heatmap on focused pages except indices */
+body.view-req .kpiBar,
+body.view-req #riskHeatmapCard,
+body.view-req #cLevelBlock{ display:none !important; }
+
+body.view-product .kpiBar,
+body.view-product #riskHeatmapCard,
+body.view-product #cLevelBlock{ display:none !important; }
+
+body.view-psi .kpiBar,
+body.view-psi #riskHeatmapCard,
+body.view-psi #cLevelBlock{ display:none !important; }
+
+/* PSI focused view should not show product requirements & project risks */
+body.view-psi #prodReqCard,
+body.view-psi #projectRisksWrap{ display:none !important; }
+
 /* Product-only view: show only 6) Требования к продукту (prodReqCard) */
 body.view-product #cardMaturity,
 body.view-product #cardFinance,
@@ -657,6 +680,9 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 <button class="btn ghost" id="btnCompanyAll" style="display:none">Все записи</button>
 </div>
 </div>
+
+<!-- Passport extended fields (hidden on focused pages) -->
+<div id="passportExtra">
 <div class="row" style="margin-top:10px">
 <label>Sales менеджер (ФИО)
           <input id="sales_manager" placeholder="Имя Фамилия"/>
@@ -763,6 +789,9 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 </div>
 <div class="hr"></div>
 </div>
+<!-- /passportExtra -->
+</div>
+
 <div class="card" id="cardMaturity">
 <h2>2) Зрелость и риски (для квалификации)</h2>
 <div class="small">Заполняется на интервью. Индексы считаются автоматически (в шапке).</div>
