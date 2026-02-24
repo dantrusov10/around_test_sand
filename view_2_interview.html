@@ -2819,19 +2819,7 @@ function setupKpiExplain(){
     kpiModalOpen(stat.id);
   });
 
-  // hover open (only on devices that support hover)
-  const canHover = window.matchMedia && window.matchMedia("(hover:hover)").matches;
-  if(canHover){
-    let t=null, lastId=null;
-    bar.addEventListener("pointerover",(e)=>{
-      const stat = e.target.closest(".stat[id]");
-      if(!stat) return;
-      lastId = stat.id;
-      clearTimeout(t);
-      t = setTimeout(()=>{ if(lastId) kpiModalOpen(lastId); }, 550);
-    });
-    bar.addEventListener("pointerout",()=>{ clearTimeout(t); lastId=null; });
-  }
+  // NOTE: Hover-to-open disabled (accidental popups)
 
   // modal close handlers
   const closeBtn = document.getElementById("kpiModalClose");
@@ -3992,31 +3980,19 @@ function syncToGoogleSheets(){
   const u=new URL(location.href);
   const c=(u.searchParams.get('company')||'').trim();
   if(!c) return;
-  // Try to load latest row for this company via search+get
+  // Load latest payload for this company (Apps Script supports action=get&company=...)
   const dock=document.getElementById('dockCompany');
   if(dock) dock.value=c;
-  try{
-    if(typeof loadCompanyByName==='function') { loadCompanyByName(c); return; }
-  }catch(e){}
-  try{
-    // fallback: use search endpoint and take newest row
-    const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(c) + '&limit=20';
-    jsonp(url).then(res=>{
-      const items = (res && (res.items||res.results||res.data)) || [];
-      const list = Array.isArray(items)?items:[];
-      if(!list.length) return;
-      // pick newest by row/timestamp
-      list.sort((a,b)=> (Number(b.row||b.r||0)-Number(a.row||a.r||0)) || String(b.timestamp||b.ts||'').localeCompare(String(a.timestamp||a.ts||'')) );
-      const row = list[0].row || list[0].r;
-      if(!row) return;
-      const gurl = WEBAPP_URL + '?action=get&row=' + encodeURIComponent(row);
-      return jsonp(gurl);
-    }).then(data=>{
-      const payload = (data && (data.payload || data.data || data.item && data.item.payload)) || null;
+  if(!WEBAPP_URL) return;
+  showLoader('Загружаю компанию…', 'Тяну последнюю запись из Google Sheets');
+  jsonp(WEBAPP_URL + '?action=get&company=' + encodeURIComponent(c))
+    .then(data=>{
+      const payload = (data && (data.payload || (data.item && data.item.payload) || data.data)) || null;
       if(payload && typeof applyPayload==='function') applyPayload(payload);
       if(typeof recalc==='function') try{recalc();}catch(e){}
-    }).catch(()=>{});
-  }catch(e){}
+    })
+    .catch(()=>{})
+    .finally(()=>hideLoader());
 })();
 </script>
 
