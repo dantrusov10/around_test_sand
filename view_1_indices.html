@@ -6,7 +6,7 @@
 <script src="question_bank.js"></script>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Карта тестирования + ПСИ — Инферит ИТМен</title>
+<title>Карта тестирования + ПСИ — Индексы</title>
 <style>
 :root{
   --brand-red:#ff0000;
@@ -95,6 +95,12 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
   margin-top:10px;
 }
 @media(max-width:1480px){.kpiBar{grid-template-columns:repeat(2, minmax(0,1fr))}}
+
+/* Make the "Риск и готовность" block always 2 columns (desktop/tablet) */
+.kpiBar.riskReady{grid-template-columns:repeat(2, minmax(0,1fr))}
+/* Ensure the nested riskReady grid spans full width of the outer KPI grid */
+.kpiBar > .kpiBar.riskReady{grid-column:1 / -1; width:100%}
+.kpiGroupTitle{grid-column:1 / -1}
 .stat{
   background:var(--field);
   border:1px solid var(--border);
@@ -107,6 +113,10 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
 .good{outline:2px solid rgba(16,185,129,.35)}
 .warn{outline:2px solid rgba(245,158,11,.35)}
 .bad{ outline:2px solid rgba(244,63,94,.35)}
+
+
+.bar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:6px}
+.bar>span{display:block;height:100%;width:0%;background:rgba(255,0,0,.65)}
 
 /* Tables */
 .table-wrap{overflow:auto;border:1px solid #e5e7eb;border-radius:14px;background:#fff}
@@ -255,6 +265,12 @@ body.no-kpi .kpiBar{display:none !important;}
     }
     
 
+body{overflow-x:hidden;}
+.demoSummary{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(15,23,42,.12);border-radius:999px;background:#fff;cursor:pointer;user-select:none;}
+.demoSummary::marker{display:none;}
+.demoDetails[open] .demoSummary{background:#f8fafc;}
+.demoExtra{margin-top:8px;}
+
 .benchWrap{display:none!important;}
 
 #benchBadge,#benchTransparencyCard,#benchDetails,#benchProfileLabel{display:none!important;}
@@ -262,24 +278,7 @@ body.no-kpi .kpiBar{display:none !important;}
 .dockLoadBtn{border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer}
 .dockLoadBtn:hover{filter:brightness(0.98)}
 .dockTop{display:flex;gap:10px;align-items:center}
-
-.dockSearchStatus{
-  margin-top:6px;
-  font-size:12px;
-  color:var(--muted);
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
-.dockSearchStatus .miniSpinner{
-  width:14px;height:14px;border-radius:999px;
-  border:2px solid rgba(0,0,0,.12);
-  border-top-color: rgba(0,0,0,.55);
-  animation: spin 1s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-\1
+</style>
 
 <style id="kpi-modal-css">
 /* ===== KPI explain modal ===== */
@@ -301,6 +300,31 @@ body.no-kpi .kpiBar{display:none !important;}
 .kpiModal .sect p, .kpiModal .sect li{margin:0;color:#334155;font-size:13px;line-height:1.5}
 .kpiModal .sect ul{margin:8px 0 0 18px}
 .kpiModal .note{margin-top:10px;color:#64748b;font-size:12px}
+
+/* demo plan list */
+.miniList{margin:6px 0 0 18px; padding:0;}
+.miniList li{margin:4px 0;}
+/* Demo plan (compact) */
+/* No inner scrollbars: top-3 + раскрывашка keeps card tidy */
+#demoFocusHint{padding-right:2px;}
+.demoIntro{font-size:12px; opacity:.85; margin-bottom:8px;}
+.demoSectionTitle{font-size:12px; font-weight:600; margin-top:8px;}
+.demoList{margin:6px 0 0 0; padding:0; list-style:none;}
+.demoList li{display:flex; gap:8px; align-items:flex-start; margin:6px 0;}
+.demoList .prio{font-weight:700; white-space:nowrap; font-size:12px;}
+.demoList .func{font-size:12px; line-height:1.25;}
+.demoDetails{margin-top:6px;}
+.demoDetails summary{
+  cursor:pointer; font-size:12px; user-select:none;
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 10px; border-radius:999px;
+  border:1px solid rgba(15,23,42,.12);
+  background:rgba(255,255,255,.85);
+}
+.demoDetails summary::-webkit-details-marker{display:none}
+.demoDetails summary:after{content:"▾"; opacity:.75; transform:translateY(-1px)}
+.demoDetails[open] summary:after{content:"▴"}
+.demoDetails[open] summary{margin-bottom:6px;}
 .kpi-clickable{cursor:pointer;user-select:none}
 .kpi-clickable:active{transform:translateY(1px)}
 </style>
@@ -346,9 +370,13 @@ body.no-kpi .kpiBar{display:none !important;}
 @keyframes glspin{to{transform:rotate(360deg)}}
 </style>
 
+
+<style id="pageVisibilityRules">
+/* Page: Indices */
+#cardPassport, #cardMaturity, #cardFinance, #cardReq, #cardPSI, #prodReqCard, #projectRisksWrap { display:none !important; }
+</style>
 </head>
-<body class="view-indices">
-<div id=\"__hiddenMatrices\" style=\"display:none\"></div>
+<body class="view-full">
   <div class="quickDock">
     <div class="card pad">
       <div class="dockTitle">Быстрый вход</div>
@@ -358,8 +386,6 @@ body.no-kpi .kpiBar{display:none !important;}
         <button id="dockLoadBtn" class="dockLoadBtn" type="button" title="Загрузить">Загрузить</button>
       </div>
       <div id="dockSuggest" class="dockSuggest"></div>
-      <div id="dockSearchStatus" class="dockSearchStatus" style="display:none"></div>
-
 
       <div style="height:12px"></div>
       <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
@@ -473,8 +499,8 @@ body.no-kpi .kpiBar{display:none !important;}
     <div class="value mono" id="probIndex">—%</div>
     <div class="small" id="probLabel">—</div>
   </div>
-</div>
-  
+
+
   <div class="kpiBar riskReady" style="margin-top:8px">
     <div class="kpiGroupTitle">Риск и готовность</div>
 
@@ -502,8 +528,8 @@ body.no-kpi .kpiBar{display:none !important;}
       <div class="small" id="demoFocusHint">—</div>
     </div>
   </div>
-
-</header>
+</div>
+  </header>
 
   <div class="grid">
 
@@ -542,40 +568,39 @@ body.no-kpi .kpiBar{display:none !important;}
       <div>
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
           <b>Управляемость / отсутствие истории</b>
-          <span class="mono" id="riskCtrlPct">—%</span>
+          <span class="mono" id="riskGovPct">—%</span>
         </div>
-        <div class="bar"><span id="riskCtrlBar"></span></div>
+        <div class="bar"><span id="riskGovBar"></span></div>
       </div>
     </div>
 
-    <div class="hr" style="margin-top:14px"></div>
-    <h3 style="margin:0 0 8px">Стоимость бездействия (₽/год)</h3>
+    <div class="hr"></div>
+    <h3>Стоимость бездействия (₽/год)</h3>
     <div class="row">
-      <div class="stat">
+      <div class="stat" style="box-shadow:none">
         <div class="label">Лицензии (ПО)</div>
         <div class="value mono" id="coiLic">—</div>
         <div class="small">Бюджет лицензий × % неиспользуемого ПО</div>
       </div>
-      <div class="stat">
+      <div class="stat" style="box-shadow:none">
         <div class="label">Простои</div>
         <div class="value mono" id="coiDown">—</div>
         <div class="small">Часы простоя × Стоимость часа</div>
       </div>
     </div>
     <div class="row" style="margin-top:10px">
-      <div class="stat">
+      <div class="stat" style="box-shadow:none">
         <div class="label">Ручной труд</div>
         <div class="value mono" id="coiManual">—</div>
-        <div class="small">Кол-во IT × зарплата × % ручных операций</div>
+        <div class="small">Кол-во ИТ × зарплата × % ручных операций</div>
       </div>
-      <div class="stat">
+      <div class="stat" style="box-shadow:none">
         <div class="label">Итого</div>
         <div class="value mono" id="coiTotal">—</div>
         <div class="small">Сумма 3 компонентов</div>
       </div>
     </div>
   </div>
-
 
 
   <div class="card" id="cLevelBlock" style="display:none">
@@ -638,12 +663,17 @@ body.no-kpi .kpiBar{display:none !important;}
           </select>
         </label>
       </div>
+      <div class="row" style="margin-top:6px">
+        <div id="companyMeta" class="hint" style="flex:1;color:#6b7280;font-size:12px">—</div>
+        <button id="btnCompanyAll" class="btn ghost" style="display:none">Все записи</button>
+      </div>
+</div>
       <div class="row" style="margin-top:10px">
         <label>Sales менеджер (ФИО)
-          <input id="sales_manager" placeholder="—" disabled>
+          <input id="sales_manager" placeholder="Имя Фамилия">
         </label>
         <label>Pre-Sale менеджер (ФИО)
-          <input id="presale_manager" placeholder="—" disabled>
+          <input id="presale_manager" placeholder="Имя Фамилия">
         </label>
       </div>
 
@@ -858,6 +888,11 @@ body.no-kpi .kpiBar{display:none !important;}
       <div data-mode="deep">
 <h3 style="margin:14px 0 6px">Железо и простои (для CoI)</h3>
       <div class="small">Дополняет Cost of Inaction: простои и инвестиции в обновление железа.</div>
+      <div class="row" style="margin-top:6px">
+        <div id="companyMeta" class="hint" style="flex:1;color:#6b7280;font-size:12px">—</div>
+        <button id="btnCompanyAll" class="btn ghost" style="display:none">Все записи</button>
+      </div>
+</div>
       <div class="row" style="margin-top:10px">
         <label>Бюджет на железо (₽/год) <span class="small" style="opacity:.8">(оценочно)</span>
           <input id="hwBudget" type="number" min="0" step="10000" value="0">
@@ -964,7 +999,8 @@ body.no-kpi .kpiBar{display:none !important;}
       </div>
       <div class="hr"></div>
 
-      <h2>6) Требования к продукту — реестр</h2>
+      <div class="card pad" id="prodReqCard" style="margin-top:12px">
+      <h2>6) Требования к продукту</h2>
       <div class="small">Фиксируем требования к продукту (для roadmap/оценки). Индекс — по «возможности».</div>
 
       <div class="btns" style="margin:10px 0 6px">
@@ -990,6 +1026,8 @@ body.no-kpi .kpiBar{display:none !important;}
 
 
       
+    </div>
+
       <div id="projectRisksWrap">
         <h2>5.1) Риски проекта (контроль качества)</h2>
         <div class="small">Раздел для внутреннего контроля. В клиентской версии PDF скрыт.</div>
@@ -1074,8 +1112,11 @@ const FEAS_OPTIONS = [
   { label: "—", score: null },
   { label: "Полностью", score: 1.00 },
   { label: "Частично", score: 0.60 },
+  // Backward-compat: older sheets stored just "Нет"
   { label: "Нет", score: 0.00 },
   { label: "Нет возможности", score: 0.00 },
+  { label: "Нет возможности", score: 0.00 },
+  // Backward-compat casing variants
   { label: "Хард код (скоро)", score: 0.70 },
   { label: "Хард код (Скоро)", score: 0.70 },
   { label: "Хард код (не скоро)", score: 0.30 },
@@ -1354,6 +1395,7 @@ function paintStat(elId, pct, higherBetter=true){
 }
 function paintRisk(score){
   const el=document.getElementById("kRisk");
+  if(!el) return;
   el.classList.remove("good","warn","bad");
   if(!isFinite(score)) return;
   if(score<=1) el.classList.add("good");
@@ -1412,6 +1454,287 @@ function createScoreRow(tbody,item,type){
   updateDot();
 }
 
+
+function _normKey(s){
+  // Normalize question label to match keys in question_bank.js
+  // Bank keys do NOT contain numbering like "T1." / "P3." etc.
+  let x = String(s||"").replace(/\s+/g," ").trim();
+  // strip leading numbering markers: "T1.", "P10.", "1)", "1.", "2.1" etc.
+  x = x.replace(/^(?:[TPА-ЯA-Z]{0,2}\s*)?\d+(?:[\.:]\d+)*[\.)\.:\-\s]+/i, "");
+  // strip leading "T"/"P" with digits if still present
+  x = x.replace(/^[TP]\s*\d+\s*[\.)\.:\-\s]+/i, "");
+  return x.toLowerCase().replace(/ё/g,"е")
+    .replace(/[“”"'`]/g,"")
+    .replace(/\s+/g," ")
+    .replace(/[^0-9a-zа-я .\-_/():,?]+/g,"")
+    .trim();
+}
+
+function _normZone(z){
+  const v = String(z||"").trim().toLowerCase();
+  if(!v) return "";
+  if(v.includes("лицен")) return "Лицензионный риск";
+  if(v.includes("руч") || v.includes("операц")) return "Операционная неэффективность / ручной труд";
+  if(v.includes("истор") || v.includes("управ")) return "Управляемость / отсутствие истории";
+  // default -> grey
+  return "Серые зоны (охват / архитектура)";
+}
+
+function _getBank(){
+  // Return expanded bank with multiple key forms to avoid mismatches
+  // between question text in UI (often without numbering) and keys in the bank.
+  if(window.__ITMEN_BANK_EXPANDED) return window.__ITMEN_BANK_EXPANDED;
+  const base = (window.ITMEN_QUESTION_BANK)||{};
+  const exp = {};
+  try{
+    Object.entries(base).forEach(([k,v])=>{
+      // keep original key
+      exp[String(k)] = v;
+      // add normalized-without-numbering key
+      const nk = _normKey(k);
+      if(nk) exp[nk] = v;
+      // add extra variant: strip only leading "t1."/"p1." from already normalized strings
+      const nk2 = nk.replace(/^[tp]\s*\d+\s*[\.)\-:\s]+/i, "").trim();
+      if(nk2) exp[nk2] = v;
+    });
+  }catch(_e){}
+  window.__ITMEN_BANK_EXPANDED = exp;
+  return exp;
+}
+
+function computeHeatmapFromMaturity(){
+  const bank=_getBank();
+  const zones = {
+    "Серые зоны (охват / архитектура)": {w:0, s:0},
+    "Лицензионный риск": {w:0, s:0},
+    "Операционная неэффективность / ручной труд": {w:0, s:0},
+    "Управляемость / отсутствие истории": {w:0, s:0},
+  };
+  const contribs = [];
+
+  function handleRows(rows){
+    rows.forEach(tr=>{
+      const labelCell = tr.children?.[0];
+      const labelText = labelCell ? labelCell.textContent.replace(/\s+/g," ").trim() : "";
+      // Prefer stable code keys like T1/P3 (text may differ slightly between bank and UI)
+      const mCode = labelText.match(/^\s*([TP])\s*(\d+)\s*[\.)]/i);
+      const codeKey = mCode ? (mCode[1].toLowerCase()+mCode[2]) : null;
+      const key=_normKey(labelText);
+      const meta = (codeKey && bank[codeKey]) ? bank[codeKey] : bank[key];
+      if(!meta) return;
+
+      const sel=tr.querySelector("select");
+      const v = (sel && sel.value!=="") ? Number(sel.value) : null;
+      if(v===null || Number.isNaN(v)) return;
+
+      // v: 0 Нет, 1 Частично, 2 Да
+      const answerRisk = (v===2)?0 : (v===1)?0.5 : 1;
+      const w = Number(meta.w)||1;
+      const zone = _normZone(meta.zone);
+      if(!zones[zone]) zones[zone] = {w:0,s:0};
+      zones[zone].w += w;
+      zones[zone].s += w*answerRisk;
+
+      // contribution for demo plan
+      contribs.push({
+        zone,
+        w,
+        a: answerRisk,
+        c: w*answerRisk,
+        prio: Number(meta.prio)||99,
+        func: meta.func || "",
+        module: meta.module||"",
+        q: meta.q||labelText
+      });
+    });
+  }
+
+  handleRows([ ...document.querySelectorAll("#techTbody tr") ]);
+  handleRows([ ...document.querySelectorAll("#procTbody tr") ]);
+
+  const out = {};
+  let totW=0, totS=0;
+  Object.keys(zones).forEach(z=>{
+    const Zw=zones[z].w;
+    const Zs=zones[z].s;
+    const risk = (Zw>0) ? (Zs/Zw) : null;
+    out[z] = risk; // 0..1
+    if(risk!==null){
+      totW += Zw;
+      totS += Zs;
+    }
+  });
+  out.__overall = (totW>0) ? (totS/totW) : null;
+
+  // main problem = max risk
+  let maxZ=null, maxV=-1;
+  Object.entries(out).forEach(([z,v])=>{
+    if(z==="__overall" || v===null) return;
+    if(v>maxV){maxV=v; maxZ=z;}
+  });
+  out.__mainZone = maxZ;
+  out.__mainRisk = (maxV>=0)?maxV:null;
+  out.__contribs = contribs;
+
+  return out;
+}
+
+function decideModules(r){
+  // thresholds are in percent
+  const grey = r["Серые зоны (охват / архитектура)"];
+  const lic  = r["Лицензионный риск"];
+  const ops  = r["Операционная неэффективность / ручной труд"];
+  const gov  = r["Управляемость / отсутствие истории"];
+
+  const mods=[];
+  if(grey!==null && grey*100 >= 40) mods.push("Базовый");
+  if(lic!==null  && lic*100  >= 30) mods.push("Призма");
+  if(gov!==null  && gov*100  >= 40) mods.push("Гибкая модель");
+  if(ops!==null  && ops*100  >= 50) mods.push("Обогащение");
+  return mods.length ? mods : ["—"];
+}
+
+function decideDemo(mainZone){
+  switch(mainZone){
+    case "Серые зоны (охват / архитектура)":
+      return {title:"Агрегация/охват", hint:"Начать с единого источника правды и покрытия сегментов."};
+    case "Лицензионный риск":
+      return {title:"Призма (лицензии)", hint:"Начать с нормализации ПО и контроля лицензионных рисков."};
+    case "Операционная неэффективность / ручной труд":
+      return {title:"Автоматизация", hint:"Начать со снижения ручного труда и ускорения обновления данных."};
+    case "Управляемость / отсутствие истории":
+      return {title:"История/управляемость", hint:"Начать с истории изменений и управляемости (аудит/ответственность)."};
+    default:
+      return {title:"—", hint:"Заполни ответы в 2.1/2.2 — появится сценарий."};
+  }
+}
+
+function _escHtml(s){
+  return (s||"").replace(/[&<>\"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+}
+
+function buildDemoPlan(hm){
+  const contribs = (hm && hm.__contribs) ? hm.__contribs.slice() : [];
+  if(!contribs.length){
+    return {title:"—", html:"<div class='small'>Заполни ответы в 2.1/2.2 — появится план демо.</div>"};
+  }
+
+  // Sort by impact (w×answer) then by explicit priority (lower=more important)
+  contribs.sort((x,y)=> (y.c - x.c) || ((x.prio||99) - (y.prio||99)));
+
+  const mainZone = hm.__mainZone || null;
+  const base = decideDemo(mainZone);
+
+  function cleanQ(q){
+    return (q||"")
+      .replace(/^\s*[TP]\s*\d+\s*[\.)]\s*/i, "")
+      .replace(/^\s*\d+\s*[\.)]\s*/, "")
+      .trim();
+  }
+  function pickFunc(x){
+    const f = (x.func && String(x.func).trim()) ? String(x.func).trim() : cleanQ(x.q||"");
+    // Normalize: collapse whitespace, remove trailing dots
+    return f.replace(/\s+/g," ").replace(/[.。]\s*$/,"").trim();
+  }
+
+  // Deduplicate by functional description (same function may map to multiple questions)
+  function uniqueByFunc(list){
+    const seen=new Set();
+    const out=[];
+    for(const x of list){
+      const f=pickFunc(x);
+      if(!f) continue;
+      const key=f.toLowerCase();
+      if(seen.has(key)) continue;
+      seen.add(key);
+      out.push({...x, __func:f});
+    }
+    return out;
+  }
+
+  const inMainZone = mainZone ? contribs.filter(x=>x.zone===mainZone && x.c>0) : [];
+  const allPositive = contribs.filter(x=>x.c>0);
+
+  const topMainUnique = uniqueByFunc(inMainZone);
+  const topAllUnique  = uniqueByFunc(allPositive);
+
+  // Remove items already shown in main list from "also show"
+  const mainKeys = new Set(topMainUnique.map(x=>x.__func.toLowerCase()));
+  const alsoUnique = topAllUnique.filter(x=>!mainKeys.has(x.__func.toLowerCase()));
+
+  function li(x, idx){
+    const pr = (idx!==undefined && idx!==null) ? (idx+1) : "";
+    return `<li><span class="prio">Приоритет ${pr}</span><span class="func">${_escHtml(x.__func || pickFunc(x))}</span></li>`;
+  }
+
+  // UI: show only TOP by main zone. Everything else is under one "Показать ещё".
+const mainTop = topMainUnique.slice(0,3);
+const mainMore = topMainUnique.slice(3,10); // cap
+const alsoMore = alsoUnique.slice(0,10);    // cap
+
+let html = `<div class="demoIntro">${_escHtml(base.hint)}</div>`;
+
+if(mainTop.length){
+  html += `<div class="demoSectionTitle">Топ демо по основной зоне</div>
+    <ul class="demoList">${mainTop.map((x,i)=>li(x,i)).join("")}</ul>`;
+}
+
+const extraCount = (mainMore.length + alsoMore.length);
+if(extraCount){
+  html += `<details class="demoDetails"><summary class="demoSummary">Показать ещё (${extraCount})</summary>
+    <div class="demoExtra">`;
+  if(mainMore.length){
+    html += `<div class="demoSectionTitle" style="margin-top:8px">Ещё по основной зоне</div>
+      <ul class="demoList">${mainMore.map((x,i)=>li(x,i+mainTop.length)).join("")}</ul>`;
+  }
+  if(alsoMore.length){
+    html += `<div class="demoSectionTitle" style="margin-top:10px">Также стоит показать</div>
+      <ul class="demoList">${alsoMore.map((x,i)=>li(x,i+mainTop.length+mainMore.length)).join("")}</ul>`;
+  }
+  html += `</div></details>`;
+}
+
+return {title: base.title, html};
+}
+
+function _fmtRub(n){
+  if(n===null || n===undefined || Number.isNaN(n)) return "—";
+  try{
+    return Math.round(n).toLocaleString("ru-RU");
+  }catch(e){
+    return String(Math.round(n));
+  }
+}
+
+// Safe numeric reader (value/text -> number)
+function _num(id){
+  const el=document.getElementById(id);
+  if(!el) return NaN;
+  const raw=("value" in el) ? (el.value??"") : (el.textContent??"");
+  const s=_numFromText(raw);
+  const n=parseFloat(String(s).replace(",","."));
+  return Number.isFinite(n)?n:NaN;
+}
+
+function computeCOIBreakdown(){
+  const licBudget = _num("licBudget") || 0;
+  const unusedPct = _num("unusedPct") || 0;
+  const downtimeHours = _num("downtimeHours") || 0;
+  // In UI input is "downtimeCost". Keep backward-compat with "costPerHour".
+  const costPerHour = _num("downtimeCost") || _num("costPerHour") || 0;
+  const itCount = _num("itCount") || 0;
+  const salary = _num("salary") || 0;
+  const manualPct = _num("manualPct") || 0;
+
+  const licLoss = licBudget * (unusedPct/100);
+  const downLoss = downtimeHours * costPerHour;
+  const manualLoss = itCount * salary * 12 * (manualPct/100);
+
+  const total = licLoss + downLoss + manualLoss;
+  return {licLoss, downLoss, manualLoss, total};
+}
+
+
 function ensureBaseTables(){
   const techTb=document.getElementById("techTbody");
   const procTb=document.getElementById("procTbody");
@@ -1420,6 +1743,18 @@ function ensureBaseTables(){
   TECH.forEach(x=>createScoreRow(techTb,x,"tech"));
   PROC.forEach(x=>createScoreRow(procTb,x,"proc"));
   RISK.forEach(x=>createScoreRow(riskTb,x,"risk"));
+
+  // IMPORTANT: these maturity selects feed Heatmap/Pilot Readiness.
+  // Rows are created dynamically, so we must bind recalc after creation.
+  try{
+    [...techTb.querySelectorAll('select,input,textarea'),
+     ...procTb.querySelectorAll('select,input,textarea'),
+     ...riskTb.querySelectorAll('select,input,textarea')]
+      .forEach(el=>{
+        el.addEventListener('change', recalc, {passive:true});
+        el.addEventListener('input', debounce(recalc, 120), {passive:true});
+      });
+  }catch(_e){}
 }
 
 function addReqRow(data){
@@ -1446,9 +1781,9 @@ function addReqRow(data){
 
   if(data){
     tr.querySelector(".req-text").value = data.text || "";
-    tr.querySelector(".req-type").value = data.type || "Тех";
-    tr.querySelector(".req-must").value = data.must || "Да";
-    tr.querySelector(".req-feas").value = data.feas || "—";
+    setSelectSmart_(tr.querySelector(".req-type"), data.type, "Тех");
+    setSelectSmart_(tr.querySelector(".req-must"), data.must, "Да");
+    setSelectSmart_(tr.querySelector(".req-feas"), data.feas, "—");
     tr.querySelector(".req-metric").value = data.metric || "";
     tr.querySelector(".req-owner").value = data.owner || "";
   }
@@ -1460,12 +1795,68 @@ function addReqRow(data){
   recalc();
 }
 
+// --- Helpers: robustly set <select> values coming from Google Sheets (case/aliases)
+function setSelectSmart_(sel, raw, fallback){
+  if(!sel) return;
+  const v0 = (raw===undefined || raw===null) ? "" : String(raw);
+  const v = v0.trim();
+  if(!v){
+    if(fallback!==undefined) sel.value = String(fallback);
+    return;
+  }
+
+  // 1) exact
+  const opts = Array.from(sel.options||[]);
+  if(opts.some(o=>String(o.value)===v)) { sel.value = v; return; }
+  if(opts.some(o=>String(o.text)===v)) { sel.value = (opts.find(o=>String(o.text)===v)||{}).value || v; return; }
+
+  // 2) case-insensitive match
+  const vl = v.toLowerCase();
+  const optCI = opts.find(o=>String(o.value).toLowerCase()===vl) || opts.find(o=>String(o.text).toLowerCase()===vl);
+  if(optCI){ sel.value = optCI.value; return; }
+
+  // 3) common aliases (Да/Нет, numbers, booleans)
+  const yes = ["1","да","yes","true","y","ok","ага"].includes(vl);
+  const no  = ["0","нет","no","false","n"].includes(vl);
+  if(yes){
+    const o = opts.find(o=>o.value==="Да" || o.text==="Да");
+    if(o){ sel.value=o.value; return; }
+  }
+  if(no){
+    const o = opts.find(o=>o.value==="Нет" || o.text==="Нет");
+    if(o){ sel.value=o.value; return; }
+  }
+
+  // 4) type aliases
+  const map = {
+    "техническое":"Тех",
+    "технический":"Тех",
+    "технич":"Тех",
+    "интеграция":"Интеграции",
+    "интеграции":"Интеграции",
+    "отчеты":"Отчеты",
+    "отчёты":"Отчеты",
+  };
+  for(const k in map){
+    if(vl.includes(k)){
+      const want = map[k];
+      const o = opts.find(o=>o.value===want || o.text===want);
+      if(o){ sel.value=o.value; return; }
+    }
+  }
+
+  // 5) fallback
+  if(fallback!==undefined) sel.value = String(fallback);
+}
+
 
 const PROD_FEAS_OPTIONS = [
   { label: "—", score: null },
   { label: "Полностью", score: 1.00 },
   { label: "Частично", score: 0.60 },
   { label: "Нет", score: 0.00 },
+  { label: "Нет возможности", score: 0.00 },
+  // Accept both casing variants
   { label: "Хард код (Скоро)", score: 0.70 },
   { label: "Хард код (скоро)", score: 0.70 },
   { label: "Хард код (не скоро)", score: 0.30 },
@@ -1497,9 +1888,9 @@ function addProdReqRow(data){
   if(data){
     tr.querySelector(".prod-biz").value = data.biz || data.owner || "";
     tr.querySelector(".prod-func").value = data.func || data.text || "";
-    tr.querySelector(".prod-type").value = data.type || "Тех";
-    tr.querySelector(".prod-must").value = data.must || "Да";
-    tr.querySelector(".prod-feas").value = data.feas || "—";
+    setSelectSmart_(tr.querySelector(".prod-type"), data.type, "Тех");
+    setSelectSmart_(tr.querySelector(".prod-must"), data.must, "Да");
+    setSelectSmart_(tr.querySelector(".prod-feas"), data.feas, "—");
   }
 
   tr.querySelectorAll("input,select,textarea").forEach(el=>{
@@ -1534,8 +1925,8 @@ function addPsiRow(data){
     tr.querySelector(".psi-scn").value = data.scn || "";
     tr.querySelector(".psi-exp").value = data.exp || "";
     tr.querySelector(".psi-act").value = data.act || "";
-    tr.querySelector(".psi-ok").value = data.ok || "";
-    tr.querySelector(".psi-acc").value = data.acc || "";
+    setSelectSmart_(tr.querySelector(".psi-ok"),  data.ok,  "");
+    setSelectSmart_(tr.querySelector(".psi-acc"), data.acc, "");
     tr.querySelector(".psi-note").value = data.note || "";
   }
   tr.querySelectorAll("input,select,textarea").forEach(el=>{
@@ -1770,47 +2161,13 @@ function paintIf(id, pct, isPct){
   paintStat(id, pct, isPct);
 }
 
-
-function ensureHiddenMatrices(){
-  try{
-    const host=document.getElementById('__hiddenMatrices');
-    if(!host) return;
-    // already built?
-    if(host.dataset.built==='1') return;
-    const mkSelect=(cls, max)=>{
-      const sel=document.createElement('select');
-      sel.className=cls;
-      sel.style.display='none';
-      sel.innerHTML = Array.from({length:max+1},(_,i)=>`<option value="${i}">${i}</option>`).join('');
-      return sel;
-    };
-    const mkNote=(cls)=>{
-      const inp=document.createElement('input');
-      inp.className=cls;
-      inp.type='text';
-      inp.value='';
-      inp.style.display='none';
-      return inp;
-    };
-
-    // Build 1:1 arrays for TECH/PROC/RISK used by recalc()/apply()
-    const techN = (typeof TECH!=='undefined' && Array.isArray(TECH)) ? TECH.length : 0;
-    const procN = (typeof PROC!=='undefined' && Array.isArray(PROC)) ? PROC.length : 0;
-    const riskN = (typeof RISK!=='undefined' && Array.isArray(RISK)) ? RISK.length : 0;
-
-    for(let i=0;i<techN;i++){ host.appendChild(mkSelect('tech-score',2)); host.appendChild(mkNote('tech-note')); }
-    for(let i=0;i<procN;i++){ host.appendChild(mkSelect('proc-score',2)); host.appendChild(mkNote('proc-note')); }
-    for(let i=0;i<riskN;i++){ host.appendChild(mkSelect('risk-score',1)); host.appendChild(mkNote('risk-note')); }
-
-    host.dataset.built='1';
-  }catch(e){ console.warn('ensureHiddenMatrices failed', e); }
-}
-
-// ensure matrices exist before any load/apply/recalc
-try{ document.addEventListener('DOMContentLoaded', ensureHiddenMatrices); }catch(_e){}
-
-
 function recalc(){
+  let recover = NaN; // prevent TDZ (used before computed)
+
+  // During reverse-sync (loading from Google Sheets) we dispatch many change/input
+  // events. Recalc must stay safe and MUST NOT trigger any automatic save.
+  window.__ITMEN_IS_LOADING = window.__ITMEN_IS_LOADING === true;
+
   console.log("recalc() clicked", new Date().toISOString());
   try{ applyQuickSynthetics(); }catch(e){}
 
@@ -1890,7 +2247,7 @@ const riskIndex = (riskAnswered.length>0)
   const lossDowntime=downtimeHours*downtimeCost;
   const lossTotal=lossManual+lossUnused+lossDowntime;
 
-  setText("coiTotal", fmtMoney(lossTotal));
+  setText("coiRub", fmtMoney(lossTotal));
   setText("coiBreakdown", `Ручные операции: ${fmtMoney(lossManual)} · Неиспользуемое ПО: ${fmtMoney(lossUnused)} · Простои: ${fmtMoney(lossDowntime)}`);
   paintIf("kCoI", lossTotal>0 ? 10 : NaN, false); // just adds outline if filled
 
@@ -2028,7 +2385,7 @@ const riskIndex = (riskAnswered.length>0)
   const V = clamp((isFinite(est.vmUnusedPct.v)?est.vmUnusedPct.v:vmUnusedPct)/100, 0, 1);
   const L_norm = clamp(L/0.25, 0, 1);
   const V_norm = clamp(V/0.30, 0, 1);
-  let recover = 100 * (1 - (0.6*L_norm + 0.4*V_norm));
+  recover = 100 * (1 - (0.6*L_norm + 0.4*V_norm));
   recover = Math.round(clamp(recover, 0, 100));
   setText("recoverIndex", isFinite(recover) ? `${recover}%` : "—%");
   setText("recoverLabel", recover>=75 ? "Высокий потенциал" : (recover>=45 ? "Средний потенциал" : "Низкий потенциал"));
@@ -2121,15 +2478,87 @@ const riskIndex = (riskAnswered.length>0)
   if(sumW>0){
     psi2 = valid.reduce((a,p)=>a + p.v*p.w,0) / sumW;
     psi2 = Math.round(clamp(psi2, 0, 100));
-  } else {
-    // fallback: if everything missing, at least anchor PSI to visible core indices
-    const core = [techIndex, procIndex].map(Number).filter(Number.isFinite);
-    if(core.length) psi2 = Math.round(core.reduce((a,b)=>a+b,0)/core.length);
+
+    // NOTE: legacy variable `core` was undefined and broke recalc, which prevented
+    // Heatmap/Pilot Readiness from updating.
   }
   setText("psi2Score", isFinite(psi2) ? `${psi2}%` : "—%");
   setText("psi2Label", isFinite(psi2) ? (psi2>=75 ? "Зелёная зона" : (psi2>=45 ? "Жёлтая зона" : "Красная зона")) : "—");
   try{ paintIf("kPSI", Number.isFinite(psi2)?psi2:NaN, true); }catch(_e){}
   try{ renderBenchHints(); }catch(_e){}
+
+
+  // ==== Heatmap / Pilot Readiness / Modules / Demo / COI breakdown ====
+  try{
+    const hm = computeHeatmapFromMaturity();
+    const g = hm["Серые зоны (охват / архитектура)"];
+    const l = hm["Лицензионный риск"];
+    const o = hm["Операционная неэффективность / ручной труд"];
+    const v = hm["Управляемость / отсутствие истории"];
+    const overall = hm.__overall;
+
+    function setBar(pctId, barId, val){
+      const el=document.getElementById(pctId);
+      const bar=document.getElementById(barId);
+      if(!el || !bar) return;
+      if(val===null){ el.textContent="—%"; bar.style.width="0%"; return; }
+      const p=Math.max(0, Math.min(100, Math.round(val*100)));
+      el.textContent=p+"%";
+      bar.style.width=p+"%";
+    }
+    setBar("riskGreyPct","riskGreyBar",g);
+    setBar("riskLicPct","riskLicBar",l);
+    setBar("riskOpsPct","riskOpsBar",o);
+    setBar("riskGovPct","riskGovBar",v);
+
+    // Pilot readiness
+    const prEl=document.getElementById("pilotReady");
+    const prLab=document.getElementById("pilotReadyLabel");
+    if(prEl){
+      if(overall===null){ prEl.textContent="—%"; prLab && (prLab.textContent="Заполни зрелость (2.1/2.2)"); }
+      else{
+        const pr = Math.max(0, Math.min(100, Math.round((1-overall)*100)));
+        prEl.textContent = pr+"%";
+        if(prLab){
+          prLab.textContent = (pr<50) ? "Пилот сложный" : (pr<70) ? "Пилот средний" : "Быстрый пилот";
+        }
+      }
+    }
+
+    // Main problem
+    const mp=document.getElementById("mainProblem");
+    const mph=document.getElementById("mainProblemHint");
+    if(mp){
+      mp.textContent = hm.__mainZone || "—";
+      if(mph){
+        mph.textContent = (hm.__mainZone && hm.__mainRisk!==null) ? ("Риск: "+Math.round(hm.__mainRisk*100)+"%") : "Заполни зрелость (2.1/2.2)";
+      }
+    }
+
+    // Modules
+    const mods=decideModules(hm);
+    const rm=document.getElementById("recModules");
+    if(rm) rm.textContent = mods.join(" + ");
+
+    // Demo focus (top functions)
+    const dp=buildDemoPlan(hm);
+    const dfe=document.getElementById("demoFocus");
+    const dff=document.getElementById("demoFocusHint");
+    if(dfe) dfe.textContent=dp.title;
+    if(dff) dff.innerHTML=dp.html;
+
+    // COI breakdown
+    const coi = computeCOIBreakdown();
+    const coiLic=document.getElementById("coiLic");
+    const coiDown=document.getElementById("coiDown");
+    const coiManual=document.getElementById("coiManual");
+    const coiTotal=document.getElementById("coiTotal");
+    coiLic && (coiLic.textContent=_fmtRub(coi.licLoss));
+    coiDown && (coiDown.textContent=_fmtRub(coi.downLoss));
+    coiManual && (coiManual.textContent=_fmtRub(coi.manualLoss));
+    coiTotal && (coiTotal.textContent=_fmtRub(coi.total));
+  }catch(e){ console.warn("heatmap/calc failed", e); }
+
 
 }catch(e){ console.error('recalc tail error', e); }
 // Required fields gate (PDF)
@@ -2278,7 +2707,6 @@ function flattenForSheets(raw){
 
 
 function apply(data){
-  try{ ensureHiddenMatrices(); }catch(_e){}
   if(!data) return;
   const set=(id,v)=>{const el=document.getElementById(id); if(el) el.value = v ?? "";};
 
@@ -2304,22 +2732,14 @@ function apply(data){
   // requirements
   const __reqTb=document.getElementById("reqTbody");
   if(__reqTb) __reqTb.innerHTML="";
-  if(__reqTb){
   (data.requirements||[]).forEach(r=>addReqRow(r));
-  if((data.requirements||[]).length===0) seedReq();
-}
-
   // product requirements
   const prTb=document.getElementById("prodReqTbody");
   if(prTb){ prTb.innerHTML=""; (data.productRequirements||[]).forEach(r=>addProdReqRow(r)); }
   // psi
   const __psiTb=document.getElementById("psiTbody");
   if(__psiTb) __psiTb.innerHTML="";
-  if(__psiTb){
   (data.psi||[]).forEach(r=>addPsiRow(r));
-  if((data.psi||[]).length===0) seedPsi();
-}
-
   const p=data.pilot||{};
   set("pilotGoal",p.goal); set("pilotTasks_removed",p.tasks); set("pilotKpi_removed",p.kpi); set("pilotScope",p.scope);
   set("pilotSummary",p.summary); set("pilotDecision",p.decision); set("recommendedConfig",p.recommendedConfig);
@@ -2473,6 +2893,12 @@ function buildExcelWorkbook(payload){
   psi.unshift(["№","Сценарий","Ожидание","Факт","Соотв.","Приняли?","Комментарий"]);
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(psi), "06_ПСИ_5");
 
+  // Sheet: 6 Требования к продукту
+  const prodreq = (payload.productRequirements||payload.prodRequirements||payload.prodreq||[]).map((r,i)=>[i+1, r.biz||"", r.func||"", r.type||"", r.must||"", r.feas||""]);
+  prodreq.unshift(["№","Бизнес требование","Функциональное требование","Тип","Обязат.","Возможность"]);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(prodreq), "07_ПродТреб_6");
+
+
   // Sheet: 5.1 Риски проекта
   const pr = payload.projectRisks||{};
   const prHead = [
@@ -2505,21 +2931,24 @@ function exportExcel(){
 
 let _gsyncTimer = null;
 async function syncToGoogleSheets(reason){
-  // GitHub Pages CSP часто блокирует fetch/beacon на внешние домены (connect-src 'self').
-  // Поэтому отправляем данные через скрытую HTML-форму в iframe (это не fetch и обычно не блокируется).
-  clearTimeout(_gsyncTimer);
-  _gsyncTimer = setTimeout(async ()=>{
+  // CSP-safe saving for GitHub Pages: use fetch(no-cors) and allow connect-src via CSP meta in <head>.
+  clearTimeout(window.__gsyncTimer);
+  window.__gsyncTimer = setTimeout(async ()=>{
+    const st = document.getElementById("gsyncStatus");
     try{
+      // Always try to compute indices before saving (but don't block save if UI paint fails)
       try{ recalc(); }catch(_e){}
+
+      const url = (typeof window.GS_WEBAPP_URL === "string" && window.GS_WEBAPP_URL) ? window.GS_WEBAPP_URL :
+                  ((typeof window.GOOGLE_SHEETS_WEBAPP_URL === "string" && window.GOOGLE_SHEETS_WEBAPP_URL) ? window.GOOGLE_SHEETS_WEBAPP_URL : "");
+      if(!url) throw new Error("Google Sheets URL is not set");
+
       const payloadRaw = collect();
       payloadRaw.audit = payloadRaw.audit || {};
       payloadRaw.audit.syncReason = reason || "manual";
       payloadRaw.audit.syncedAt = new Date().toISOString();
-      const payload = flattenForSheets(payloadRaw);
 
-      const st = document.getElementById("gsyncStatus");
-      const url = (typeof GOOGLE_SHEETS_WEBAPP_URL === "string" ? GOOGLE_SHEETS_WEBAPP_URL : "") || "";
-      if(!url) throw new Error("GOOGLE_SHEETS_WEBAPP_URL is not set");
+      const payload = flattenForSheets(payloadRaw);
 
       if(st){
         st.style.display="block";
@@ -2527,47 +2956,26 @@ async function syncToGoogleSheets(reason){
         st.textContent="⏫ Отправляю в Google Sheets…";
       }
 
-      const form = document.getElementById("gsyncForm");
-      const frame = document.getElementById("gsyncFrame");
-      if(!form || !frame) throw new Error("gsync form/iframe not found");
+      await fetch(url + (url.includes("?") ? "&" : "?") + "action=save", {
+        method: "POST",
+        mode: "no-cors",
+        headers: {"Content-Type":"text/plain;charset=utf-8"},
+        body: JSON.stringify(payload)
+      });
 
-      form.action = url;
-      const payloadInput = form.querySelector('input[name="payload"]');
-      payloadInput.value = JSON.stringify(payload);
-
-      let done = false;
-      const onload = () => {
-        if(done) return;
-        done = true;
-        try{ frame.removeEventListener("load", onload); }catch(_){}
-        if(st){
-          st.style.color = "#16a34a";
-          st.textContent = "✅ Отправлено в Google Sheets.";
-          setTimeout(()=>{ try{ st.style.display='none'; }catch(_e){} }, 3500);
-        }
-      };
-      try{ frame.addEventListener("load", onload); }catch(_){}
-
-      form.submit();
-
-      setTimeout(()=>{
-        if(done) return;
-        done = true;
-        if(st){
-          st.style.color = "#16a34a";
-          st.textContent = "✅ Отправлено (проверьте строку в таблице).";
-          setTimeout(()=>{ try{ st.style.display='none'; }catch(_e){} }, 3500);
-        }
-      }, 1500);
-
+      if(st){
+        st.style.color="#16a34a";
+        st.textContent="✅ Отправлено в Google Sheets.";
+        setTimeout(()=>{ try{ st.style.display='none'; }catch(_){} }, 2500);
+      }
+      console.log("✅ Sheets sync sent (fetch no-cors)");
     }catch(err){
       console.error("gsync error", err);
-      const st = document.getElementById("gsyncStatus");
       if(st){
         st.style.display="block";
         st.style.color="#b91c1c";
         st.textContent="⚠️ Ошибка синхронизации: " + ((err && err.message) ? err.message : err);
-        setTimeout(()=>{ try{ st.style.display='none'; }catch(_e){} }, 6500);
+        setTimeout(()=>{ try{ st.style.display='none'; }catch(_){} }, 6500);
       }
     }
   }, 200);
@@ -2576,10 +2984,15 @@ async function syncToGoogleSheets(reason){
 document.getElementById("btnExportXlsx")?.addEventListener("click", exportExcel);
 
 // Пересчитать = только пересчитать (НЕ сохраняем автоматически)
-document.getElementById("btnRecalc").addEventListener("click", ()=>{ try{ recalc(); }catch(e){ console.warn("recalc() failed", e); } });
+document.getElementById("btnRecalc").addEventListener("click", ()=>{
+  try{ recalc(); }catch(e){ console.warn("recalc() failed", e); }
+});
 
-// Печать / Сохранить в PDF = синхронизируем в Google Sheets
-document.getElementById("btnPrint").addEventListener("click", ()=>{ try{ syncToGoogleSheets("pdf"); }catch(e){ console.warn("syncToGoogleSheets failed", e); } window.print(); });
+// Печать / Сохранить в PDF = синхронизируем в Google Sheets (как в вашей логике)
+document.getElementById("btnPrint").addEventListener("click", ()=>{
+  try{ syncToGoogleSheets("pdf"); }catch(e){ console.warn("syncToGoogleSheets failed", e); }
+  window.print();
+});
 
 document.getElementById("btnCLevel").addEventListener("click", ()=>{
   try{
@@ -2659,17 +3072,19 @@ document.getElementById("btnAddReq").addEventListener("click", ()=>addReqRow());
 if(document.getElementById("btnAddProdReq")) document.getElementById("btnAddProdReq").addEventListener("click", ()=>addProdReqRow());
 document.getElementById("btnClearReq").addEventListener("click", ()=>{
   if(confirm("Очистить все требования?")){ const __reqTb=document.getElementById("reqTbody");
-  if(__reqTb) __reqTb.innerHTML=""; seedReq(); recalc(); }
+  if(__reqTb) __reqTb.innerHTML=""; recalc(); }
+});
+if(document.getElementById("btnClearProdReq")) document.getElementById("btnClearProdReq").addEventListener("click", ()=>{
+  if(confirm("Очистить все требования к продукту?")){ const __prodTb=document.getElementById("prodReqTbody");
+  if(__prodTb) __prodTb.innerHTML=""; recalc(); }
 });
 document.getElementById("btnAddPsi").addEventListener("click", ()=>addPsiRow());
 document.getElementById("btnClearPsi").addEventListener("click", ()=>{
   if(confirm("Очистить все сценарии ПСИ?")){ const __psiTb=document.getElementById("psiTbody");
-  if(__psiTb) __psiTb.innerHTML=""; seedPsi(); recalc(); }
+  if(__psiTb) __psiTb.innerHTML=""; recalc(); }
 });
 
 ensureBaseTables();
-seedReq();
-seedPsi();
 recalc();
 
 const pdfModeEl = document.getElementById("pdfMode");
@@ -3034,6 +3449,59 @@ const KPI_META = {
         <li><b>70–100%</b>: можно строить продвинутые сценарии (предиктивная аналитика, автополитики).</li>
       </ul>`
   }
+  ,
+
+  // --- Risk & Readiness (auto) ---
+  kPilotReady: {
+    title: "Pilot Readiness Index",
+    sub: "Индекс готовности к пилоту (1 − средний риск по зонам) × 100",
+    what: "Показывает, насколько «легко» пройти пилот: чем ниже риск по ключевым зонам (данные/архитектура, лицензии, ручной труд, управляемость), тем выше готовность.",
+    how: "Сначала считаем риск по 4 зонам: Σ(Вес×Ответ) / Σ(Вес зоны), где Ответ: Да=0, Частично=0.5, Нет=1. Далее берём среднее по зонам и считаем Ready = (1 − RiskAvg) × 100.",
+    impact: "Используется, чтобы быстро классифицировать пилот: <50 — сложный (нужны подготовительные работы), 50–70 — средний, 70+ — быстрый.",
+    doHtml: `
+      <ul>
+        <li><b>&lt;50%</b>: сначала закрываем 1–2 самые красные зоны (минимальный контур данных/доступов), затем пилот.</li>
+        <li><b>50–70%</b>: пилот возможен, но фиксируем границы (охват, сроки) и критерии успеха.</li>
+        <li><b>70%+</b>: можно идти в пилот уверенно и расширять охват.</li>
+      </ul>`
+  },
+  kMainProblem: {
+    title: "Основная проблема",
+    sub: "Зона риска с максимальным вкладом",
+    what: "Это «главная причина боли» по модели: где риск максимальный — туда и бьём демо/пилот в первую очередь.",
+    how: "Берём максимальную из 4 зон риска (серые зоны / лицензии / ручной труд / управляемость).",
+    impact: "Позволяет не распыляться: показывать 1 главный сценарий демо и собрать пилот вокруг него.",
+    doHtml: `
+      <div class="small">Подсказка: зона риска = Σ(Вес×Ответ) / Σ(Вес зоны). Чем ближе к 100%, тем сильнее боль.</div>
+      <ul style="margin-top:8px">
+        <li><b>Серые зоны</b> → начать с агрегации/охвата и единой картины.</li>
+        <li><b>Лицензии</b> → начать с Призмы (нормализация ПО, контроль лицензий).</li>
+        <li><b>Ручной труд</b> → начать с автоматизации и сокращения ручных операций.</li>
+        <li><b>Управляемость</b> → начать с истории/ответственности и дисциплины изменений.</li>
+      </ul>`
+  },
+  kModules: {
+    title: "Рекомендуемая конфигурация",
+    sub: "Автоматически по порогам риска",
+    what: "Подбирает набор модулей ИТМен под профиль боли клиента, чтобы пилот и демо были релевантны.",
+    how: "Сравниваем риск по зонам с порогами (вшиты): Серые зоны≥40% → Базовый; Лицензии≥30% → Призма; Управляемость≥40% → Гибкая модель; Ручной труд≥50% → Обогащение.",
+    impact: "Снижает вероятность «показали не то» и ускоряет согласование пилота.",
+    doHtml: `<div class="small">Это рекомендация для старта. Дальше можно расширять конфигурацию по мере подключения источников и уточнения требований.</div>`
+  },
+  kDemo: {
+    title: "Приоритет демо",
+    sub: "Стартовый сценарий демо по главной зоне риска",
+    what: "Определяет, с какого сценария демо начать, чтобы быстро «попасть в боль» и закрепить ценность.",
+    how: "Сценарий выбирается по зоне с максимальным риском (см. «Основная проблема»).",
+    impact: "Увеличивает конверсию демо → пилот, потому что первые 5–10 минут показывают именно то, за что клиент готов платить.",
+    doHtml: `
+      <ul>
+        <li><b>Серые зоны</b>: показать агрегацию источников → единая картина → coverage/freshness.</li>
+        <li><b>Лицензии</b>: показать нормализацию ПО → соответствие → экономия на лицензиях.</li>
+        <li><b>Ручной труд</b>: показать автоматизацию отчётов/сверок → снижение ручных операций.</li>
+        <li><b>Управляемость</b>: показать историю изменений → ответственность → контроль изменений.</li>
+      </ul>`
+  }
 };
 
 function kpiModalOpen(kpiId){
@@ -3092,19 +3560,20 @@ function kpiModalClose(){
 }
 
 function setupKpiExplain(){
-  const bar = document.querySelector(".kpiBar");
-  if(!bar) return;
+  const bars = document.querySelectorAll(".kpiBar");
+  if(!bars || !bars.length) return;
 
-  // make KPI cards clearly clickable
-  bar.querySelectorAll(".stat[id]").forEach(el=>{
-    el.classList.add("kpi-clickable");
-    el.setAttribute("role","button");
-    el.setAttribute("tabindex","0");
-    el.setAttribute("aria-label","Открыть описание индекса");
-  });
+  bars.forEach(bar=>{
+    // make KPI cards clearly clickable
+    bar.querySelectorAll(".stat[id]").forEach(el=>{
+      el.classList.add("kpi-clickable");
+      el.setAttribute("role","button");
+      el.setAttribute("tabindex","0");
+      el.setAttribute("aria-label","Открыть описание" );
+    });
 
-  // robust click/tap delegation
-  bar.addEventListener("click",(e)=>{
+    // robust click/tap delegation
+    bar.addEventListener("click",(e)=>{
       // Prevent KPI modal from opening when user interacts with expandable lists / controls inside cards
       if(e?.target?.tagName==="SUMMARY" || e?.target?.closest?.("details.demoDetails")) return;
       const stat = e.target.closest(".stat[id]");
@@ -3112,14 +3581,29 @@ function setupKpiExplain(){
       kpiModalOpen(stat.id);
     });
 
-  // keyboard open (Enter/Space)
-  bar.addEventListener("keydown",(e)=>{
-    if(e.key !== "Enter" && e.key !== " ") return;
-    const stat = e.target.closest?.(".stat[id]");
-    if(!stat) return;
-    e.preventDefault();
-    kpiModalOpen(stat.id);
+    // keyboard open (Enter/Space)
+    bar.addEventListener("keydown",(e)=>{
+      if(e.key !== "Enter" && e.key !== " ") return;
+      const stat = e.target.closest?.(".stat[id]");
+      if(!stat) return;
+      e.preventDefault();
+      kpiModalOpen(stat.id);
+    });
   });
+
+  // hover open (only on devices that support hover)
+  const canHover = window.matchMedia && window.matchMedia("(hover:hover)").matches;
+  if(canHover){
+    let t=null, lastId=null;
+    bar.addEventListener("pointerover",(e)=>{
+      const stat = e.target.closest(".stat[id]");
+      if(!stat) return;
+      lastId = stat.id;
+      clearTimeout(t);
+      t = setTimeout(()=>{ if(lastId) kpiModalOpen(lastId); }, 550);
+    });
+    bar.addEventListener("pointerout",()=>{ clearTimeout(t); lastId=null; });
+  }
 
   // modal close handlers
   const closeBtn = document.getElementById("kpiModalClose");
@@ -3348,7 +3832,25 @@ function renderBenchHints(){
 
 
 /* ===== v7.6 PATCH: exact Google Sheets header mapping ===== */
-const SHEET_KEYS = (`run_id	timestamp	pdfMode	interviewMode	benchMode	cLevelText	company	industry	lpr	sources	workplaces	servers	branches	vdi	closed	envNote	virt	hostingModel	adDomains	netSeg	terminalFarms	hwAge	hwAccounting	redundancy	salary	itCount	manualPct	licBudget	unusedPct	finNote	vmUnusedPct	keyPeopleRisk	docScore	obsoletePct	hwBudget	hwPlan	downtimeHours	downtimeCost	incidentsPerMonth	serviceDesk	riskLevelText	riskNotes	psi2Score	psi2Label	techIndex	procIndex	riskIndex	coiTotal	recoverIndex	busIndex	obsolIndex	aiIndex	painIndex	feasScore	readyIndex	readyLabel	probIndex	probLabel	benchCount	benchProfileLabel	req_count	psi_count	project_risks_count	project_risk_level	project_risk_notes	tech_count	proc_count	risk_count	tech_01_label	tech_01_score	tech_01_note	tech_02_label	tech_02_score	tech_02_note	tech_03_label	tech_03_score	tech_03_note	tech_04_label	tech_04_score	tech_04_note	tech_05_label	tech_05_score	tech_05_note	tech_06_label	tech_06_score	tech_06_note	tech_07_label	tech_07_score	tech_07_note	tech_08_label	tech_08_score	tech_08_note	tech_09_label	tech_09_score	tech_09_note	tech_10_label	tech_10_score	tech_10_note	proc_01_label	proc_01_score	proc_01_note	proc_02_label	proc_02_score	proc_02_note	proc_03_label	proc_03_score	proc_03_note	proc_04_label	proc_04_score	proc_04_note	proc_05_label	proc_05_score	proc_05_note	proc_06_label	proc_06_score	proc_06_note	proc_07_label	proc_07_score	proc_07_note	proc_08_label	proc_08_score	proc_08_note	proc_09_label	proc_09_score	proc_09_note	proc_10_label	proc_10_score	proc_10_note	risk_01_label	risk_01_val	risk_01_note	risk_02_label	risk_02_val	risk_02_note	risk_03_label	risk_03_val	risk_03_note	risk_04_label	risk_04_val	risk_04_note	risk_05_label	risk_05_val	risk_05_note	risk_06_label	risk_06_val	risk_06_note	risk_07_label	risk_07_val	risk_07_note	risk_08_label	risk_08_val	risk_08_note	req_01_text	req_01_type	req_01_must	req_01_feas	req_01_metric	req_01_owner	req_02_text	req_02_type	req_02_must	req_02_feas	req_02_metric	req_02_owner	req_03_text	req_03_type	req_03_must	req_03_feas	req_03_metric	req_03_owner	req_04_text	req_04_type	req_04_must	req_04_feas	req_04_metric	req_04_owner	req_05_text	req_05_type	req_05_must	req_05_feas	req_05_metric	req_05_owner	req_06_text	req_06_type	req_06_must	req_06_feas	req_06_metric	req_06_owner	req_07_text	req_07_type	req_07_must	req_07_feas	req_07_metric	req_07_owner	req_08_text	req_08_type	req_08_must	req_08_feas	req_08_metric	req_08_owner	req_09_text	req_09_type	req_09_must	req_09_feas	req_09_metric	req_09_owner	req_10_text	req_10_type	req_10_must	req_10_feas	req_10_metric	req_10_owner	req_11_text	req_11_type	req_11_must	req_11_feas	req_11_metric	req_11_owner	req_12_text	req_12_type	req_12_must	req_12_feas	req_12_metric	req_12_owner	req_13_text	req_13_type	req_13_must	req_13_feas	req_13_metric	req_13_owner	req_14_text	req_14_type	req_14_must	req_14_feas	req_14_metric	req_14_owner	req_15_text	req_15_type	req_15_must	req_15_feas	req_15_metric	req_15_owner	req_16_text	req_16_type	req_16_must	req_16_feas	req_16_metric	req_16_owner	req_17_text	req_17_type	req_17_must	req_17_feas	req_17_metric	req_17_owner	req_18_text	req_18_type	req_18_must	req_18_feas	req_18_metric	req_18_owner	req_19_text	req_19_type	req_19_must	req_19_feas	req_19_metric	req_19_owner	req_20_text	req_20_type	req_20_must	req_20_feas	req_20_metric	req_20_owner	psi_01_scn	psi_01_exp	psi_01_act	psi_01_ok	psi_01_acc	psi_01_note	psi_02_scn	psi_02_exp	psi_02_act	psi_02_ok	psi_02_acc	psi_02_note	psi_03_scn	psi_03_exp	psi_03_act	psi_03_ok	psi_03_acc	psi_03_note	psi_04_scn	psi_04_exp	psi_04_act	psi_04_ok	psi_04_acc	psi_04_note	psi_05_scn	psi_05_exp	psi_05_act	psi_05_ok	psi_05_acc	psi_05_note	psi_06_scn	psi_06_exp	psi_06_act	psi_06_ok	psi_06_acc	psi_06_note	psi_07_scn	psi_07_exp	psi_07_act	psi_07_ok	psi_07_acc	psi_07_note	psi_08_scn	psi_08_exp	psi_08_act	psi_08_ok	psi_08_acc	psi_08_note	psi_09_scn	psi_09_exp	psi_09_act	psi_09_ok	psi_09_acc	psi_09_note	psi_10_scn	psi_10_exp	psi_10_act	psi_10_ok	psi_10_acc	psi_10_note	psi_11_scn	psi_11_exp	psi_11_act	psi_11_ok	psi_11_acc	psi_11_note	psi_12_scn	psi_12_exp	psi_12_act	psi_12_ok	psi_12_acc	psi_12_note	psi_13_scn	psi_13_exp	psi_13_act	psi_13_ok	psi_13_acc	psi_13_note	psi_14_scn	psi_14_exp	psi_14_act	psi_14_ok	psi_14_acc	psi_14_note	psi_15_scn	psi_15_exp	psi_15_act	psi_15_ok	psi_15_acc	psi_15_note	psi_16_scn	psi_16_exp	psi_16_act	psi_16_ok	psi_16_acc	psi_16_note	psi_17_scn	psi_17_exp	psi_17_act	psi_17_ok	psi_17_acc	psi_17_note	psi_18_scn	psi_18_exp	psi_18_act	psi_18_ok	psi_18_acc	psi_18_note	psi_19_scn	psi_19_exp	psi_19_act	psi_19_ok	psi_19_acc	psi_19_note	psi_20_scn	psi_20_exp	psi_20_act	psi_20_ok	psi_20_acc	psi_20_note	project_risk_01_name	project_risk_01_condition	project_risk_01_status	project_risk_01_note	project_risk_02_name	project_risk_02_condition	project_risk_02_status	project_risk_02_note	project_risk_03_name	project_risk_03_condition	project_risk_03_status	project_risk_03_note	project_risk_04_name	project_risk_04_condition	project_risk_04_status	project_risk_04_note	project_risk_05_name	project_risk_05_condition	project_risk_05_status	project_risk_05_note	project_risk_06_name	project_risk_06_condition	project_risk_06_status	project_risk_06_note	project_risk_07_name	project_risk_07_condition	project_risk_07_status	project_risk_07_note	project_risk_08_name	project_risk_08_condition	project_risk_08_status	project_risk_08_note	project_risk_09_name	project_risk_09_condition	project_risk_09_status	project_risk_09_note	project_risk_10_name	project_risk_10_condition	project_risk_10_status	project_risk_10_note	project_risk_11_name	project_risk_11_condition	project_risk_11_status	project_risk_11_note	project_risk_12_name	project_risk_12_condition	project_risk_12_status	project_risk_12_note	project_risk_13_name	project_risk_13_condition	project_risk_13_status	project_risk_13_note	project_risk_14_name	project_risk_14_condition	project_risk_14_status	project_risk_14_note	project_risk_15_name	project_risk_15_condition	project_risk_15_status	project_risk_15_note	project_risk_16_name	project_risk_16_condition	project_risk_16_status	project_risk_16_note	project_risk_17_name	project_risk_17_condition	project_risk_17_status	project_risk_17_note	project_risk_18_name	project_risk_18_condition	project_risk_18_status	project_risk_18_note	project_risk_19_name	project_risk_19_condition	project_risk_19_status	project_risk_19_note	project_risk_20_name	project_risk_20_condition	project_risk_20_status	project_risk_20_note`).split(/\t/);
+const SHEET_KEYS = (`run_id	timestamp	pdfMode	interviewMode	benchMode	cLevelText	company	industry	lpr	sources	workplaces	servers	branches	vdi	closed	envNote	virt	hostingModel	adDomains	netSeg	terminalFarms	hwAge	hwAccounting	redundancy	salary	itCount	manualPct	licBudget	unusedPct	finNote	vmUnusedPct	keyPeopleRisk	docScore	obsoletePct	hwBudget	hwPlan	downtimeHours	downtimeCost	incidentsPerMonth	serviceDesk	riskLevelText	riskNotes	psi2Score	psi2Label	techIndex	procIndex	riskIndex	coiTotal	recoverIndex	busIndex	obsolIndex	aiIndex	painIndex	feasScore	readyIndex	readyLabel	probIndex	probLabel	benchCount	benchProfileLabel	req_count	psi_count	project_risks_count	project_risk_level	project_risk_notes	tech_count	proc_count	risk_count	tech_01_label	tech_01_score	tech_01_note	tech_02_label	tech_02_score	tech_02_note	tech_03_label	tech_03_score	tech_03_note	tech_04_label	tech_04_score	tech_04_note	tech_05_label	tech_05_score	tech_05_note	tech_06_label	tech_06_score	tech_06_note	tech_07_label	tech_07_score	tech_07_note	tech_08_label	tech_08_score	tech_08_note	tech_09_label	tech_09_score	tech_09_note	tech_10_label	tech_10_score	tech_10_note	proc_01_label	proc_01_score	proc_01_note	proc_02_label	proc_02_score	proc_02_note	proc_03_label	proc_03_score	proc_03_note	proc_04_label	proc_04_score	proc_04_note	proc_05_label	proc_05_score	proc_05_note	proc_06_label	proc_06_score	proc_06_note	proc_07_label	proc_07_score	proc_07_note	proc_08_label	proc_08_score	proc_08_note	proc_09_label	proc_09_score	proc_09_note	proc_10_label	proc_10_score	proc_10_note	risk_01_label	risk_01_val	risk_01_note	risk_02_label	risk_02_val	risk_02_note	risk_03_label	risk_03_val	risk_03_note	risk_04_label	risk_04_val	risk_04_note	risk_05_label	risk_05_val	risk_05_note	risk_06_label	risk_06_val	risk_06_note	risk_07_label	risk_07_val	risk_07_note	risk_08_label	risk_08_val	risk_08_note	req_01_text	req_01_type	req_01_must	req_01_feas	req_01_metric	req_01_owner	req_02_text	req_02_type	req_02_must	req_02_feas	req_02_metric	req_02_owner	req_03_text	req_03_type	req_03_must	req_03_feas	req_03_metric	req_03_owner	req_04_text	req_04_type	req_04_must	req_04_feas	req_04_metric	req_04_owner	req_05_text	req_05_type	req_05_must	req_05_feas	req_05_metric	req_05_owner	req_06_text	req_06_type	req_06_must	req_06_feas	req_06_metric	req_06_owner	req_07_text	req_07_type	req_07_must	req_07_feas	req_07_metric	req_07_owner	req_08_text	req_08_type	req_08_must	req_08_feas	req_08_metric	req_08_owner	req_09_text	req_09_type	req_09_must	req_09_feas	req_09_metric	req_09_owner	req_10_text	req_10_type	req_10_must	req_10_feas	req_10_metric	req_10_owner	req_11_text	req_11_type	req_11_must	req_11_feas	req_11_metric	req_11_owner	req_12_text	req_12_type	req_12_must	req_12_feas	req_12_metric	req_12_owner	req_13_text	req_13_type	req_13_must	req_13_feas	req_13_metric	req_13_owner	req_14_text	req_14_type	req_14_must	req_14_feas	req_14_metric	req_14_owner	req_15_text	req_15_type	req_15_must	req_15_feas	req_15_metric	req_15_owner	req_16_text	req_16_type	req_16_must	req_16_feas	req_16_metric	req_16_owner	req_17_text	req_17_type	req_17_must	req_17_feas	req_17_metric	req_17_owner	req_18_text	req_18_type	req_18_must	req_18_feas	req_18_metric	req_18_owner	req_19_text	req_19_type	req_19_must	req_19_feas	req_19_metric	req_19_owner	req_20_text	req_20_type	req_20_must	req_20_feas	req_20_metric	req_20_owner	psi_01_scn	psi_01_exp	psi_01_act	psi_01_ok	psi_01_acc	psi_01_note	psi_02_scn	psi_02_exp	psi_02_act	psi_02_ok	psi_02_acc	psi_02_note	psi_03_scn	psi_03_exp	psi_03_act	psi_03_ok	psi_03_acc	psi_03_note	psi_04_scn	psi_04_exp	psi_04_act	psi_04_ok	psi_04_acc	psi_04_note	psi_05_scn	psi_05_exp	psi_05_act	psi_05_ok	psi_05_acc	psi_05_note	psi_06_scn	psi_06_exp	psi_06_act	psi_06_ok	psi_06_acc	psi_06_note	psi_07_scn	psi_07_exp	psi_07_act	psi_07_ok	psi_07_acc	psi_07_note	psi_08_scn	psi_08_exp	psi_08_act	psi_08_ok	psi_08_acc	psi_08_note	psi_09_scn	psi_09_exp	psi_09_act	psi_09_ok	psi_09_acc	psi_09_note	psi_10_scn	psi_10_exp	psi_10_act	psi_10_ok	psi_10_acc	psi_10_note	psi_11_scn	psi_11_exp	psi_11_act	psi_11_ok	psi_11_acc	psi_11_note	psi_12_scn	psi_12_exp	psi_12_act	psi_12_ok	psi_12_acc	psi_12_note	psi_13_scn	psi_13_exp	psi_13_act	psi_13_ok	psi_13_acc	psi_13_note	psi_14_scn	psi_14_exp	psi_14_act	psi_14_ok	psi_14_acc	psi_14_note	psi_15_scn	psi_15_exp	psi_15_act	psi_15_ok	psi_15_acc	psi_15_note	psi_16_scn	psi_16_exp	psi_16_act	psi_16_ok	psi_16_acc	psi_16_note	psi_17_scn	psi_17_exp	psi_17_act	psi_17_ok	psi_17_acc	psi_17_note	psi_18_scn	psi_18_exp	psi_18_act	psi_18_ok	psi_18_acc	psi_18_note	psi_19_scn	psi_19_exp	psi_19_act	psi_19_ok	psi_19_acc	psi_19_note	psi_20_scn	psi_20_exp	psi_20_act	psi_20_ok	psi_20_acc	psi_20_note	project_risk_01_name	project_risk_01_condition	project_risk_01_status	project_risk_01_note	project_risk_02_name	project_risk_02_condition	project_risk_02_status	project_risk_02_note	project_risk_03_name	project_risk_03_condition	project_risk_03_status	project_risk_03_note	project_risk_04_name	project_risk_04_condition	project_risk_04_status	project_risk_04_note	project_risk_05_name	project_risk_05_condition	project_risk_05_status	project_risk_05_note	project_risk_06_name	project_risk_06_condition	project_risk_06_status	project_risk_06_note	project_risk_07_name	project_risk_07_condition	project_risk_07_status	project_risk_07_note	project_risk_08_name	project_risk_08_condition	project_risk_08_status	project_risk_08_note	project_risk_09_name	project_risk_09_condition	project_risk_09_status	project_risk_09_note	project_risk_10_name	project_risk_10_condition	project_risk_10_status	project_risk_10_note	project_risk_11_name	project_risk_11_condition	project_risk_11_status	project_risk_11_note	project_risk_12_name	project_risk_12_condition	project_risk_12_status	project_risk_12_note	project_risk_13_name	project_risk_13_condition	project_risk_13_status	project_risk_13_note	project_risk_14_name	project_risk_14_condition	project_risk_14_status	project_risk_14_note	project_risk_15_name	project_risk_15_condition	project_risk_15_status	project_risk_15_note	project_risk_16_name	project_risk_16_condition	project_risk_16_status	project_risk_16_note	project_risk_17_name	project_risk_17_condition	project_risk_17_status	project_risk_17_note	project_risk_18_name	project_risk_18_condition	project_risk_18_status	project_risk_18_note	project_risk_19_name	project_risk_19_condition	project_risk_19_status	project_risk_19_note	project_risk_20_name	project_risk_20_condition	project_risk_20_status	project_risk_20_note	sales_manager	presale_manager	pilotGoal	pilotScope	pilotSummary	pilotDecision	recommendedConfig	pilotTasks_removed	pilotKpi_removed	psi_01_req	psi_02_req	psi_03_req	psi_04_req	psi_05_req	psi_06_req	psi_07_req	psi_08_req	psi_09_req	psi_10_req	psi_11_req	psi_12_req	psi_13_req	psi_14_req	psi_15_req	psi_16_req	psi_17_req	psi_18_req	psi_19_req	psi_20_req	prod_01_biz	prod_01_func	prod_01_type	prod_01_must	prod_01_feas	prod_02_biz	prod_02_func	prod_02_type	prod_02_must	prod_02_feas	prod_03_biz	prod_03_func	prod_03_type	prod_03_must	prod_03_feas	prod_04_biz	prod_04_func	prod_04_type	prod_04_must	prod_04_feas	prod_05_biz	prod_05_func	prod_05_type	prod_05_must	prod_05_feas	prod_06_biz	prod_06_func	prod_06_type	prod_06_must	prod_06_feas	prod_07_biz	prod_07_func	prod_07_type	prod_07_must	prod_07_feas	prod_08_biz	prod_08_func	prod_08_type	prod_08_must	prod_08_feas	prod_09_biz	prod_09_func	prod_09_type	prod_09_must	prod_09_feas	prod_10_biz	prod_10_func	prod_10_type	prod_10_must	prod_10_feas	prod_11_biz	prod_11_func	prod_11_type	prod_11_must	prod_11_feas	prod_12_biz	prod_12_func	prod_12_type	prod_12_must	prod_12_feas	prod_13_biz	prod_13_func	prod_13_type	prod_13_must	prod_13_feas	prod_14_biz	prod_14_func	prod_14_type	prod_14_must	prod_14_feas	prod_15_biz	prod_15_func	prod_15_type	prod_15_must	prod_15_feas	prod_16_biz	prod_16_func	prod_16_type	prod_16_must	prod_16_feas	prod_17_biz	prod_17_func	prod_17_type	prod_17_must	prod_17_feas	prod_18_biz	prod_18_func	prod_18_type	prod_18_must	prod_18_feas	prod_19_biz	prod_19_func	prod_19_type	prod_19_must	prod_19_feas	prod_20_biz	prod_20_func	prod_20_type	prod_20_must	prod_20_feas	prod_21_biz	prod_21_func	prod_21_type	prod_21_must	prod_21_feas	prod_22_biz	prod_22_func	prod_22_type	prod_22_must	prod_22_feas	prod_23_biz	prod_23_func	prod_23_type	prod_23_must	prod_23_feas	prod_24_biz	prod_24_func	prod_24_type	prod_24_must	prod_24_feas	prod_25_biz	prod_25_func	prod_25_type	prod_25_must	prod_25_feas	prod_26_biz	prod_26_func	prod_26_type	prod_26_must	prod_26_feas	prod_27_biz	prod_27_func	prod_27_type	prod_27_must	prod_27_feas	prod_28_biz	prod_28_func	prod_28_type	prod_28_must	prod_28_feas	prod_29_biz	prod_29_func	prod_29_type	prod_29_must	prod_29_feas	prod_30_biz	prod_30_func	prod_30_type	prod_30_must	prod_30_feas	payload`).split(/\t/);
+
+// Compat layer: the Sheet template uses prodreq_* columns for product requirements.
+// If we trim payload by SHEET_KEYS and prodreq_* aren't present, they get dropped on save.
+(function ensureSheetKeysCompat(){
+  try{
+    const need = [];
+    const has = (k)=>SHEET_KEYS.indexOf(k)>=0;
+    if(!has("prodreq_count")) need.push("prodreq_count");
+    for(let i=1;i<=30;i++){
+      const n = String(i).padStart(2,"0");
+      ["biz","func","type","must","feas"].forEach(sfx=>{
+        const k = `prodreq_${n}_${sfx}`;
+        if(!has(k)) need.push(k);
+      });
+    }
+    if(need.length) SHEET_KEYS.push(...need);
+  }catch(e){ console.warn("ensureSheetKeysCompat failed", e); }
+})();
 
 function _el(id){ return document.getElementById(id); }
 function _val(id){
@@ -3377,12 +3879,7 @@ function buildSheetPayloadExact(){
   const out = {};
 
   // Basic scalar ids (match your headers 1:1)
-  const scalarIds = ["pdfMode","interviewMode","benchMode","cLevelText","company","industry","lpr","sources",
-    "workplaces","servers","branches","vdi","closed","envNote","virt","hostingModel","adDomains","netSeg",
-    "terminalFarms","hwAge","hwAccounting","redundancy","salary","itCount","manualPct","licBudget","unusedPct",
-    "finNote","vmUnusedPct","keyPeopleRisk","docScore","obsoletePct","hwBudget","hwPlan","downtimeHours",
-    "downtimeCost","incidentsPerMonth","serviceDesk","riskLevelText","riskNotes"
-  ];
+  const scalarIds = ["pdfMode", "interviewMode", "benchMode", "cLevelText", "company", "industry", "lpr", "sources", "sales_manager", "presale_manager", "workplaces", "servers", "branches", "vdi", "closed", "envNote", "pilotGoal", "pilotScope", "pilotSummary", "pilotDecision", "recommendedConfig", "pilotTasks_removed", "pilotKpi_removed", "virt", "hostingModel", "adDomains", "netSeg", "terminalFarms", "hwAge", "hwAccounting", "redundancy", "salary", "itCount", "manualPct", "licBudget", "unusedPct", "finNote", "vmUnusedPct", "keyPeopleRisk", "docScore", "obsoletePct", "hwBudget", "hwPlan", "downtimeHours", "downtimeCost", "incidentsPerMonth", "serviceDesk", "riskLevelText", "riskNotes"];
   scalarIds.forEach(id=> out[id]=_val(id));
 
   // virt (supports native checkboxes UI)
@@ -3403,7 +3900,7 @@ function buildSheetPayloadExact(){
   ];
   kpiIds.forEach(id=>{
     const raw=_val(id);
-    out[id] = (id.endsWith("Label") || id==="psi2Label" || id==="readyLabel" || id==="probLabel" || id==="benchProfileLabel")
+    out[id] = (id.endsWith("Label") || id==="psi2Label" || id==="readyLabel" || id==="probLabel" || id==="benchProfileLabel" || id==="mainProblem" || id==="recModules" || id==="demoFocus")
       ? raw
       : _numFromText(raw);
   });
@@ -3437,7 +3934,7 @@ function buildSheetPayloadExact(){
       const r = rows[i];
       out[keyL] = (labelsArr && labelsArr[i] && labelsArr[i].label) ? labelsArr[i].label : (r?.cells?.[0]?.textContent||"").trim();
       out[keyS] = r ? (r.querySelector("select")?.value ?? "") : "";
-      out[keyN] = r ? (r.querySelector("textarea")?.value ?? "") : "";
+      out[keyN] = r ? (r.querySelector("input,textarea")?.value ?? "") : "";
     }
   }
   fillMaturity("tech", techRows, (typeof TECH!=="undefined"?TECH:null), "score", "note");
@@ -3452,31 +3949,54 @@ function buildSheetPayloadExact(){
     const r = riskRows[i];
     out[keyL] = (typeof RISK!=="undefined" && RISK[i] && RISK[i].label) ? RISK[i].label : (r?.cells?.[0]?.textContent||"").trim();
     out[keyV] = r ? (r.querySelector("select")?.value ?? "") : "";
-    out[keyN] = r ? (r.querySelector("textarea")?.value ?? "") : "";
+    out[keyN] = r ? (r.querySelector("input,textarea")?.value ?? "") : "";
   }
 
   // Requirements (up to 20)
   for(let i=0;i<20;i++){
     const idx=i+1;
     const r=reqRows[i];
-    out[`req_${String(idx).padStart(2,"0")}_text`]   = r ? _cellVal(r.cells[1]) : "";
-    out[`req_${String(idx).padStart(2,"0")}_type`]   = r ? _cellVal(r.cells[2]) : "";
-    out[`req_${String(idx).padStart(2,"0")}_must`]   = r ? _cellVal(r.cells[3]) : "";
-    out[`req_${String(idx).padStart(2,"0")}_feas`]   = r ? _cellVal(r.cells[4]) : "";
-    out[`req_${String(idx).padStart(2,"0")}_metric`] = r ? _cellVal(r.cells[5]) : "";
-    out[`req_${String(idx).padStart(2,"0")}_owner`]  = r ? _cellVal(r.cells[6]) : "";
+    // Table columns: 0 №, 1 owner(business need), 2 text(req), 3 type, 4 must, 5 feas, 6 metric
+    out[`req_${String(idx).padStart(2,"0")}_owner`]  = r ? _cellVal(r.cells[1]) : "";
+    out[`req_${String(idx).padStart(2,"0")}_text`]   = r ? _cellVal(r.cells[2]) : "";
+    out[`req_${String(idx).padStart(2,"0")}_type`]   = r ? _cellVal(r.cells[3]) : "";
+    out[`req_${String(idx).padStart(2,"0")}_must`]   = r ? _cellVal(r.cells[4]) : "";
+    out[`req_${String(idx).padStart(2,"0")}_feas`]   = r ? _cellVal(r.cells[5]) : "";
+    out[`req_${String(idx).padStart(2,"0")}_metric`] = r ? _cellVal(r.cells[6]) : "";
   }
 
   // PSI (up to 20)
   for(let i=0;i<20;i++){
     const idx=i+1;
     const r=psiRows[i];
-    out[`psi_${String(idx).padStart(2,"0")}_scn`]  = r ? _cellVal(r.cells[1]) : "";
-    out[`psi_${String(idx).padStart(2,"0")}_exp`]  = r ? _cellVal(r.cells[2]) : "";
-    out[`psi_${String(idx).padStart(2,"0")}_act`]  = r ? _cellVal(r.cells[3]) : "";
-    out[`psi_${String(idx).padStart(2,"0")}_ok`]   = r ? _cellVal(r.cells[4]) : "";
-    out[`psi_${String(idx).padStart(2,"0")}_acc`]  = r ? _cellVal(r.cells[5]) : "";
-    out[`psi_${String(idx).padStart(2,"0")}_note`] = r ? _cellVal(r.cells[6]) : "";
+    const n = String(idx).padStart(2,"0");
+    // Table columns: 0 №, 1 req, 2 scn, 3 exp, 4 act, 5 ok, 6 acc, 7 note
+    out["psi_"+n+"_req"]  = r ? _cellVal(r.cells[1]) : "";
+    out["psi_"+n+"_scn"]  = r ? _cellVal(r.cells[2]) : "";
+    out["psi_"+n+"_exp"]  = r ? _cellVal(r.cells[3]) : "";
+    out["psi_"+n+"_act"]  = r ? _cellVal(r.cells[4]) : "";
+    out["psi_"+n+"_ok"]   = r ? _cellVal(r.cells[5]) : "";
+    out["psi_"+n+"_acc"]  = r ? _cellVal(r.cells[6]) : "";
+    out["psi_"+n+"_note"] = r ? _cellVal(r.cells[7]) : "";
+  }
+
+  // Product requirements (up to 30)
+  const prodRows = Array.from(document.querySelectorAll("#prodReqTbody tr"));
+  out.prodreq_count = prodRows.length;
+  for(let i=0;i<30;i++){
+    const idx=i+1;
+    const r=prodRows[i];
+    const n = String(idx).padStart(2,"0");
+    out["prodreq_"+n+"_biz"]  = r ? _cellVal(r.cells[1]) : "";
+    out["prod_"+n+"_biz"]  = r ? _cellVal(r.cells[1]) : "";
+    out["prodreq_"+n+"_func"] = r ? _cellVal(r.cells[2]) : "";
+    out["prod_"+n+"_func"] = r ? _cellVal(r.cells[2]) : "";
+    out["prodreq_"+n+"_type"] = r ? _cellVal(r.cells[3]) : "";
+    out["prod_"+n+"_type"] = r ? _cellVal(r.cells[3]) : "";
+    out["prodreq_"+n+"_must"] = r ? _cellVal(r.cells[4]) : "";
+    out["prod_"+n+"_must"] = r ? _cellVal(r.cells[4]) : "";
+    out["prodreq_"+n+"_feas"] = r ? _cellVal(r.cells[5]) : "";
+    out["prod_"+n+"_feas"] = r ? _cellVal(r.cells[5]) : "";
   }
 
   // Project risk table (up to 20)
@@ -3496,6 +4016,19 @@ function buildSheetPayloadExact(){
   // Also include full JSON snapshot if someone adds "payload" column later
   out.payload = JSON.stringify(out);
 
+  // === Dashboard aliases (so analytics can read consistent keys) ===
+  // Some dashboard widgets expect psi/ready/probability fields.
+  const psi2Num = parseFloat(String(out.psi2Score||"").replace("%","").trim());
+  const readyNum = parseFloat(String(out.readyIndex||"").replace("%","").trim());
+  const probNum = parseFloat(String(out.probIndex||"").replace("%","").trim());
+  if(isFinite(psi2Num)) out.psi = psi2Num;
+  if(isFinite(readyNum)) out.ready = readyNum;
+  if(isFinite(probNum)) { out.probability = probNum; out.prob = probNum; }
+  // Synthetic analytics aliases
+  const benchNum = parseInt(String(out.benchCount||"0"),10);
+  if(isFinite(benchNum)) out.synthetic_count = benchNum;
+  out.total_fields = SHEET_KEYS.length;
+
   // Return only keys the sheet expects (safe)
   const trimmed = {};
   SHEET_KEYS.forEach(k=>{ trimmed[k]= (out[k]===undefined? "": out[k]); });
@@ -3504,13 +4037,16 @@ function buildSheetPayloadExact(){
 
 // Override sync to Sheets to use exact payload
 async function syncToGoogleSheets(){
-  const url = (typeof GOOGLE_SHEETS_WEBAPP_URL!=="undefined" && GOOGLE_SHEETS_WEBAPP_URL) ? GOOGLE_SHEETS_WEBAPP_URL : null;
-  if(!url){
+  // IMPORTANT: Apps Script routes actions by query parameter.
+  // If we POST raw JSON to /exec without ?action=save, server will default to stats.
+  const base = (typeof GOOGLE_SHEETS_WEBAPP_URL!=="undefined" && GOOGLE_SHEETS_WEBAPP_URL) ? String(GOOGLE_SHEETS_WEBAPP_URL).trim() : "";
+  if(!base){
     console.warn("Google Sheets URL is not set");
     return;
   }
+  const url = base + (base.includes("?") ? "&" : "?") + "action=save";
   const payload = buildSheetPayloadExact();
-  const body = JSON.stringify(payload);
+  const body = "action=save&payload=" + encodeURIComponent(JSON.stringify(payload));
 
   // 1) Beacon (no CORS / no preflight)
   try{
@@ -3522,7 +4058,7 @@ async function syncToGoogleSheets(){
 
   // 2) Fetch no-cors fallback
   try{
-    await fetch(url, {method:"POST", mode:"no-cors", body, headers: {"Content-Type":"text/plain;charset=utf-8"}});
+    await fetch(url, {method:"POST", mode:"no-cors", body, keepalive:true, headers: {"Content-Type":"text/plain;charset=utf-8"}});
     console.log("✅ Sheets sync sent (fetch no-cors)");
   }catch(e){
     console.error("❌ Sheets sync failed", e);
@@ -3612,56 +4148,12 @@ async function gsSearch(q){
     return await jsonp(url); // JSONP to bypass CORS for local HTML
   }
 
-  async function gsGetByRow(row){
+  async function gsGetByCompany(company){
     const base = (typeof GOOGLE_SHEETS_WEBAPP_URL === "string" && GOOGLE_SHEETS_WEBAPP_URL) ? GOOGLE_SHEETS_WEBAPP_URL : "";
     if(!base) throw new Error("GOOGLE_SHEETS_WEBAPP_URL is not set");
-    const url = `${base}?action=get&row=${encodeURIComponent(row)}`;
+    const url = `${base}?action=get&company=${encodeURIComponent(company)}`;
     return await jsonp(url); // JSONP to bypass CORS for local HTML
   }
-
-async function gsGetByCompany(company){
-  const url = `${WEBAPP_URL}?action=get&company=${encodeURIComponent(company)}`;
-  const r = await fetch(url,{method:"GET"});
-  const data = await r.json();
-  if(!data) return {ok:false};
-  let item = data.item || (data.data && data.data.item) || data.data || data;
-  let p = (item && item.payload !== undefined) ? item.payload : item;
-  if(typeof p === "string"){ try{ p = JSON.parse(p); }catch(e){} }
-  if(p && typeof p === "object" && typeof p.payload === "string"){ try{ p.payload = JSON.parse(p.payload);}catch(e){} }
-  const out = (p && p.payload && typeof p.payload === "object") ? p.payload : p;
-  return {ok:true,item:out};
-}
-
-
-function extractPayloadFromItem(item){
-  let p = item;
-  if(item && item.payload !== undefined) p = item.payload;
-  if(typeof p === "string"){ try{ p = JSON.parse(p); }catch(e){} }
-  if(p && typeof p === "object" && typeof p.payload === "string"){ try{ p.payload = JSON.parse(p.payload);}catch(e){} }
-  if(p && typeof p === "object" && p.payload && typeof p.payload === "object") p = p.payload;
-  return p;
-}
-function applyLoadedItem(item){
-  const payload = extractPayloadFromItem(item);
-  try{
-    // IMPORTANT: these pages must apply FLAT payload from Sheets (not nested structured model).
-    if(typeof applyPayload==="function"){
-      applyPayload(payload);
-    } else if(typeof apply==="function"){
-      apply(payload);
-    }
-  }catch(e){
-    console.warn("applyLoadedItem failed", e);
-    try{ if(typeof applyPayload==="function") applyPayload(payload); }catch(_e){}
-  }
-  try{
-    const btn = document.getElementById("btnRecalc");
-    if(btn) btn.click();
-  }catch(_e){}
-  try{ if(typeof recalc==="function") recalc(); }catch(_e){}
-}
-
-
 
 
   // Build a fast lookup: normalizedId -> real element id
@@ -3695,8 +4187,180 @@ function applyLoadedItem(item){
     return null;
   }
 
+  // Rebuild table sections from flat sheet columns when loading a company.
+  // Sheets rows are flat (req_01_text, psi_01_scn, prod_01_biz, ...), while the UI expects arrays.
+  function rebuildTablesFromFlat_(data){
+    if(!data || typeof data !== "object") return;
+    const pick = (k) => {
+      if (data[k] !== undefined) return data[k];
+      const lk = String(k).toLowerCase();
+      if (data[lk] !== undefined) return data[lk];
+      return "";
+    };
+
+    // --- Fallback: if Apps Script stored full arrays as JSON strings in columns (requirements/productRequirements/psi)
+    // Some older/newer sheets may store these as JSON (e.g., "[{...}]" ). Prefer them when present.
+    function tryParseJsonArray(v){
+      if(typeof v!=="string") return null;
+      const s=v.trim();
+      if(!s) return null;
+      if(!(s.startsWith("[") && s.endsWith("]"))) return null;
+      try{
+        const arr = JSON.parse(s);
+        return Array.isArray(arr) ? arr : null;
+      }catch(e){ return null; }
+    }
+
+    const reqTbody = document.getElementById("reqTbody");
+    if(reqTbody){
+      // Prefer JSON array snapshot when available
+      const __arr = tryParseJsonArray(data.requirements || data.Requirements);
+      if(__arr){
+        reqTbody.innerHTML = "";
+        (__arr.length?__arr:[{}]).forEach(r=>addReqRow(r));
+      } else {
+      reqTbody.innerHTML = "";
+      const rows = [];
+      for(let i=1;i<=20;i++){
+        const n = String(i).padStart(2,"0");
+        const row = {
+          owner: pick(`req_${n}_owner`),
+          text: pick(`req_${n}_text`),
+          type: pick(`req_${n}_type`),
+          must: pick(`req_${n}_must`),
+          feas: pick(`req_${n}_feas`),
+          metric: pick(`req_${n}_metric`),
+        };
+        const hasAny = Object.values(row).some(v=>String(v??"").trim()!=="");
+        if(hasAny) rows.push(row);
+      }
+      if(rows.length===0) rows.push({});
+      rows.forEach(r=>addReqRow(r));      }
+
+    }
+
+    const psiTbody = document.getElementById("psiTbody");
+    if(psiTbody){
+      // Prefer JSON array snapshot when available
+      const __arr = tryParseJsonArray(data.psi || data.PSI);
+      if(__arr){
+        psiTbody.innerHTML = "";
+        (__arr.length?__arr:[{}]).forEach(r=>addPsiRow(r));
+      } else {
+      psiTbody.innerHTML = "";
+      const rows = [];
+      for(let i=1;i<=20;i++){
+        const n = String(i).padStart(2,"0");
+        const row = {
+          req: pick(`psi_${n}_req`),
+          scn: pick(`psi_${n}_scn`),
+          exp: pick(`psi_${n}_exp`),
+          act: pick(`psi_${n}_act`),
+          ok: pick(`psi_${n}_ok`),
+          acc: pick(`psi_${n}_acc`),
+          note: pick(`psi_${n}_note`),
+        };
+        const hasAny = Object.values(row).some(v=>String(v??"").trim()!=="");
+        if(hasAny) rows.push(row);
+      }
+      if(rows.length===0) rows.push({});
+      rows.forEach(r=>addPsiRow(r));      }
+
+    }
+
+    const prodTbody = document.getElementById("prodReqTbody");
+    if(prodTbody){
+      // Prefer JSON array snapshot when available
+      const __arr = tryParseJsonArray(data.productRequirements || data.ProductRequirements || data.prodRequirements || data.ProdRequirements);
+      if(__arr){
+        prodTbody.innerHTML = "";
+        (__arr.length?__arr:[{}]).forEach(r=>addProdReqRow(r));
+      } else {
+      prodTbody.innerHTML = "";
+      const rows = [];
+      for(let i=1;i<=30;i++){
+        const n = String(i).padStart(2,"0");
+        // Some sheets used different prefixes for product requirements.
+        // Support: prod_XX_*, prodreq_XX_*, product_XX_*.
+        const pickProd = (suffix) => (
+          pick(`prod_${n}_${suffix}`) ||
+          pick(`prodreq_${n}_${suffix}`) ||
+          pick(`product_${n}_${suffix}`)
+        );
+        const row = {
+          biz: pickProd("biz"),
+          func: pickProd("func"),
+          type: pickProd("type"),
+          must: pickProd("must"),
+          feas: pickProd("feas"),
+        };
+        const hasAny = Object.values(row).some(v=>String(v??"").trim()!=="");
+        if(hasAny) rows.push(row);
+      }
+      if(rows.length===0) rows.push({});
+      rows.forEach(r=>addProdReqRow(r));      }
+
+    }
+  }
+
   function applyPayload(payload){
     if(!payload || typeof payload !== "object") return;
+
+    // Guard: while we are applying data from Sheets, we must avoid any
+    // auto-save triggers and reduce noisy intermediate recalcs.
+    window.__ITMEN_IS_LOADING = true;
+    // normalize legacy/alt keys coming from Sheets / Apps Script
+    try{
+      const p = payload;
+      if(p.sales_manager==null && p.salesManager!=null) p.sales_manager = p.salesManager;
+      if(p.sales_manager==null && p.sales!=null) p.sales_manager = p.sales;
+      if(p.presale_manager==null && p.preSaleManager!=null) p.presale_manager = p.preSaleManager;
+      if(p.presale_manager==null && p.presaleManager!=null) p.presale_manager = p.presaleManager;
+      if(p.presale_manager==null && p.presale!=null) p.presale_manager = p.presale;
+      if(p.timestamp==null && p.Timestamp!=null) p.timestamp = p.Timestamp;
+      if(p.run_id==null && p.runId!=null) p.run_id = p.runId;
+      if(p.sources==null && p.data_sources!=null) p.sources = p.data_sources;
+      if(p.sources==null && p["Источники данных"]!=null) p.sources = p["Источники данных"];
+      // pilot dot-notation (from flattenForSheets or Apps Script)
+      if(p.pilotGoal==null && p["pilot.goal"]!=null) p.pilotGoal = p["pilot.goal"];
+      if(p.pilotScope==null && p["pilot.scope"]!=null) p.pilotScope = p["pilot.scope"];
+      if(p.pilotSummary==null && p["pilot.summary"]!=null) p.pilotSummary = p["pilot.summary"];
+      if(p.pilotDecision==null && p["pilot.decision"]!=null) p.pilotDecision = p["pilot.decision"];
+      if(p.recommendedConfig==null && p["pilot.recommendedConfig"]!=null) p.recommendedConfig = p["pilot.recommendedConfig"];
+      if(p.pilotTasks_removed==null && p["pilot.tasks"]!=null) p.pilotTasks_removed = p["pilot.tasks"];
+      if(p.pilotKpi_removed==null && p["pilot.kpi"]!=null) p.pilotKpi_removed = p["pilot.kpi"];
+    }catch(e){}
+
+
+    // 0) If the sheet row contains a full JSON snapshot in 'payload' column — parse it.
+    // It may be either:
+    //  - a flat object (same keys as columns), or
+    //  - a structured payload (meta/maturity/requirements/psi/pilot...).
+    try{
+      const raw = payload.payload;
+      let full = null;
+      if(typeof raw === "string"){
+        let s = raw.trim();
+        // sometimes payload is double-encoded JSON string
+        for(let i=0;i<2;i++){
+          if(s.startsWith('"') && s.endsWith('"')){ try{ s = JSON.parse(s); }catch(_e){} }
+        }
+        if(s && (s.startsWith("{") || s.startsWith("["))){
+          try{ full = JSON.parse(s); }catch(_e){}
+        }
+      } else if(raw && typeof raw === "object"){
+        full = raw;
+      }
+
+      if(full && typeof full === "object"){
+        if(full.meta || full.maturity || full.requirements || full.productRequirements || full.psi || full.pilot){
+          try{ if(typeof apply==="function") apply(full); }catch(e){ console.warn("apply(structured) failed", e); }
+        } else {
+          payload = Object.assign({}, full, payload);
+        }
+      }
+    }catch(e){}
+
 
     // 1) basic fields by id
     Object.entries(payload).forEach(([id, val]) => {
@@ -3743,7 +4407,10 @@ function applyLoadedItem(item){
       }
     }catch(e){}
 
-    // 3) kick recalculation (if button exists)
+    // 3) rebuild tables from flat sheet columns (requirements/PSI/product requirements)
+    try{ rebuildTablesFromFlat_(payload); }catch(e){ console.warn("rebuildTablesFromFlat_ failed", e); }
+
+    // 4) kick recalculation (if button exists)
     const btn = document.getElementById("btnRecalc");
     if(btn) btn.click();
     // 3) maturity tables (tech/proc) and risk table are stored in Sheets as tech_01_score etc.
@@ -3766,10 +4433,10 @@ function applyLoadedItem(item){
             }
           }
           if(payload[keyN] !== undefined && payload[keyN] !== null){
-            const ta = row.querySelector("textarea");
-            if(ta){
-              ta.value = String(payload[keyN]);
-              ta.dispatchEvent(new Event("input", { bubbles:true }));
+            const field = row.querySelector("input,textarea");
+            if(field){
+              field.value = String(payload[keyN]);
+              field.dispatchEvent(new Event("input", { bubbles:true }));
             }
           }
         }
@@ -3791,10 +4458,10 @@ function applyLoadedItem(item){
             }
           }
           if(payload[keyN] !== undefined && payload[keyN] !== null){
-            const ta = row.querySelector("textarea");
-            if(ta){
-              ta.value = String(payload[keyN]);
-              ta.dispatchEvent(new Event("input", { bubbles:true }));
+            const field = row.querySelector("input,textarea");
+            if(field){
+              field.value = String(payload[keyN]);
+              field.dispatchEvent(new Event("input", { bubbles:true }));
             }
           }
         }
@@ -3806,6 +4473,9 @@ function applyLoadedItem(item){
     }catch(e){
       console.warn("applyPayload maturity/risk fill failed", e);
     }
+
+    // done
+    window.__ITMEN_IS_LOADING = false;
 
   }
 
@@ -3854,7 +4524,8 @@ function applyLoadedItem(item){
 
     const __memCache = new Map();
 const LS_KEY = "itmen_gs_search_cache_v1";
-const LS_TTL_MS = 6 * 60 * 60 * 1000; // 6h
+// Keep TTL small so new companies appear quickly in suggestions.
+const LS_TTL_MS = 5 * 60 * 1000; // 5 min
 
 function lsLoad(){
   try{
@@ -3863,185 +4534,6 @@ function lsLoad(){
     const obj = JSON.parse(raw);
     return (obj && typeof obj === "object") ? obj : {};
   }catch(e){ return {}; }
-// Update derived risk blocks from loaded payload
-try{ updateRiskFromPayload(payload); }catch(e){}
-
-}
-function _normKey(s){
-  return String(s||"").trim().toLowerCase()
-    .replace(/ё/g,"е")
-    .replace(/\s+/g," ")
-    .replace(/\u00a0/g," ")
-    .trim();
-}
-function _toRiskFromScore(v){
-  // score: 0=нет, 1=частично, 2=есть => risk: 1, 0.5, 0
-  const n = Number(v);
-  if(isNaN(n)) return null;
-  if(n<=0) return 1;
-  if(n===1) return 0.5;
-  return 0;
-}
-function updateRiskFromPayload(payload){
-  const bank = window.ITMEN_QUESTION_BANK || {};
-  const zones = {
-    "Серые зоны (охват / архитектура)": {w:0, s:0},
-    "Лицензионный риск": {w:0, s:0},
-    "Операционная неэффективность / ручной труд": {w:0, s:0},
-    "Управляемость / отсутствие истории": {w:0, s:0},
-  };
-  const contribs = [];
-
-  function pushItem(label, score){
-    const key = _normKey(label);
-    const meta = bank[key];
-    if(!meta || !meta.zone) return;
-    const r = _toRiskFromScore(score);
-    if(r===null) return;
-    const w = Number(meta.w||1);
-    const z = meta.zone;
-    if(!zones[z]) return;
-    zones[z].w += w;
-    zones[z].s += w*r;
-    if(r>0){
-      contribs.push({zone:z, c:w*r, func:meta.func||"", prio:meta.prio||99, q:meta.q||label});
-    }
-  }
-
-  // TECH 01..10
-  for(let i=1;i<=10;i++){
-    const k = String(i).padStart(2,"0");
-    pushItem(payload[`tech_${k}_label`], payload[`tech_${k}_score`]);
-  }
-  // PROC 01..10
-  for(let i=1;i<=10;i++){
-    const k = String(i).padStart(2,"0");
-    pushItem(payload[`proc_${k}_label`], payload[`proc_${k}_score`]);
-  }
-
-  // Compute per-zone % (0..100)
-  let totalW=0, totalS=0;
-  let mainZone=null, mainVal=-1;
-  for(const [z,obj] of Object.entries(zones)){
-    totalW += obj.w;
-    totalS += obj.s;
-    const pct = obj.w ? (obj.s/obj.w) : 0;
-    if(pct>mainVal){ mainVal=pct; mainZone=z; }
-  }
-  const overall = totalW ? (totalS/totalW) : 0;
-  const pilotReady = Math.max(0, Math.min(1, 1-overall));
-  // labels
-  const prPct = Math.round(pilotReady*100);
-  const prLabel = prPct<50 ? "Пилот сложный" : (prPct<70 ? "Пилот средний" : "Пилот быстрый");
-
-  // Decide config
-  const zPct = (name)=> zones[name].w ? (zones[name].s/zones[name].w) : 0;
-  const grey = zPct("Серые зоны (охват / архитектура)");
-  const lic  = zPct("Лицензионный риск");
-  const ops  = zPct("Операционная неэффективность / ручной труд");
-  const ctrl = zPct("Управляемость / отсутствие истории");
-
-  const mods=[];
-  if(grey>=0.40) mods.push("Базовый");
-  if(lic>=0.30) mods.push("Призма");
-  if(ctrl>=0.40) mods.push("Гибкая модель");
-  if(ops>=0.50) mods.push("Обогащение");
-  const modulesText = mods.length ? mods.join(" + ") : "—";
-
-  // Demo focus
-  const focusMap = {
-    "Серые зоны (охват / архитектура)": {title:"Агрегация/охват", hint:"Начать с единого источника правды и покрытия сегментов."},
-    "Лицензионный риск": {title:"Призма (лицензии)", hint:"Начать с нормализации ПО и контроля лицензионных рисков."},
-    "Операционная неэффективность / ручной труд": {title:"Автоматизация", hint:"Начать с автоматизации сбора/актуализации и снижения ручных операций."},
-    "Управляемость / отсутствие истории": {title:"История/управляемость", hint:"Начать с истории изменений и управляемости процессов."},
-  };
-  const demoBase = focusMap[mainZone] || {title:"—", hint:"—"};
-
-  // Render demo lists (unique by func)
-  function pickFunc(x){
-    const f = (x.func && String(x.func).trim()) ? String(x.func).trim() : String(x.q||"").trim();
-    return f.replace(/\s+/g," ").replace(/[.。]\s*$/,"").trim();
-  }
-  const seen=new Set(); const uniq=[];
-  contribs.sort((a,b)=> (b.c-a.c) || ((a.prio||99)-(b.prio||99)));
-  for(const x of contribs){
-    const f=pickFunc(x);
-    const k=f.toLowerCase();
-    if(!f || seen.has(k)) continue;
-    seen.add(k);
-    uniq.push({func:f, c:x.c, zone:x.zone});
-  }
-  const mainList = uniq.filter(x=>x.zone===mainZone).slice(0,3);
-  const extraList = uniq.filter(x=>x.zone!==mainZone).slice(0,6);
-
-  const demoHtml = (()=> {
-    let h = `<div class="demoIntro">${_escHtml(demoBase.hint)}</div>`;
-    if(mainList.length){
-      h += `<div class="demoSectionTitle">Топ демо по основной зоне</div><ul class="demoList">`+
-        mainList.map((x,i)=>`<li><span class="prio">Приоритет ${i+1}</span><span class="func">${_escHtml(x.func)}</span></li>`).join("")+
-        `</ul>`;
-    }
-    const extraCount = extraList.length;
-    if(extraCount){
-      h += `<details class="demoDetails"><summary class="demoSummary">Показать ещё (${extraCount})</summary><div class="demoExtra">`+
-        `<div class="demoSectionTitle" style="margin-top:10px">Также стоит показать</div><ul class="demoList">`+
-        extraList.map((x,i)=>`<li><span class="prio">Приоритет ${i+1}</span><span class="func">${_escHtml(x.func)}</span></li>`).join("")+
-        `</ul></div></details>`;
-    }
-    return h;
-  })();
-
-  // Apply to UI
-  function setPct(id,p){ const el=document.getElementById(id); if(el) el.textContent = Math.round(p*100)+"%"; }
-  function setBar(id,p){ const el=document.getElementById(id); if(el) el.style.width = Math.round(p*100)+"%"; }
-
-  setPct("riskGreyPct", grey); setBar("riskGreyBar", grey);
-  setPct("riskLicPct", lic); setBar("riskLicBar", lic);
-  setPct("riskOpsPct", ops); setBar("riskOpsBar", ops);
-  setPct("riskCtrlPct", ctrl); setBar("riskCtrlBar", ctrl);
-
-  const pr=document.getElementById("pilotReady"); if(pr) pr.textContent = prPct+"%";
-  const prl=document.getElementById("pilotReadyLabel"); if(prl) prl.textContent = prLabel;
-
-  const mp=document.getElementById("mainProblem"); if(mp) mp.textContent = (mainZone||"—").replace(/^.*?\s\(/,"").replace(/\).*$/,"");
-  const mph=document.getElementById("mainProblemHint"); if(mph) mph.textContent = "Риск: "+Math.round(mainVal*100)+"%";
-
-  const rm=document.getElementById("recModules"); if(rm) rm.textContent = modulesText;
-
-  const df=document.getElementById("demoFocus"); if(df) df.textContent = demoBase.title;
-  const dfh=document.getElementById("demoFocusHint"); if(dfh) dfh.textContent = demoBase.hint;
-
-  // Modal details
-  const modalTitle=document.getElementById("kpiModalTitle");
-  const modalBody=document.getElementById("kpiModalBody");
-  window.__kpiDetails = {
-    pilot: {title:"Pilot Readiness Index", html:`<div class="small">Готовность к пилоту = 1 − средний риск (по всем зонам).<br><b>${prPct}%</b> — ${_escHtml(prLabel)}</div>`},
-    problem: {title:"Основная проблема", html:`<div class="small"><b>${_escHtml(mainZone||"—")}</b><br>Риск: ${Math.round(mainVal*100)}%</div>`},
-    modules: {title:"Рекомендуемая конфигурация", html:`<div class="small">Пороги:<br>Серые зоны ≥40% → Базовый<br>Лицензионный риск ≥30% → Призма<br>Управляемость ≥40% → Гибкая модель<br>Ручной труд ≥50% → Обогащение</div><div style="margin-top:8px"><b>${_escHtml(modulesText)}</b></div>`},
-    demo: {title:`Приоритет демо: ${_escHtml(demoBase.title)}`, html: demoHtml}
-  };
-
-  // COI
-  const licBudget = Number(payload.licBudget||0);
-  const unusedPct = Number(payload.unusedPct||0)/100;
-  const downtimeHours = Number(payload.downtimeHours||0);
-  const downtimeCost = Number(payload.downtimeCost||0);
-  const itCount = Number(payload.itCount||0);
-  const salary = Number(payload.salary||0);
-  const manualPct = Number(payload.manualPct||0)/100;
-
-  const coiLic = licBudget * unusedPct;
-  const coiDown = downtimeHours * downtimeCost;
-  const coiManual = itCount * salary * manualPct * 12; // monthly to yearly
-  const coiTotal = coiLic + coiDown + coiManual;
-
-  function rub(x){ 
-    try{ return (Math.round(x)).toLocaleString("ru-RU")+" ₽"; }catch(_){ return String(Math.round(x))+" ₽"; }
-  }
-  const el1=document.getElementById("coiLic"); if(el1) el1.textContent=rub(coiLic);
-  const el2=document.getElementById("coiDown"); if(el2) el2.textContent=rub(coiDown);
-  const el3=document.getElementById("coiManual"); if(el3) el3.textContent=rub(coiManual);
-  const el4=document.getElementById("coiTotal"); if(el4) el4.textContent=rub(coiTotal);
 }
 function lsSave(obj){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(obj)); }catch(e){}
@@ -4065,6 +4557,7 @@ function cacheSet(q, data){
   if(!key) return;
   __memCache.set(key, data);
   __lsCache[key] = {t: Date.now(), data};
+  // keep cache small
   const keys = Object.keys(__lsCache);
   if(keys.length > 80){
     keys.sort((a,b)=>(__lsCache[a]?.t||0)-(__lsCache[b]?.t||0));
@@ -4073,14 +4566,23 @@ function cacheSet(q, data){
   lsSave(__lsCache);
 }
 
+// Expose cache reset (used after SAVE)
+function cacheClear(){
+  try{ __memCache.clear(); }catch(_e){}
+  try{ __lsCache = {}; localStorage.removeItem(LS_KEY); }catch(_e){}
+}
+try{ window.__itmenCompanyCacheClear = cacheClear; }catch(_e){}
+
 const run = debounce(async ()=>{
   const qRaw = String(input.value || "").trim();
   if(qRaw.length < 2){ hide(); return; }
   const q = qRaw.toLowerCase();
 
+  // inline feedback right away
   dd.innerHTML = `<div class="companySuggestItem"><div class="companySuggestTitle">Ищу компанию…</div><div class="companySuggestMeta">Запрос к базе в Google Sheets</div></div>`;
   show();
 
+  // global loader — only if request is slow (no flicker)
   let slowTimer = setTimeout(()=>showLoader("Ищу компанию…", "Запрос к Google Sheets"), 450);
 
   try{
@@ -4106,6 +4608,7 @@ const run = debounce(async ()=>{
 
     dd.innerHTML = "";
 
+    // Simple suggestions (company list). When selected → load last saved snapshot by company.
     items.forEach(it=>{
       const name = String(it.company || "").trim();
       if(!name) return;
@@ -4121,16 +4624,7 @@ const run = debounce(async ()=>{
           const got = await gsGetByCompany(name);
           if(got && got.ok && got.item){
             showLoader("Применяю данные…", "Заполняю форму значениями из базы");
-            try{
-        if(typeof normalizePayload==="function" && typeof apply==="function"){
-          apply(normalizePayload(got.item));
-            try{ if(typeof recalc==="function") recalc(); }catch(e){}
-} else if(typeof applyPayload==="function"){
-          applyLoadedItem(got.item);
-        }
-      }catch(_e){
-        try{ if(typeof applyPayload==="function") applyLoadedItem(got.item); }catch(__e){}
-      }
+            applyPayload(got.item);
             showLoader("Пересчитываю индексы…", "Обновляю KPI и индексы реализуемости");
             try{ recalc(); }catch(_e){}
           }
@@ -4363,207 +4857,154 @@ function syncToGoogleSheets(){
     form.appendChild(inp);
   }
   inp.value = JSON.stringify(payload);
-  try{ form.submit(); console.log("✅ Sheets sync sent (form-post)"); }
+  try{ 
+    form.submit();
+    // After SAVE, clear company suggestions cache so new names appear immediately.
+    try{ window.__itmenCompanyCacheClear && window.__itmenCompanyCacheClear(); }catch(_e){}
+    console.log("✅ Sheets sync sent (form-post)"); 
+  }
   catch(e){ console.error("❌ Sheets sync failed (form-post)", e); }
 }
 /* === end override === */
 
+
+  function openCompanyVersionsModal(company, items){
+    try{
+      const modal = document.getElementById('kpiModal');
+      const body = document.getElementById('kpiModalBody');
+      const title = document.getElementById('kpiModalTitle');
+      if(!modal || !body || !title){
+        const msg = items.map((it,i)=>`${i+1}) ${(it.timestamp||it.Timestamp||'')}`).join('\n');
+        alert(`Все записи для ${company}:\n`+msg);
+        return;
+      }
+      title.textContent = `Все записи — ${company}`;
+      const rows = items.slice().sort((a,b)=> String(b.timestamp||b.Timestamp||'').localeCompare(String(a.timestamp||a.Timestamp||'')));
+      body.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${rows.map((it,idx)=>{
+            const ts = it.timestamp||it.Timestamp||'';
+            const tsTxt = ts ? new Date(ts).toLocaleString('ru-RU') : '—';
+            const rid = it.run_id || it.runId || '';
+            return `<button class="btn ghost" data-idx="${idx}" style="text-align:left">
+              <div style="font-weight:600">${tsTxt}</div>
+              <div style="font-size:12px;color:#6b7280">run_id: ${rid || '—'}</div>
+            </button>`;
+          }).join('')}
+        </div>`;
+      body.querySelectorAll('button[data-idx]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const it = rows[Number(btn.getAttribute('data-idx'))];
+          applyPayload(it);
+          const metaEl = document.getElementById('companyMeta');
+          if(metaEl){
+            const ts = it.timestamp||it.Timestamp||'';
+            metaEl.textContent = `Последнее заполнение: ${ts ? new Date(ts).toLocaleString('ru-RU') : '—'} · версий: ${rows.length}`;
+          }
+          closeKpiModal();
+        });
+      });
+      openKpiModal();
+    }catch(e){
+      console.warn('openCompanyVersionsModal failed', e);
+    }
+  }
 </script>
 
-
 <script>
-/* === Unified QuickDock + Sheets loader (no page reload) === */
-(function(){
-  const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
-  window.WEBAPP_URL = WEBAPP_URL; // expose for legacy code
-  const dockCompany = document.getElementById("dockCompany");
-  \1
-    const dockSearchStatus = document.getElementById("dockSearchStatus");const dockLoadBtn = document.getElementById("dockLoadBtn");
-  if(!dockCompany || !dockSuggest) return;
+  // QuickDock (search + link company param)
+  (function(){
+    const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
+    const dockCompany = document.getElementById('dockCompany');
+    const dockSuggest = document.getElementById('dockSuggest');
+    if(!dockCompany) return;
 
-  function setUrlCompany(company){
-    try{
-      const u = new URL(location.href);
-      if(company) u.searchParams.set("company", company); else u.searchParams.delete("company");
-      history.replaceState(null, "", u.toString());
-    }catch(e){}
-  }
+    function jsonp(url, timeoutMs=15000){
+      return new Promise((resolve, reject)=>{
+        const cb = 'cb_' + Math.random().toString(36).slice(2);
+        const s = document.createElement('script');
+        const t = setTimeout(()=>{ cleanup(); reject(new Error('JSONP timeout')); }, timeoutMs);
+        function cleanup(){
+          clearTimeout(t);
+          try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
+          if(s.parentNode) s.parentNode.removeChild(s);
+        }
+        window[cb] = (data)=>{ cleanup(); resolve(data); };
+        const sep = url.includes('?') ? '&' : '?';
+        s.src = url + sep + 'callback=' + encodeURIComponent(cb);
+        s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
+        document.body.appendChild(s);
+      });
+    }
 
-  function showGlobalLoader(title, sub){
-    const gl = document.getElementById("globalLoader");
-    if(!gl) return;
-    const t = document.getElementById("globalLoaderTitle");
-    const s = document.getElementById("globalLoaderSub");
-    if(t && title) t.textContent = title;
-    if(s && sub) s.textContent = sub;
-    gl.style.display = "flex";
-    gl.setAttribute("aria-hidden","false");
-  }
-  function hideGlobalLoader(){
-    const gl = document.getElementById("globalLoader");
-    if(!gl) return;
-    gl.style.display = "none";
-    gl.setAttribute("aria-hidden","true");
-  }
+    function getCompanyFromUrl(){
+      try{ return (new URL(location.href)).searchParams.get('company') || ''; }catch(e){ return ''; }
+    }
+    function setCompanyInLinks(company){
+      const qs = company ? ('?company='+encodeURIComponent(company)) : '';
+      document.querySelectorAll('.quickDock a.tool').forEach(a=>{
+        const href = a.getAttribute('href') || '';
+        if(!href || href.startsWith('http')) return;
+        const clean = href.split('?')[0];
+        a.setAttribute('href', clean + qs);
+      });
+    }
 
-  function jsonp(url, timeoutMs=20000){
-    return new Promise((resolve, reject)=>{
-      const cb = "cb_" + Math.random().toString(36).slice(2) + "_" + Date.now();
-      const sep = url.includes("?") ? "&" : "?";
-      const full = url + sep + "callback=" + encodeURIComponent(cb);
-      const s = document.createElement("script");
-      s.async = true;
-      let done=false;
-      const cleanup = ()=>{
-        if(done) return; done=true;
-        try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
-        try{ s.remove(); }catch(e){}
-      };
-      const timer = setTimeout(()=>{ cleanup(); reject(new Error("JSONP timeout")); }, timeoutMs);
-      window[cb] = (data)=>{ clearTimeout(timer); cleanup(); resolve(data); };
-      s.onerror = ()=>{ clearTimeout(timer); cleanup(); reject(new Error("JSONP error")); };
-      s.src = full;
-      document.body.appendChild(s);
+    const initial = getCompanyFromUrl();
+    dockCompany.value = initial;
+    setCompanyInLinks(initial);
+
+    let timer=null;
+    dockCompany.addEventListener('input', ()=>{
+      clearTimeout(timer);
+      const q = dockCompany.value.trim();
+      setCompanyInLinks(q);
+      if(q.length < 3){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
+      timer = setTimeout(()=>runSearch(q), 250);
     });
-  }
-  window.__gs_jsonp = jsonp;
 
-  async function gsSearch(q){
-    if(!WEBAPP_URL) return [];
-    const data = await jsonp(WEBAPP_URL + "?action=search&q=" + encodeURIComponent(q) + "&limit=10");
-    return (data && data.ok && Array.isArray(data.items)) ? data.items : [];
-  }
-  async async function gsGetRow(row){
-    const base = (typeof GOOGLE_SHEETS_WEBAPP_URL === "string" && GOOGLE_SHEETS_WEBAPP_URL) ? GOOGLE_SHEETS_WEBAPP_URL : (typeof WEBAPP_URL==="string"?WEBAPP_URL:"");
-    if(!base) throw new Error("GOOGLE_SHEETS_WEBAPP_URL is not set");
-    const data = await jsonp(base + "?action=get&row=" + encodeURIComponent(row));
-    return (data && (data.payload || data.item || data.data)) || null;
-  }
-
-  function applyAnyPayload(obj){
-    if(!obj) return;
-    try{
-      if(typeof applyLoadedItem === "function"){ applyLoadedItem(obj); return; }
-    }catch(e){}
-    try{
-      if(typeof applyPayload === "function"){ applyPayload(obj); }
-      else if(typeof apply === "function"){ apply(obj); }
-    }catch(e){ console.warn("applyAnyPayload failed", e); }
-    try{ if(typeof recalc==="function") recalc(); }catch(e){}
-  }
-
-  async function loadCompanyByRow(row, companyLabel){
-    showGlobalLoader("Загружаю данные…", "Читаю последнюю строку из Google Sheets.");
-    try{
-      const item = await gsGetRow(row);
-      applyAnyPayload(item);
-      if(companyLabel){
-        dockCompany.value = companyLabel;
-        setUrlCompany(companyLabel);
-        setCompanyInLinks(companyLabel);
+    dockCompany.addEventListener('keydown', (ev)=>{
+      if(ev.key === 'Enter'){
+        const c = dockCompany.value.trim();
+        const u = new URL(location.href);
+        if(c) u.searchParams.set('company', c); else u.searchParams.delete('company');
+        location.href = u.toString();
       }
-    }catch(e){
-      console.error("Load company failed", e);
-      alert("Ошибка загрузки данных из Google Sheets. Проверь доступ к WebApp и структуру ответа.");
-    }finally{
-      hideGlobalLoader();
-    }
-  }
-
-  async function loadCompanyByName(name){
-    const q = (name||"").trim();
-    if(!q) return;
-    showGlobalLoader("Ищу компанию…", "Сверяю по списку в Google Sheets.");
-    try{
-      if(dockSearchStatus){dockSearchStatus.innerHTML = `<span class="miniSpinner"></span><span>Поиск…</span>`; dockSearchStatus.style.display="flex";}
-      const items = await gsSearch(q);
-      
-      if(dockSearchStatus){dockSearchStatus.style.display="none";}if(!items.length){ alert("Компания не найдена в Google Sheets"); return; }
-      items.sort((a,b)=> (Number(b.row||0)-Number(a.row||0)));
-      await loadCompanyByRow(items[0].row, items[0].company);
-    }finally{
-      hideGlobalLoader();
-    }
-  }
-  window.loadCompanyByName = loadCompanyByName;
-
-  function setCompanyInLinks(company){
-    const qs = company ? ("?company="+encodeURIComponent(company)) : "";
-    document.querySelectorAll(".quickDock a.tool").forEach(a=>{
-      const href = a.getAttribute("href") || "";
-      if(!href || href.startsWith("http")) return;
-      a.setAttribute("href", href.split("?")[0] + qs);
     });
-  }
+    const dockLoadBtn = document.getElementById('dockLoadBtn');
+    if(dockLoadBtn){ dockLoadBtn.addEventListener('click', ()=>{ const ev = new KeyboardEvent('keydown',{key:'Enter'}); dockCompany.dispatchEvent(ev); }); }
 
-  // UI behaviour
-  let timer=null;
-  dockCompany.addEventListener("input", ()=>{
-    clearTimeout(timer);
-    const q = dockCompany.value.trim();
-    setUrlCompany(q);
-    setCompanyInLinks(q);
-    if(q.length < 2){
-      dockSuggest.style.display="none"; dockSuggest.innerHTML="";
-      return;
-    }
-    dockSuggest.style.display="block";
-    dockSuggest.innerHTML = '<div class="dockItem"><b>Поиск…</b><span style="color:#6b7280;font-size:12px">ожидайте</span></div>';
-    timer=setTimeout(async ()=>{
+    async function runSearch(q){
+      if(!WEBAPP_URL) return;
       try{
-        if(dockSearchStatus){dockSearchStatus.innerHTML = `<span class="miniSpinner"></span><span>Поиск…</span>`; dockSearchStatus.style.display="flex";}
-      const items = await gsSearch(q);
-        
-      if(dockSearchStatus){dockSearchStatus.style.display="none";}if(!items.length){ dockSuggest.style.display="none"; dockSuggest.innerHTML=""; return; }
+        const data = await jsonp(WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=10');
+        const items = (data && data.ok && Array.isArray(data.items)) ? data.items : [];
+        if(!items.length){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
         dockSuggest.innerHTML = items.map(it=>{
-          const name = String(it.company||"").replaceAll('"','&quot;');
+          const name = (it.company||'').replaceAll('"','&quot;');
           const meta = it.timestamp ? ('<span style="color:#6b7280;font-size:12px">обновлено: '+String(it.timestamp).replaceAll('<','&lt;')+'</span>') : '';
-          return '<div class="dockItem" data-row="'+it.row+'" data-company="'+name+'"><b>'+name+'</b>'+meta+'</div>';
-        }).join("");
-        dockSuggest.style.display="block";
-        dockSuggest.querySelectorAll(".dockItem").forEach(el=>{
-          const row = Number(el.getAttribute("data-row")||0);
-          const comp = el.getAttribute("data-company")||"";
-          if(!row) return;
-          el.addEventListener("click", ()=>{
-            dockSuggest.style.display="none";
-            dockSuggest.innerHTML="";
-            loadCompanyByRow(row, comp);
+          return '<div class="dockItem" data-company="'+name+'"><b>'+name+'</b>'+meta+'</div>';
+        }).join('');
+        dockSuggest.style.display='block';
+        dockSuggest.querySelectorAll('.dockItem').forEach(el=>{
+          el.addEventListener('click', ()=>{
+            const c = el.getAttribute('data-company')||'';
+            dockSuggest.style.display='none';
+            dockCompany.value = c;
+            setCompanyInLinks(c);
+            const u = new URL(location.href);
+            u.searchParams.set('company', c);
+            location.href = u.toString();
           });
         });
       }catch(e){
-        dockSuggest.style.display="none"; dockSuggest.innerHTML="";
+        dockSuggest.style.display='none';
       }
-    }, 250);
-  });
-
-  dockCompany.addEventListener("keydown", (ev)=>{
-    if(ev.key === "Enter"){
-      ev.preventDefault();
-      const name = dockCompany.value.trim();
-      loadCompanyByName(name);
     }
-  });
-
-  if(dockLoadBtn){
-    dockLoadBtn.addEventListener("click", ()=>{
-      const name = dockCompany.value.trim();
-      loadCompanyByName(name);
-    });
-  }
-
-  // autoload from URL
-  try{
-    const u = new URL(location.href);
-    const c = (u.searchParams.get("company")||"").trim();
-    if(c){
-      dockCompany.value = c;
-      setCompanyInLinks(c);
-      loadCompanyByName(c);
-    }
-  }catch(e){}
-})();
+  })();
 </script>
+
+
 <div id="globalLoader" aria-hidden="true">
   <div class="box" role="status" aria-live="polite">
     <div class="spinner"></div>
