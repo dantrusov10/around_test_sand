@@ -3435,12 +3435,17 @@ async function gsSearch(q){
   }
 
 async function gsGetByCompany(company){
-  const base = (typeof GOOGLE_SHEETS_WEBAPP_URL === "string" && GOOGLE_SHEETS_WEBAPP_URL) ? GOOGLE_SHEETS_WEBAPP_URL : "";
-  if(!base) throw new Error("GOOGLE_SHEETS_WEBAPP_URL is not set");
-  const url = base + "?action=get&company=" + encodeURIComponent(company);
-  return await jsonp(url);
+  const url = `${WEBAPP_URL}?action=get&company=${encodeURIComponent(company)}`;
+  const r = await fetch(url,{method:"GET"});
+  const data = await r.json();
+  if(!data) return {ok:false};
+  let item = data.item || (data.data && data.data.item) || data.data || data;
+  let p = (item && item.payload !== undefined) ? item.payload : item;
+  if(typeof p === "string"){ try{ p = JSON.parse(p); }catch(e){} }
+  if(p && typeof p === "object" && typeof p.payload === "string"){ try{ p.payload = JSON.parse(p.payload);}catch(e){} }
+  const out = (p && p.payload && typeof p.payload === "object") ? p.payload : p;
+  return {ok:true,item:out};
 }
-
 
 
 function extractPayloadFromItem(item){
