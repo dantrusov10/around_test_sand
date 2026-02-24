@@ -277,6 +277,9 @@ body.no-kpi .kpiBar{display:none !important;}
 .kpiModal .note{margin-top:10px;color:#64748b;font-size:12px}
 .kpi-clickable{cursor:pointer;user-select:none}
 .kpi-clickable:active{transform:translateY(1px)}
+
+body.no-kpi .kpiModal{display:none!important;}
+body.no-kpi .kpiBar{display:none!important;}
 </style>
 
 
@@ -321,7 +324,7 @@ body.no-kpi .kpiBar{display:none !important;}
 </style>
 
 </head>
-<body class="view-psi no-kpi">
+<body class="view-psi no-kpi no-kpi">
   <div class="quickDock">
     <div class="card pad">
       <div class="dockTitle">Быстрый вход</div>
@@ -2956,7 +2959,7 @@ function setupKpiExplain(){
   document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") kpiModalClose(); });
 }
 
-document.addEventListener("DOMContentLoaded", ()=>{ try{ setupKpiExplain(); }catch(e){ console.error("KPI modal init error", e); } });
+document.addEventListener("DOMContentLoaded", ()=>{ if(document.body.classList.contains('no-kpi')) return; try{ setupKpiExplain(); }catch(e){ console.error('KPI modal init error', e); } });
 
 document.addEventListener("DOMContentLoaded", ()=>{ try{ recalc(); }catch(e){ console.error(e); } });
 
@@ -3437,19 +3440,11 @@ async function gsSearch(q){
     return await jsonp(url); // JSONP to bypass CORS for local HTML
   }
 
-  async function gsGetByRow(row){
-    const base = (typeof GOOGLE_SHEETS_WEBAPP_URL === "string" && GOOGLE_SHEETS_WEBAPP_URL) ? GOOGLE_SHEETS_WEBAPP_URL : "";
-    if(!base) throw new Error("GOOGLE_SHEETS_WEBAPP_URL is not set");
-    const url = `${base}?action=get&row=${encodeURIComponent(row)}`;
-    return await jsonp(url); // JSONP to bypass CORS for local HTML
-  }
-
-  // Preferred API: load latest record by company name
   async function gsGetByCompany(company){
     const base = (typeof GOOGLE_SHEETS_WEBAPP_URL === "string" && GOOGLE_SHEETS_WEBAPP_URL) ? GOOGLE_SHEETS_WEBAPP_URL : "";
     if(!base) throw new Error("GOOGLE_SHEETS_WEBAPP_URL is not set");
-    const url = `${base}?action=get&company=${encodeURIComponent(company||"")}`;
-    return await jsonp(url);
+    const url = `${base}?action=get&company=${encodeURIComponent(company)}`;
+    return await jsonp(url); // JSONP to bypass CORS for local HTML
   }
 
 
@@ -3484,8 +3479,180 @@ async function gsSearch(q){
     return null;
   }
 
+  // Rebuild table sections from flat sheet columns when loading a company.
+  // Sheets rows are flat (req_01_text, psi_01_scn, prod_01_biz, ...), while the UI expects arrays.
+  function rebuildTablesFromFlat_(data){
+    if(!data || typeof data !== "object") return;
+    const pick = (k) => {
+      if (data[k] !== undefined) return data[k];
+      const lk = String(k).toLowerCase();
+      if (data[lk] !== undefined) return data[lk];
+      return "";
+    };
+
+    // --- Fallback: if Apps Script stored full arrays as JSON strings in columns (requirements/productRequirements/psi)
+    // Some older/newer sheets may store these as JSON (e.g., "[{...}]" ). Prefer them when present.
+    function tryParseJsonArray(v){
+      if(typeof v!=="string") return null;
+      const s=v.trim();
+      if(!s) return null;
+      if(!(s.startsWith("[") && s.endsWith("]"))) return null;
+      try{
+        const arr = JSON.parse(s);
+        return Array.isArray(arr) ? arr : null;
+      }catch(e){ return null; }
+    }
+
+    const reqTbody = document.getElementById("reqTbody");
+    if(reqTbody){
+      // Prefer JSON array snapshot when available
+      const __arr = tryParseJsonArray(data.requirements || data.Requirements);
+      if(__arr){
+        reqTbody.innerHTML = "";
+        (__arr.length?__arr:[{}]).forEach(r=>addReqRow(r));
+      } else {
+      reqTbody.innerHTML = "";
+      const rows = [];
+      for(let i=1;i<=20;i++){
+        const n = String(i).padStart(2,"0");
+        const row = {
+          owner: pick(`req_${n}_owner`),
+          text: pick(`req_${n}_text`),
+          type: pick(`req_${n}_type`),
+          must: pick(`req_${n}_must`),
+          feas: pick(`req_${n}_feas`),
+          metric: pick(`req_${n}_metric`),
+        };
+        const hasAny = Object.values(row).some(v=>String(v??"").trim()!=="");
+        if(hasAny) rows.push(row);
+      }
+      if(rows.length===0) rows.push({});
+      rows.forEach(r=>addReqRow(r));      }
+
+    }
+
+    const psiTbody = document.getElementById("psiTbody");
+    if(psiTbody){
+      // Prefer JSON array snapshot when available
+      const __arr = tryParseJsonArray(data.psi || data.PSI);
+      if(__arr){
+        psiTbody.innerHTML = "";
+        (__arr.length?__arr:[{}]).forEach(r=>addPsiRow(r));
+      } else {
+      psiTbody.innerHTML = "";
+      const rows = [];
+      for(let i=1;i<=20;i++){
+        const n = String(i).padStart(2,"0");
+        const row = {
+          req: pick(`psi_${n}_req`),
+          scn: pick(`psi_${n}_scn`),
+          exp: pick(`psi_${n}_exp`),
+          act: pick(`psi_${n}_act`),
+          ok: pick(`psi_${n}_ok`),
+          acc: pick(`psi_${n}_acc`),
+          note: pick(`psi_${n}_note`),
+        };
+        const hasAny = Object.values(row).some(v=>String(v??"").trim()!=="");
+        if(hasAny) rows.push(row);
+      }
+      if(rows.length===0) rows.push({});
+      rows.forEach(r=>addPsiRow(r));      }
+
+    }
+
+    const prodTbody = document.getElementById("prodReqTbody");
+    if(prodTbody){
+      // Prefer JSON array snapshot when available
+      const __arr = tryParseJsonArray(data.productRequirements || data.ProductRequirements || data.prodRequirements || data.ProdRequirements);
+      if(__arr){
+        prodTbody.innerHTML = "";
+        (__arr.length?__arr:[{}]).forEach(r=>addProdReqRow(r));
+      } else {
+      prodTbody.innerHTML = "";
+      const rows = [];
+      for(let i=1;i<=30;i++){
+        const n = String(i).padStart(2,"0");
+        // Some sheets used different prefixes for product requirements.
+        // Support: prod_XX_*, prodreq_XX_*, product_XX_*.
+        const pickProd = (suffix) => (
+          pick(`prod_${n}_${suffix}`) ||
+          pick(`prodreq_${n}_${suffix}`) ||
+          pick(`product_${n}_${suffix}`)
+        );
+        const row = {
+          biz: pickProd("biz"),
+          func: pickProd("func"),
+          type: pickProd("type"),
+          must: pickProd("must"),
+          feas: pickProd("feas"),
+        };
+        const hasAny = Object.values(row).some(v=>String(v??"").trim()!=="");
+        if(hasAny) rows.push(row);
+      }
+      if(rows.length===0) rows.push({});
+      rows.forEach(r=>addProdReqRow(r));      }
+
+    }
+  }
+
   function applyPayload(payload){
     if(!payload || typeof payload !== "object") return;
+
+    // Guard: while we are applying data from Sheets, we must avoid any
+    // auto-save triggers and reduce noisy intermediate recalcs.
+    window.__ITMEN_IS_LOADING = true;
+    // normalize legacy/alt keys coming from Sheets / Apps Script
+    try{
+      const p = payload;
+      if(p.sales_manager==null && p.salesManager!=null) p.sales_manager = p.salesManager;
+      if(p.sales_manager==null && p.sales!=null) p.sales_manager = p.sales;
+      if(p.presale_manager==null && p.preSaleManager!=null) p.presale_manager = p.preSaleManager;
+      if(p.presale_manager==null && p.presaleManager!=null) p.presale_manager = p.presaleManager;
+      if(p.presale_manager==null && p.presale!=null) p.presale_manager = p.presale;
+      if(p.timestamp==null && p.Timestamp!=null) p.timestamp = p.Timestamp;
+      if(p.run_id==null && p.runId!=null) p.run_id = p.runId;
+      if(p.sources==null && p.data_sources!=null) p.sources = p.data_sources;
+      if(p.sources==null && p["Источники данных"]!=null) p.sources = p["Источники данных"];
+      // pilot dot-notation (from flattenForSheets or Apps Script)
+      if(p.pilotGoal==null && p["pilot.goal"]!=null) p.pilotGoal = p["pilot.goal"];
+      if(p.pilotScope==null && p["pilot.scope"]!=null) p.pilotScope = p["pilot.scope"];
+      if(p.pilotSummary==null && p["pilot.summary"]!=null) p.pilotSummary = p["pilot.summary"];
+      if(p.pilotDecision==null && p["pilot.decision"]!=null) p.pilotDecision = p["pilot.decision"];
+      if(p.recommendedConfig==null && p["pilot.recommendedConfig"]!=null) p.recommendedConfig = p["pilot.recommendedConfig"];
+      if(p.pilotTasks_removed==null && p["pilot.tasks"]!=null) p.pilotTasks_removed = p["pilot.tasks"];
+      if(p.pilotKpi_removed==null && p["pilot.kpi"]!=null) p.pilotKpi_removed = p["pilot.kpi"];
+    }catch(e){}
+
+
+    // 0) If the sheet row contains a full JSON snapshot in 'payload' column — parse it.
+    // It may be either:
+    //  - a flat object (same keys as columns), or
+    //  - a structured payload (meta/maturity/requirements/psi/pilot...).
+    try{
+      const raw = payload.payload;
+      let full = null;
+      if(typeof raw === "string"){
+        let s = raw.trim();
+        // sometimes payload is double-encoded JSON string
+        for(let i=0;i<2;i++){
+          if(s.startsWith('"') && s.endsWith('"')){ try{ s = JSON.parse(s); }catch(_e){} }
+        }
+        if(s && (s.startsWith("{") || s.startsWith("["))){
+          try{ full = JSON.parse(s); }catch(_e){}
+        }
+      } else if(raw && typeof raw === "object"){
+        full = raw;
+      }
+
+      if(full && typeof full === "object"){
+        if(full.meta || full.maturity || full.requirements || full.productRequirements || full.psi || full.pilot){
+          try{ if(typeof apply==="function") apply(full); }catch(e){ console.warn("apply(structured) failed", e); }
+        } else {
+          payload = Object.assign({}, full, payload);
+        }
+      }
+    }catch(e){}
+
 
     // 1) basic fields by id
     Object.entries(payload).forEach(([id, val]) => {
@@ -3532,7 +3699,10 @@ async function gsSearch(q){
       }
     }catch(e){}
 
-    // 3) kick recalculation (if button exists)
+    // 3) rebuild tables from flat sheet columns (requirements/PSI/product requirements)
+    try{ rebuildTablesFromFlat_(payload); }catch(e){ console.warn("rebuildTablesFromFlat_ failed", e); }
+
+    // 4) kick recalculation (if button exists)
     const btn = document.getElementById("btnRecalc");
     if(btn) btn.click();
     // 3) maturity tables (tech/proc) and risk table are stored in Sheets as tech_01_score etc.
@@ -3555,10 +3725,10 @@ async function gsSearch(q){
             }
           }
           if(payload[keyN] !== undefined && payload[keyN] !== null){
-            const ta = row.querySelector("textarea");
-            if(ta){
-              ta.value = String(payload[keyN]);
-              ta.dispatchEvent(new Event("input", { bubbles:true }));
+            const field = row.querySelector("input,textarea");
+            if(field){
+              field.value = String(payload[keyN]);
+              field.dispatchEvent(new Event("input", { bubbles:true }));
             }
           }
         }
@@ -3580,10 +3750,10 @@ async function gsSearch(q){
             }
           }
           if(payload[keyN] !== undefined && payload[keyN] !== null){
-            const ta = row.querySelector("textarea");
-            if(ta){
-              ta.value = String(payload[keyN]);
-              ta.dispatchEvent(new Event("input", { bubbles:true }));
+            const field = row.querySelector("input,textarea");
+            if(field){
+              field.value = String(payload[keyN]);
+              field.dispatchEvent(new Event("input", { bubbles:true }));
             }
           }
         }
@@ -3595,6 +3765,9 @@ async function gsSearch(q){
     }catch(e){
       console.warn("applyPayload maturity/risk fill failed", e);
     }
+
+    // done
+    window.__ITMEN_IS_LOADING = false;
 
   }
 
@@ -3643,7 +3816,8 @@ async function gsSearch(q){
 
     const __memCache = new Map();
 const LS_KEY = "itmen_gs_search_cache_v1";
-const LS_TTL_MS = 6 * 60 * 60 * 1000; // 6h
+// Keep TTL small so new companies appear quickly in suggestions.
+const LS_TTL_MS = 5 * 60 * 1000; // 5 min
 
 function lsLoad(){
   try{
