@@ -3586,7 +3586,19 @@ function setupKpiExplain(){
     });
   });
 
-  // NOTE: Hover-to-open disabled (accidental popups)
+  // hover open (only on devices that support hover)
+  const canHover = window.matchMedia && window.matchMedia("(hover:hover)").matches;
+  if(canHover){
+    let t=null, lastId=null;
+    bar.addEventListener("pointerover",(e)=>{
+      const stat = e.target.closest(".stat[id]");
+      if(!stat) return;
+      lastId = stat.id;
+      clearTimeout(t);
+      t = setTimeout(()=>{ if(lastId) kpiModalOpen(lastId); }, 550);
+    });
+    bar.addEventListener("pointerout",()=>{ clearTimeout(t); lastId=null; });
+  }
 
   // modal close handlers
   const closeBtn = document.getElementById("kpiModalClose");
