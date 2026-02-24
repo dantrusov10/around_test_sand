@@ -389,7 +389,12 @@ body{overflow-x:hidden;}
 @keyframes glspin{to{transform:rotate(360deg)}}
 </style>
 <style id="pageVisibilityRules">
-/* Page: Full */
+
+/* Page: Product */
+#riskHeatmapCard, #cardMaturity, #cardFinance, #cardReq, #cardPSI, #projectRisksWrap { display:none !important; }
+#cardPassport .row:not(:first-of-type){display:none !important;}
+.reqDot, .reqMark, .requiredDot, .required { display:none !important; }
+label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#company) .required{ display:inline-block !important; }
 </style>
 <style>
 /* === v32 page mode filters (keep DOM for scripts, hide for UX) === */
@@ -424,7 +429,7 @@ body.mode-product .passportOnly{display:none!important;}
 /* Product page: hide everything except header+company card+requirements product */
 body.mode-product main > section:not(#companyCard):not(.productBlock):not(#productBlock){display:none!important;}
 </style></head>
-<body class="view-product mode-product">
+<body class="view-product">
 <div class="quickDock">
 <div class="card pad">
 <div class="dockTitle">Быстрый вход</div>
@@ -4760,6 +4765,7 @@ function syncToGoogleSheets(){
   if(!base){ console.warn("Google Sheets URL is not set"); return; }
   const actionUrl = base + (base.includes("?") ? "&" : "?") + "action=save";
   const payload = (typeof buildSheetPayloadExact==="function") ? buildSheetPayloadExact() : {};
+  try{ if(!payload.company){ const c=document.getElementById("company")?.value || document.getElementById("dockCompany")?.value || ""; payload.company = String(c||"").trim(); } }catch(_e){}
   // create hidden iframe + form
   let ifr = document.getElementById("gsHiddenFrame");
   if(!ifr){
@@ -4881,6 +4887,7 @@ function syncToGoogleSheets(){
 
     const initial = getCompanyFromUrl();
     dockCompany.value = initial;
+    try{ const cEl=document.getElementById('company'); if(cEl && !cEl.value) cEl.value = initial; }catch(_e){}
     setCompanyInLinks(initial);
 
     let timer=null;
@@ -4888,12 +4895,14 @@ function syncToGoogleSheets(){
       clearTimeout(timer);
       const q = dockCompany.value.trim();
       setCompanyInLinks(q);
+      try{ const cEl=document.getElementById('company'); if(cEl) cEl.value = q; }catch(_e){}
       if(q.length < 3){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
       timer = setTimeout(()=>runSearch(q), 250);
     });
 
     dockCompany.addEventListener('keydown', (ev)=>{
       if(ev.key === 'Enter'){
+        try{ const cEl=document.getElementById('company'); if(cEl) cEl.value = dockCompany.value.trim(); }catch(_e){}
         const c = dockCompany.value.trim();
         const u = new URL(location.href);
         if(c) u.searchParams.set('company', c); else u.searchParams.delete('company');
