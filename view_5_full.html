@@ -328,6 +328,33 @@ body{overflow-x:hidden;}
 .dockLoadBtn{border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer}
 .dockLoadBtn:hover{filter:brightness(0.98)}
 .dockTop{display:flex;gap:10px;align-items:center}
+
+/* v38: center questions/requirements blocks, prevent horizontal scroll */
+body.view-pilot #cardReq,
+body.view-pilot #cardMaturity,
+body.view-product #prodReqCard,
+body.view-psi #cardPSI,
+body.view-full #cardMaturity,
+body.view-full #cardReq,
+body.view-full #prodReqCard,
+body.view-full #cardPSI{
+  max-width:1120px;
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+body.view-pilot table,
+body.view-product table,
+body.view-psi table,
+body.view-full table{
+  min-width:0 !important;
+}
+body.view-pilot .card,
+body.view-product .card,
+body.view-psi .card,
+body.view-full .card{
+  overflow-x:hidden;
+}
+
 </style>
 <style id="kpi-modal-css">
 /* ===== KPI explain modal ===== */
@@ -421,10 +448,10 @@ body{overflow-x:hidden;}
 label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#company) .required{ display:inline-block !important; }
 </style>
 </meta></head>
-<body class="view-full" class="pageMode-full">
+<body class="view-full pageMode-full">
 
 <div id="buildBadge" style="position:fixed;z-index:99999;bottom:12px;right:12px;background:#111827;color:#fff;padding:8px 10px;border-radius:10px;font:12px/1.2 system-ui;box-shadow:0 10px 30px rgba(0,0,0,.15);opacity:.92">
-  BUILD <b>v35</b> • full
+  BUILD <b>v38</b> • full
 </div>
 
 <div class="quickDock">
