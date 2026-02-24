@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="ru">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;">
+<meta content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;" http-equiv="Content-Security-Policy"/>
 <script src="config.js"></script>
 <script src="question_bank.js"></script>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>Карта тестирования + ПСИ — ПСИ</title>
 <style>
 :root{
@@ -302,7 +303,6 @@ body{overflow-x:hidden;}
 .dockLoadBtn:hover{filter:brightness(0.98)}
 .dockTop{display:flex;gap:10px;align-items:center}
 </style>
-
 <style id="kpi-modal-css">
 /* ===== KPI explain modal ===== */
 .kpiModal{position:fixed;inset:0;display:none;z-index:9999}
@@ -351,8 +351,6 @@ body{overflow-x:hidden;}
 .kpi-clickable{cursor:pointer;user-select:none}
 .kpi-clickable:active{transform:translateY(1px)}
 </style>
-
-
 <style id="gs-reverse-sync-css">
 /* Reverse sync (Google Sheets) — company autocomplete */
 .companySuggestWrap{ position:relative; }
@@ -382,8 +380,6 @@ body{overflow-x:hidden;}
   font-size:12px;
 }
 </style>
-
-
 <style id="global-loader-css">
 #globalLoader{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:100000;background:rgba(255,255,255,.65);backdrop-filter: blur(6px);}
 #globalLoader .box{background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.18);padding:16px 18px;min-width:280px;max-width:520px;display:flex;gap:12px;align-items:center}
@@ -392,705 +388,632 @@ body{overflow-x:hidden;}
 #globalLoader .sub{color:#64748b;font-size:12px;margin:2px 0 0 0;line-height:1.35}
 @keyframes glspin{to{transform:rotate(360deg)}}
 </style>
-
-
 <style id="pageVisibilityRules">
 /* Page: Full */
 </style>
-</head>
-<body class="view-psi">
-  <div class="quickDock">
-    <div class="card pad">
-      <div class="dockTitle">Быстрый вход</div>
-      <div class="dockSearchWrap dockTop">
-        <div class="dockIcon">🔎</div>
-        <input id="dockCompany" class="dockSearch" placeholder="Введите компанию" autocomplete="off"/>
-        <button id="dockLoadBtn" class="dockLoadBtn" type="button" title="Загрузить">Загрузить</button>
-      </div>
-      <div id="dockSuggest" class="dockSuggest"></div>
+<style>
+/* === v32 page mode filters (keep DOM for scripts, hide for UX) === */
+body.mode-indices .section-passport,
+body.mode-indices #passportBlock,
+body.mode-indices [data-block="passport"],
+body.mode-indices .passportOnly{display:none!important;}
 
-      <div style="height:12px"></div>
-      <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
-      <div class="toolGrid">
-        <a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+body.mode-pilot .section-passport,
+body.mode-pilot #passportBlock,
+body.mode-pilot [data-block="passport"],
+body.mode-pilot .passportOnly{display:none!important;}
+
+body.mode-psi .section-passport,
+body.mode-psi #passportBlock,
+body.mode-psi [data-block="passport"],
+body.mode-psi .passportOnly{display:none!important;}
+
+body.mode-product .section-passport,
+body.mode-product #passportBlock,
+body.mode-product [data-block="passport"],
+body.mode-product .passportOnly{display:none!important;}
+
+/* Kill any modal/backdrop that can block clicks */
+#kpiModal, .kpiModal, .modal, .modal-backdrop, .overlay, .backdrop{
+  display:none!important;
+  pointer-events:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+}
+</style></head>
+<body class="view-psi mode-psi">
+<div class="quickDock">
+<div class="card pad">
+<div class="dockTitle">Быстрый вход</div>
+<div class="dockSearchWrap dockTop">
+<div class="dockIcon">🔎</div>
+<input autocomplete="off" class="dockSearch" id="dockCompany" placeholder="Введите компанию"/>
+<button class="dockLoadBtn" id="dockLoadBtn" title="Загрузить" type="button">Загрузить</button>
+</div>
+<div class="dockSuggest" id="dockSuggest"></div>
+<div style="height:12px"></div>
+<div class="dockTitle" style="margin-bottom:0">Инструменты</div>
+<div class="toolGrid">
+<a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
 <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-        <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-        <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-        <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-        <a class="tool" href="view_4_psi.html"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-        <a class="tool" href="view_5_full.html"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
-      </div>
-    </div>
-  </div>
+<a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+<a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+<a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+<a class="tool" href="view_4_psi.html"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+<a class="tool" href="view_5_full.html"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+</div>
+</div>
+</div>
 <div class="container">
-  <header >
-    <div>
-      <h1>Карта тестирования + ПСИ (пилот) — Инферит ИТМен</h1>
-      <div class="legend">
-        <span class="pill">Тех/Проц: 0 = нет · 1 = частично · 2 = есть</span>
-        <span class="pill">Риски: 1 = да · 0 = нет</span>
-        <span class="pill">Возможность: влияет на «индекс реализуемости»</span>
-        <span class="pill">ПСИ: «Приняли?» = Да/Нет</span>
-      </div>
-    </div>
-    <div class="btns">
-      <label style="display:grid;gap:6px;font-size:12px;min-width:180px">Версия PDF
+<header>
+<div>
+<h1>Карта тестирования + ПСИ (пилот) — Инферит ИТМен</h1>
+<div class="legend">
+<span class="pill">Тех/Проц: 0 = нет · 1 = частично · 2 = есть</span>
+<span class="pill">Риски: 1 = да · 0 = нет</span>
+<span class="pill">Возможность: влияет на «индекс реализуемости»</span>
+<span class="pill">ПСИ: «Приняли?» = Да/Нет</span>
+</div>
+</div>
+<div class="btns">
+<label style="display:grid;gap:6px;font-size:12px;min-width:180px">Версия PDF
         <select id="pdfMode" style="padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--field);font-weight:700">
-          <option value="internal">Внутренняя</option>
-          <option value="client">Клиентская</option>
-        </select>
-      </label>
-      <label style="display:grid;gap:6px;font-size:12px;min-width:180px">Режим интервью
+<option value="internal">Внутренняя</option>
+<option value="client">Клиентская</option>
+</select>
+</label>
+<label style="display:grid;gap:6px;font-size:12px;min-width:180px">Режим интервью
         <select id="interviewMode" style="padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--field);font-weight:700">
-          <option value="quick">Быстрый</option>
-          <option value="deep">Глубокий</option>
-        </select>
-      </label>
-      <input id="benchMode" type="hidden" value="client">
+<option value="quick">Быстрый</option>
+<option value="deep">Глубокий</option>
+</select>
+</label>
+<input id="benchMode" type="hidden" value="client"/>
 <div id="reqStatus" style="align-self:end;color:#b91c1c;font-size:12px;display:none;max-width:260px;line-height:1.2"></div>
-
-      <button class="btn ghost" id="btnLoadCompany">Подгрузить</button>
-      <button class="btn" id="btnRecalc">Пересчитать</button>
+<button class="btn ghost" id="btnLoadCompany">Подгрузить</button>
+<button class="btn" id="btnRecalc">Пересчитать</button>
 <button class="btn ghost" id="btnPrint">Печать / PDF</button>
-      <button class="btn ghost" id="btnExportXlsx">Выгрузить Excel</button>
-      <button class="btn ghost" id="btnCLevel">C-level вывод</button>
-    </div>
-
-    <!-- KPI moved to header -->
-    <div class="kpiBar">
-  <div class="kpiGroupTitle">Клиентские индексы</div>
-
-  <div class="stat" id="kPSI">
-    <div class="label">PSI 2.0 (итог)</div>
-    <div class="value mono" id="psi2Score">—%</div>
-    <div class="small" id="psi2Label">—</div>
-  </div>
-
-  <div class="stat" id="kCoI">
-    <div class="label">Cost of Inaction (₽/год)</div>
-    <div class="value mono" id="coiRub">—</div>
-    <div class="small">Потери от ручных операций, неиспользуемого ПО/VM и простоев.</div>
-  </div>
-
-  <div class="stat" id="kRecover">
-    <div class="label">Потенциал возврата бюджета</div>
-    <div class="value mono" id="recoverIndex">—%</div>
-    <div class="small" id="recoverLabel">Лицензии и виртуальные ресурсы.</div>
-  </div>
-
-  <div class="stat" id="kTech">
-    <div class="label">Индекс тех. зрелости</div>
-    <div class="value mono" id="techIndex">—%</div>
-    <div class="small">Готовность по данным/источникам.</div>
-  </div>
-
-  <div class="stat" id="kProc">
-    <div class="label">Индекс процессной зрелости</div>
-    <div class="value mono" id="procIndex">—%</div>
-    <div class="small">Предсказуемость внедрения.</div>
-  </div>
-
-  <div class="kpiGroupTitle">Внутренние индексы</div>
-
-  <div class="stat" id="kCrit">
-    <div class="label">Категория проекта</div>
-    <div class="value mono" id="critScore">—%</div>
-    <div class="small" id="critLabel">—</div>
-  </div>
-
-  <div class="stat" id="kFeas">
-    <div class="label">Индекс реализуемости требований к пилоту</div>
-    <div class="value mono" id="feasScore">—%</div>
-    <div class="small">Средний балл по «возможности» (раздел 4).</div>
-  </div>
-
-  <div class="stat" id="kProdFeas">
-    <div class="label">Индекс реализуемости требований к продукту</div>
-    <div class="value mono" id="prodFeasScore">—%</div>
-    <div class="small">Средний балл по «возможности» (раздел 6).</div>
-  </div>
-
-  <div class="stat" id="kPain">
-    <div class="label">Индекс экономического давления</div>
-    <div class="value mono" id="painIndex">—%</div>
-    <div class="small" id="painLabel">—</div>
-  </div>
-
-  <div class="stat" id="kProb">
-    <div class="label">Вероятность сделки</div>
-    <div class="value mono" id="probIndex">—%</div>
-    <div class="small" id="probLabel">—</div>
-  </div>
-
-
-  <div class="kpiBar riskReady" style="margin-top:8px">
-    <div class="kpiGroupTitle">Риск и готовность</div>
-
-    <div class="stat clickable" id="kPilotReady" data-detail="pilot">
-      <div class="label">Pilot Readiness Index</div>
-      <div class="value mono" id="pilotReady">—%</div>
-      <div class="small" id="pilotReadyLabel">—</div>
-    </div>
-
-    <div class="stat clickable" id="kMainProblem" data-detail="problem">
-      <div class="label">Основная проблема</div>
-      <div class="value" id="mainProblem">—</div>
-      <div class="small" id="mainProblemHint">—</div>
-    </div>
-
-    <div class="stat clickable" id="kModules" data-detail="modules">
-      <div class="label">Рекомендуемая конфигурация</div>
-      <div class="value" id="recModules">—</div>
-      <div class="small">Автоматически по порогам риска.</div>
-    </div>
-
-    <div class="stat clickable" id="kDemo" data-detail="demo">
-      <div class="label">Приоритет демо</div>
-      <div class="value" id="demoFocus">—</div>
-      <div class="small" id="demoFocusHint">—</div>
-    </div>
-  </div>
+<button class="btn ghost" id="btnExportXlsx">Выгрузить Excel</button>
+<button class="btn ghost" id="btnCLevel">C-level вывод</button>
 </div>
-  </header>
-
-  <div class="grid">
-
-  <div class="card" id="riskHeatmapCard">
-    <h2>Heatmap по зонам риска (автоматически)</h2>
-    <div class="small">Формула по зоне: Σ(Вес×Ответ) / Σ(Вес зоны). Ответ: Да=0, Частично=0.5, Нет=1.</div>
-    <div class="hr"></div>
-
-    <div class="row">
-      <div>
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-          <b>Серые зоны (охват / архитектура)</b>
-          <span class="mono" id="riskGreyPct">—%</span>
-        </div>
-        <div class="bar"><span id="riskGreyBar"></span></div>
-      </div>
-
-      <div>
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-          <b>Лицензионный риск</b>
-          <span class="mono" id="riskLicPct">—%</span>
-        </div>
-        <div class="bar"><span id="riskLicBar"></span></div>
-      </div>
-    </div>
-
-    <div class="row" style="margin-top:10px">
-      <div>
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-          <b>Операционная неэффективность / ручной труд</b>
-          <span class="mono" id="riskOpsPct">—%</span>
-        </div>
-        <div class="bar"><span id="riskOpsBar"></span></div>
-      </div>
-
-      <div>
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-          <b>Управляемость / отсутствие истории</b>
-          <span class="mono" id="riskGovPct">—%</span>
-        </div>
-        <div class="bar"><span id="riskGovBar"></span></div>
-      </div>
-    </div>
-
-    <div class="hr"></div>
-    <h3>Стоимость бездействия (₽/год)</h3>
-    <div class="row">
-      <div class="stat" style="box-shadow:none">
-        <div class="label">Лицензии (ПО)</div>
-        <div class="value mono" id="coiLic">—</div>
-        <div class="small">Бюджет лицензий × % неиспользуемого ПО</div>
-      </div>
-      <div class="stat" style="box-shadow:none">
-        <div class="label">Простои</div>
-        <div class="value mono" id="coiDown">—</div>
-        <div class="small">Часы простоя × Стоимость часа</div>
-      </div>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <div class="stat" style="box-shadow:none">
-        <div class="label">Ручной труд</div>
-        <div class="value mono" id="coiManual">—</div>
-        <div class="small">Кол-во ИТ × зарплата × % ручных операций</div>
-      </div>
-      <div class="stat" style="box-shadow:none">
-        <div class="label">Итого</div>
-        <div class="value mono" id="coiTotal">—</div>
-        <div class="small">Сумма 3 компонентов</div>
-      </div>
-    </div>
-  </div>
-
-
-  <div class="card" id="cLevelBlock" style="display:none">
-    <h2>C-level вывод (авто)</h2>
-    <div class="small">Сформируйте краткий вывод для CEO/CFO/CIO: «где проседаем относительно рынка», «финансовый эффект», «следующий шаг».</div>
-    <div class="row" style="margin-top:10px">
-      <div style="grid-column:1 / -1;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <span class="pill" id="dataAccuracyPill">Точность отчёта: —%</span>
-        <span class="pill" id="dataSourcesPill">Источники: —</span>
-      </div>
-    </div>
-    <div class="small" style="margin-top:6px">Чтобы повысить точность, ответьте на 3–5 вопросов ниже (подбираются автоматически по влиянию на PSI).</div>
-    <div class="card" style="margin-top:10px;background:rgba(255,255,255,.04)">
-      <h3 style="margin:0 0 8px">Топ‑вопросы для повышения точности</h3>
-      <ol id="topQuestions" class="small" style="margin:0;padding-left:18px;line-height:1.45"></ol>
-    </div>
-    <div class="card" id="benchTransparencyCard" style="margin-top:10px;background:rgba(255,255,255,.04)">
-      <details id="benchDetails" style="cursor:pointer">
-        <summary style="font-weight:900">Показать, какие данные подставлены по бенчмаркам</summary>
-        <div class="small" id="benchDetailsMeta" style="margin-top:10px;opacity:.9"></div>
-        <div style="overflow:auto;margin-top:10px">
-          <table class="table" style="min-width:760px">
-            <thead>
-              <tr>
-                <th>Параметр</th>
-                <th>Значение</th>
-                <th>P25–P75</th>
-                <th>Источник</th>
-              </tr>
-            </thead>
-            <tbody id="benchDetailsTbody"></tbody>
-          </table>
-        </div>
-      </details>
-    </div>
-
-    <div class="row" style="margin-top:10px">
-      <label style="grid-column:1 / -1">Текст вывода
-        <textarea id="cLevelText" placeholder="Нажмите «C-level вывод» вверху — сюда подставится текст."></textarea>
-      </label>
-    </div>
-    <div class="btns" style="margin-top:10px">
-      <button class="btn ghost" id="btnCopyCLevel">Скопировать</button>
-      <button class="btn ghost" id="btnHideCLevel">Скрыть</button>
-    </div>
-  </div>
-
-    <div class="card" id="cardPassport">
-      <h2>1) Паспорт проекта</h2>
-
+<!-- KPI moved to header -->
+<div class="kpiBar">
+<div class="kpiGroupTitle">Клиентские индексы</div>
+<div class="stat" id="kPSI">
+<div class="label">PSI 2.0 (итог)</div>
+<div class="value mono" id="psi2Score">—%</div>
+<div class="small" id="psi2Label">—</div>
+</div>
+<div class="stat" id="kCoI">
+<div class="label">Cost of Inaction (₽/год)</div>
+<div class="value mono" id="coiRub">—</div>
+<div class="small">Потери от ручных операций, неиспользуемого ПО/VM и простоев.</div>
+</div>
+<div class="stat" id="kRecover">
+<div class="label">Потенциал возврата бюджета</div>
+<div class="value mono" id="recoverIndex">—%</div>
+<div class="small" id="recoverLabel">Лицензии и виртуальные ресурсы.</div>
+</div>
+<div class="stat" id="kTech">
+<div class="label">Индекс тех. зрелости</div>
+<div class="value mono" id="techIndex">—%</div>
+<div class="small">Готовность по данным/источникам.</div>
+</div>
+<div class="stat" id="kProc">
+<div class="label">Индекс процессной зрелости</div>
+<div class="value mono" id="procIndex">—%</div>
+<div class="small">Предсказуемость внедрения.</div>
+</div>
+<div class="kpiGroupTitle">Внутренние индексы</div>
+<div class="stat" id="kCrit">
+<div class="label">Категория проекта</div>
+<div class="value mono" id="critScore">—%</div>
+<div class="small" id="critLabel">—</div>
+</div>
+<div class="stat" id="kFeas">
+<div class="label">Индекс реализуемости требований к пилоту</div>
+<div class="value mono" id="feasScore">—%</div>
+<div class="small">Средний балл по «возможности» (раздел 4).</div>
+</div>
+<div class="stat" id="kProdFeas">
+<div class="label">Индекс реализуемости требований к продукту</div>
+<div class="value mono" id="prodFeasScore">—%</div>
+<div class="small">Средний балл по «возможности» (раздел 6).</div>
+</div>
+<div class="stat" id="kPain">
+<div class="label">Индекс экономического давления</div>
+<div class="value mono" id="painIndex">—%</div>
+<div class="small" id="painLabel">—</div>
+</div>
+<div class="stat" id="kProb">
+<div class="label">Вероятность сделки</div>
+<div class="value mono" id="probIndex">—%</div>
+<div class="small" id="probLabel">—</div>
+</div>
+<div class="kpiBar riskReady" style="margin-top:8px">
+<div class="kpiGroupTitle">Риск и готовность</div>
+<div class="stat clickable" data-detail="pilot" id="kPilotReady">
+<div class="label">Pilot Readiness Index</div>
+<div class="value mono" id="pilotReady">—%</div>
+<div class="small" id="pilotReadyLabel">—</div>
+</div>
+<div class="stat clickable" data-detail="problem" id="kMainProblem">
+<div class="label">Основная проблема</div>
+<div class="value" id="mainProblem">—</div>
+<div class="small" id="mainProblemHint">—</div>
+</div>
+<div class="stat clickable" data-detail="modules" id="kModules">
+<div class="label">Рекомендуемая конфигурация</div>
+<div class="value" id="recModules">—</div>
+<div class="small">Автоматически по порогам риска.</div>
+</div>
+<div class="stat clickable" data-detail="demo" id="kDemo">
+<div class="label">Приоритет демо</div>
+<div class="value" id="demoFocus">—</div>
+<div class="small" id="demoFocusHint">—</div>
+</div>
+</div>
+</div>
+</header>
+<div class="grid">
+<div class="card" id="riskHeatmapCard">
+<h2>Heatmap по зонам риска (автоматически)</h2>
+<div class="small">Формула по зоне: Σ(Вес×Ответ) / Σ(Вес зоны). Ответ: Да=0, Частично=0.5, Нет=1.</div>
+<div class="hr"></div>
 <div class="row">
-        <label>Компания
-          <input id="company" placeholder="ООО «Промресурс»">
-        </label>
-        <label>Отрасль
-          <select id="industry">
-            <option value="">— выбрать —</option>
-            <option>Промышленность</option><option>Телеком</option><option>Ритейл</option>
-            <option>Финансы</option><option>Госсектор</option><option>ИТ/интегратор</option><option>Другое</option>
-          </select>
-        </label>
-      </div>
-      <div class="row" style="margin-top:6px">
-        <div id="companyMeta" class="hint" style="flex:1;color:#6b7280;font-size:12px">—</div>
-        <button id="btnCompanyAll" class="btn ghost" style="display:none">Все записи</button>
-      </div>
+<div>
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+<b>Серые зоны (охват / архитектура)</b>
+<span class="mono" id="riskGreyPct">—%</span>
 </div>
-      <div class="row" style="margin-top:10px">
-        <label>Sales менеджер (ФИО)
-          <input id="sales_manager" placeholder="Имя Фамилия">
-        </label>
-        <label>Pre-Sale менеджер (ФИО)
-          <input id="presale_manager" placeholder="Имя Фамилия">
-        </label>
-      </div>
-
-
-      <div class="row" style="margin-top:10px">
-        <label>ЛПР / контакт
-          <input id="lpr" placeholder="ФИО, должность, контакты">
-        </label>
-        <!-- removed status block as requested -->
-        <label>Источники данных (свободный ввод)
-          <input id="sources" placeholder="AD, SCCM, VMware, SNMP, IPMI, MS SQL, API…">
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>Кол-во рабочих мест
-          <input id="workplaces" type="number" min="0" step="1" value="0">
-        </label>
-        <label>Кол-во серверов
-          <input id="servers" type="number" min="0" step="1" value="0">
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>Кол-во филиалов
-          <input id="branches" type="number" min="0" step="1" value="0">
-        </label>
+<div class="bar"><span id="riskGreyBar"></span></div>
 </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>Закрытый контур
-          <select id="closed"><option value="">—</option><option>Да</option><option>Нет</option></select>
-        </label>
-        <label>Примечания по среде (необязательно)
-          <input id="envNote" placeholder="Напр.: филиальная сеть, VDI, особенности ИБ">
-        </label>
-      </div>
-
-
-      <div data-mode="deep">
-
-<h3 style="margin:14px 0 6px">Инфраструктура (доп. вопросы)</h3>
-      <div class="small">Нативные вопросы для оценки сложности внедрения и источников данных.</div>
+<div>
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+<b>Лицензионный риск</b>
+<span class="mono" id="riskLicPct">—%</span>
+</div>
+<div class="bar"><span id="riskLicBar"></span></div>
+</div>
+</div>
 <div class="row" style="margin-top:10px">
-        <label>Виртуализация
+<div>
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+<b>Операционная неэффективность / ручной труд</b>
+<span class="mono" id="riskOpsPct">—%</span>
+</div>
+<div class="bar"><span id="riskOpsBar"></span></div>
+</div>
+<div>
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+<b>Управляемость / отсутствие истории</b>
+<span class="mono" id="riskGovPct">—%</span>
+</div>
+<div class="bar"><span id="riskGovBar"></span></div>
+</div>
+</div>
+<div class="hr"></div>
+<h3>Стоимость бездействия (₽/год)</h3>
+<div class="row">
+<div class="stat" style="box-shadow:none">
+<div class="label">Лицензии (ПО)</div>
+<div class="value mono" id="coiLic">—</div>
+<div class="small">Бюджет лицензий × % неиспользуемого ПО</div>
+</div>
+<div class="stat" style="box-shadow:none">
+<div class="label">Простои</div>
+<div class="value mono" id="coiDown">—</div>
+<div class="small">Часы простоя × Стоимость часа</div>
+</div>
+</div>
+<div class="row" style="margin-top:10px">
+<div class="stat" style="box-shadow:none">
+<div class="label">Ручной труд</div>
+<div class="value mono" id="coiManual">—</div>
+<div class="small">Кол-во ИТ × зарплата × % ручных операций</div>
+</div>
+<div class="stat" style="box-shadow:none">
+<div class="label">Итого</div>
+<div class="value mono" id="coiTotal">—</div>
+<div class="small">Сумма 3 компонентов</div>
+</div>
+</div>
+</div>
+<div class="card" id="cLevelBlock" style="display:none">
+<h2>C-level вывод (авто)</h2>
+<div class="small">Сформируйте краткий вывод для CEO/CFO/CIO: «где проседаем относительно рынка», «финансовый эффект», «следующий шаг».</div>
+<div class="row" style="margin-top:10px">
+<div style="grid-column:1 / -1;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<span class="pill" id="dataAccuracyPill">Точность отчёта: —%</span>
+<span class="pill" id="dataSourcesPill">Источники: —</span>
+</div>
+</div>
+<div class="small" style="margin-top:6px">Чтобы повысить точность, ответьте на 3–5 вопросов ниже (подбираются автоматически по влиянию на PSI).</div>
+<div class="card" style="margin-top:10px;background:rgba(255,255,255,.04)">
+<h3 style="margin:0 0 8px">Топ‑вопросы для повышения точности</h3>
+<ol class="small" id="topQuestions" style="margin:0;padding-left:18px;line-height:1.45"></ol>
+</div>
+<div class="card" id="benchTransparencyCard" style="margin-top:10px;background:rgba(255,255,255,.04)">
+<details id="benchDetails" style="cursor:pointer">
+<summary style="font-weight:900">Показать, какие данные подставлены по бенчмаркам</summary>
+<div class="small" id="benchDetailsMeta" style="margin-top:10px;opacity:.9"></div>
+<div style="overflow:auto;margin-top:10px">
+<table class="table" style="min-width:760px">
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Значение</th>
+<th>P25–P75</th>
+<th>Источник</th>
+</tr>
+</thead>
+<tbody id="benchDetailsTbody"></tbody>
+</table>
+</div>
+</details>
+</div>
+<div class="row" style="margin-top:10px">
+<label style="grid-column:1 / -1">Текст вывода
+        <textarea id="cLevelText" placeholder="Нажмите «C-level вывод» вверху — сюда подставится текст."></textarea>
+</label>
+</div>
+<div class="btns" style="margin-top:10px">
+<button class="btn ghost" id="btnCopyCLevel">Скопировать</button>
+<button class="btn ghost" id="btnHideCLevel">Скрыть</button>
+</div>
+</div>
+<div class="card" id="cardPassport">
+<h2>1) Паспорт проекта</h2>
+<div class="row">
+<label>Компания
+          <input id="company" placeholder="ООО «Промресурс»"/>
+</label>
+<label>Отрасль
+          <select id="industry">
+<option value="">— выбрать —</option>
+<option>Промышленность</option><option>Телеком</option><option>Ритейл</option>
+<option>Финансы</option><option>Госсектор</option><option>ИТ/интегратор</option><option>Другое</option>
+</select>
+</label>
+</div>
+<div class="row" style="margin-top:6px">
+<div class="hint" id="companyMeta" style="flex:1;color:#6b7280;font-size:12px">—</div>
+<button class="btn ghost" id="btnCompanyAll" style="display:none">Все записи</button>
+</div>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Sales менеджер (ФИО)
+          <input id="sales_manager" placeholder="Имя Фамилия"/>
+</label>
+<label>Pre-Sale менеджер (ФИО)
+          <input id="presale_manager" placeholder="Имя Фамилия"/>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>ЛПР / контакт
+          <input id="lpr" placeholder="ФИО, должность, контакты"/>
+</label>
+<!-- removed status block as requested -->
+<label>Источники данных (свободный ввод)
+          <input id="sources" placeholder="AD, SCCM, VMware, SNMP, IPMI, MS SQL, API…"/>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Кол-во рабочих мест
+          <input id="workplaces" min="0" step="1" type="number" value="0"/>
+</label>
+<label>Кол-во серверов
+          <input id="servers" min="0" step="1" type="number" value="0"/>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Кол-во филиалов
+          <input id="branches" min="0" step="1" type="number" value="0"/>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Закрытый контур
+          <select id="closed"><option value="">—</option><option>Да</option><option>Нет</option></select>
+</label>
+<label>Примечания по среде (необязательно)
+          <input id="envNote" placeholder="Напр.: филиальная сеть, VDI, особенности ИБ"/>
+</label>
+</div>
+<div data-mode="deep">
+<h3 style="margin:14px 0 6px">Инфраструктура (доп. вопросы)</h3>
+<div class="small">Нативные вопросы для оценки сложности внедрения и источников данных.</div>
+<div class="row" style="margin-top:10px">
+<label>Виртуализация
           
-<input id="virt" type="hidden" value="">
+<input id="virt" type="hidden" value=""/>
 <div class="virt-wrapper">
-  <label class="virt-item"><input type="checkbox" value="VMware"> VMware</label>
-  <label class="virt-item"><input type="checkbox" value="Hyper-V"> Hyper‑V</label>
-  <label class="virt-item"><input type="checkbox" value="KVM/Proxmox"> KVM / Proxmox</label>
-  <label class="virt-item"><input type="checkbox" value="Другая"> Другая</label>
-  <label class="virt-item"><input type="checkbox" value="Нет"> Нет</label>
+<label class="virt-item"><input type="checkbox" value="VMware"/> VMware</label>
+<label class="virt-item"><input type="checkbox" value="Hyper-V"/> Hyper‑V</label>
+<label class="virt-item"><input type="checkbox" value="KVM/Proxmox"/> KVM / Proxmox</label>
+<label class="virt-item"><input type="checkbox" value="Другая"/> Другая</label>
+<label class="virt-item"><input type="checkbox" value="Нет"/> Нет</label>
 </div>
 <div class="virt-hint">Можно выбрать несколько вариантов.</div>
-
-        </label>
-        <label>Модель размещения
+</label>
+<label>Модель размещения
           <select id="hostingModel">
-            <option value="">—</option>
-            <option>On‑prem</option>
-            <option>Гибрид</option>
-            <option>Публичное облако</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>Домены AD / каталогов (кол-во)
-          <input id="adDomains" type="number" min="0" step="1" value="0">
-        </label>
-        <label>Сегментация сети
+<option value="">—</option>
+<option>On‑prem</option>
+<option>Гибрид</option>
+<option>Публичное облако</option>
+</select>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Домены AD / каталогов (кол-во)
+          <input id="adDomains" min="0" step="1" type="number" value="0"/>
+</label>
+<label>Сегментация сети
           <select id="netSeg">
-            <option value="">—</option>
-            <option>Prod/Test/Dev Разделены</option>
-            <option>Есть сегментация (частично)</option>
-            <option>Нет</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>Терминальные фермы / RDS / VDI farms
+<option value="">—</option>
+<option>Prod/Test/Dev Разделены</option>
+<option>Есть сегментация (частично)</option>
+<option>Нет</option>
+</select>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Терминальные фермы / RDS / VDI farms
           <select id="terminalFarms">
-            <option value="">—</option>
-            <option>Да</option>
-            <option>Нет</option>
-          </select>
-        </label>
-        <label>Возраст основного железа
+<option value="">—</option>
+<option>Да</option>
+<option>Нет</option>
+</select>
+</label>
+<label>Возраст основного железа
           <select id="hwAge">
-            <option value="">—</option>
-            <option>до 3 лет</option>
-            <option>3–5 лет</option>
-            <option>5+ лет</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
+<option value="">—</option>
+<option>до 3 лет</option>
+<option>3–5 лет</option>
+<option>5+ лет</option>
+</select>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
 <label>Резервирование критичных серверов
           <select id="redundancy">
-            <option value="">—</option>
-            <option>Есть</option>
-            <option>Частично</option>
-            <option>Нет</option>
-          </select>
-        </label>
-      </div>
-
-
-      
+<option value="">—</option>
+<option>Есть</option>
+<option>Частично</option>
+<option>Нет</option>
+</select>
+</label>
 </div>
-
+</div>
 <div class="hr"></div>
-
-      </div>
-
-    <div class="card" id="cardMaturity">
-      <h2>2) Зрелость и риски (для квалификации)</h2>
-      <div class="small">Заполняется на интервью. Индексы считаются автоматически (в шапке).</div>
-
-      <h3>2.1 Техническая зрелость</h3>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Критерий</th><th style="width:170px">Балл (0–2)</th><th>Комментарий</th></tr></thead>
-          <tbody id="techTbody"></tbody>
-        </table>
-      </div>
-
-      <h3>2.2 Процессная зрелость</h3>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Критерий</th><th style="width:170px">Балл (0–2)</th><th>Комментарий</th></tr></thead>
-          <tbody id="procTbody"></tbody>
-        </table>
-      </div>
-
-      <h3>2.3 Риск-профиль</h3>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Фактор</th><th style="width:170px">Есть? (0/1)</th><th>Комментарий</th></tr></thead>
-          <tbody id="riskTbody"></tbody>
-        </table>
-      </div>
-
-      <div class="hr"></div>
-
-      </div>
-
-    <div class="card" id="cardFinance">
-      <h2>3) Финансовая база (для ROI / Cost of Inaction)</h2>
+</div>
+<div class="card" id="cardMaturity">
+<h2>2) Зрелость и риски (для квалификации)</h2>
+<div class="small">Заполняется на интервью. Индексы считаются автоматически (в шапке).</div>
+<h3>2.1 Техническая зрелость</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Критерий</th><th style="width:170px">Балл (0–2)</th><th>Комментарий</th></tr></thead>
+<tbody id="techTbody"></tbody>
+</table>
+</div>
+<h3>2.2 Процессная зрелость</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Критерий</th><th style="width:170px">Балл (0–2)</th><th>Комментарий</th></tr></thead>
+<tbody id="procTbody"></tbody>
+</table>
+</div>
+<h3>2.3 Риск-профиль</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Фактор</th><th style="width:170px">Есть? (0/1)</th><th>Комментарий</th></tr></thead>
+<tbody id="riskTbody"></tbody>
+</table>
+</div>
+<div class="hr"></div>
+</div>
+<div class="card" id="cardFinance">
+<h2>3) Финансовая база (для ROI / Cost of Inaction)</h2>
 <div class="small">Включает лицензии, ручные операции, простои и влияние железа.</div>
-      <div class="small">Это отдельный блок для заполнения сотрудником. Используется в ROI и в расчетах потерь.</div>
-
-      <div class="row" style="margin-top:10px">
-        <label>Средняя зарплата IT (₽/мес) GROSS
-          <input id="salary" type="number" min="0" step="1000" value="0">
-        </label>
-        <label>Кол-во IT сотрудников
-          <input id="itCount" type="number" min="0" step="1" value="0">
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>% ручных операций
-          <input id="manualPct" type="number" min="0" max="100" step="1" value="0">
-        </label>
-        <label>Бюджет на лицензии (₽/год)
-          <input id="licBudget" type="number" min="0" step="10000" value="0">
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>% неиспользуемого ПО (оценка)
-          <input id="unusedPct" type="number" min="0" max="100" step="1" value="0">
-        </label>
-        <label>Комментарий к расчету
-          <input id="finNote" placeholder="Откуда цифры / кто подтвердил">
-        </label>
-      
-      <div data-mode="deep">
+<div class="small">Это отдельный блок для заполнения сотрудником. Используется в ROI и в расчетах потерь.</div>
 <div class="row" style="margin-top:10px">
-        <label>% неиспользуемых VM / виртуальных ресурсов (оценка)
-          <input id="vmUnusedPct" type="number" min="0" max="100" step="1" value="0">
-        </label>
-        <label>Незаменимые ИТ-сотрудники (bus-factor ≤2)
+<label>Средняя зарплата IT (₽/мес) GROSS
+          <input id="salary" min="0" step="1000" type="number" value="0"/>
+</label>
+<label>Кол-во IT сотрудников
+          <input id="itCount" min="0" step="1" type="number" value="0"/>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>% ручных операций
+          <input id="manualPct" max="100" min="0" step="1" type="number" value="0"/>
+</label>
+<label>Бюджет на лицензии (₽/год)
+          <input id="licBudget" min="0" step="10000" type="number" value="0"/>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>% неиспользуемого ПО (оценка)
+          <input id="unusedPct" max="100" min="0" step="1" type="number" value="0"/>
+</label>
+<label>Комментарий к расчету
+          <input id="finNote" placeholder="Откуда цифры / кто подтвердил"/>
+</label>
+<div data-mode="deep">
+<div class="row" style="margin-top:10px">
+<label>% неиспользуемых VM / виртуальных ресурсов (оценка)
+          <input id="vmUnusedPct" max="100" min="0" step="1" type="number" value="0"/>
+</label>
+<label>Незаменимые ИТ-сотрудники (bus-factor ≤2)
           <select id="keyPeopleRisk">
-            <option value="">—</option>
-            <option>Да</option>
-            <option>Нет</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>Документированность процессов и знаний (0–2)
+<option value="">—</option>
+<option>Да</option>
+<option>Нет</option>
+</select>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Документированность процессов и знаний (0–2)
           <select id="docScore">
-            <option value="0">0 — нет</option>
-            <option value="1">1 — частично</option>
-            <option value="2">2 — есть</option>
-          </select>
-        </label>
-        <label>% устаревших ОС/ПО (оценка)
-          <input id="obsoletePct" type="number" min="0" max="100" step="1" value="0">
-        </label>
-      </div>
-
+<option value="0">0 — нет</option>
+<option value="1">1 — частично</option>
+<option value="2">2 — есть</option>
+</select>
+</label>
+<label>% устаревших ОС/ПО (оценка)
+          <input id="obsoletePct" max="100" min="0" step="1" type="number" value="0"/>
+</label>
 </div>
 </div>
-
-      <div data-mode="deep">
+</div>
+<div data-mode="deep">
 <h3 style="margin:14px 0 6px">Железо и простои (для CoI)</h3>
-      <div class="small">Дополняет Cost of Inaction: простои и инвестиции в обновление железа.</div>
-      <div class="row" style="margin-top:6px">
-        <div id="companyMeta" class="hint" style="flex:1;color:#6b7280;font-size:12px">—</div>
-        <button id="btnCompanyAll" class="btn ghost" style="display:none">Все записи</button>
-      </div>
+<div class="small">Дополняет Cost of Inaction: простои и инвестиции в обновление железа.</div>
+<div class="row" style="margin-top:6px">
+<div class="hint" id="companyMeta" style="flex:1;color:#6b7280;font-size:12px">—</div>
+<button class="btn ghost" id="btnCompanyAll" style="display:none">Все записи</button>
 </div>
-      <div class="row" style="margin-top:10px">
-        <label>Бюджет на железо (₽/год) <span class="small" style="opacity:.8">(оценочно)</span>
-          <input id="hwBudget" type="number" min="0" step="10000" value="0">
-        </label>
-        <label>Амортизация/обновление железа (план есть?)
+</div>
+<div class="row" style="margin-top:10px">
+<label>Бюджет на железо (₽/год) <span class="small" style="opacity:.8">(оценочно)</span>
+<input id="hwBudget" min="0" step="10000" type="number" value="0"/>
+</label>
+<label>Амортизация/обновление железа (план есть?)
           <select id="hwPlan">
-            <option value="">—</option>
-            <option>Да</option>
-            <option>Частично</option>
-            <option>Нет</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>Простои/инциденты: часов простоя в год <span class="small" style="opacity:.8">(оценочно)</span>
-          <input id="downtimeHours" type="number" min="0" step="1" value="0">
-        </label>
-        <label>Стоимость часа простоя (₽/час) <span class="small" style="opacity:.8">(для бизнеса)</span>
-          <input id="downtimeCost" type="number" min="0" step="1000" value="0">
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label>Инцидентов в месяц (в среднем) <span class="small" style="opacity:.8">(оценочно)</span>
-          <input id="incidentsPerMonth" type="number" min="0" step="1" value="0">
-        </label>
-        <label>Сервис-деск есть?
+<option value="">—</option>
+<option>Да</option>
+<option>Частично</option>
+<option>Нет</option>
+</select>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Простои/инциденты: часов простоя в год <span class="small" style="opacity:.8">(оценочно)</span>
+<input id="downtimeHours" min="0" step="1" type="number" value="0"/>
+</label>
+<label>Стоимость часа простоя (₽/час) <span class="small" style="opacity:.8">(для бизнеса)</span>
+<input id="downtimeCost" min="0" step="1000" type="number" value="0"/>
+</label>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Инцидентов в месяц (в среднем) <span class="small" style="opacity:.8">(оценочно)</span>
+<input id="incidentsPerMonth" min="0" step="1" type="number" value="0"/>
+</label>
+<label>Сервис-деск есть?
           <select id="serviceDesk">
-            <option value="">—</option>
-            <option>Да</option>
-            <option>Нет</option>
-          </select>
-        </label>
-      </div>
-
-
-      
+<option value="">—</option>
+<option>Да</option>
+<option>Нет</option>
+</select>
+</label>
+</div>
 </div>
 <div class="hr"></div>
-
-      
-      <div class="hr"></div>
-
-      </div>
-
-    <div class="card" id="cardReq">
-      <h2>4) Требования к пилоту — реестр</h2>
-      <div class="small">Заполняется после интервью/демо. Это основа для ПСИ и приемки. <b>Статус убран</b> — документ статичный.</div>
-
-      <div class="btns" style="margin:10px 0 6px">
-        <button class="btn ghost" id="btnAddReq">+ Добавить требование</button>
-        <button class="btn ghost" id="btnClearReq">Очистить</button>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:54px">№</th>
-              <th style="min-width:220px">Бизнес потребность</th>
-              <th style="min-width:340px">Требование клиента</th>
-              <th style="width:160px">Тип</th>
-              <th style="width:140px">Обязат.</th>
-              <th style="width:220px">Возможность</th>
-              <th style="min-width:240px">Метрика проверки</th>
-            </tr>
-          </thead>
-          <tbody id="reqTbody"></tbody>
-        </table>
-      </div>
-
-      
-      <div class="hr"></div>
-      <div class="hr"></div>
-
-      </div>
-
-    <div class="card" id="cardPSI">
-      <h2>5) ПСИ — сценарии тестирования и приемка</h2>
-      <div class="small">По итогам пилота: фиксируем «ожидание → факт → соответствие» и решение «приняли/не приняли».</div>
-
-      <div class="btns" style="margin:10px 0 6px">
-        <button class="btn ghost" id="btnAddPsi">+ Добавить сценарий</button>
-        <button class="btn ghost" id="btnClearPsi">Очистить</button>
-      </div>
-
-      <div class="table-wrap">
-        <table id="psiTable">
-          <thead>
-            <tr>
-              <th style="width:54px">№</th>
-              <th style="min-width:260px">Требования</th>
-              <th style="min-width:260px">Сценарий проверки</th>
-              <th style="min-width:260px">Ожидаемый результат</th>
-              <th style="min-width:260px">Фактический результат</th>
-              <th style="width:170px">Соотв. (Да/Нет)</th>
-              <th style="width:190px">Приняли? (Да/Нет)</th>
-              <th style="min-width:260px">Комментарий</th>
-            </tr>
-          </thead>
-          <tbody id="psiTbody"></tbody>
-        </table>
-      </div>
-      <div class="hr"></div>
-
-      <div class="card pad" id="prodReqCard" style="margin-top:12px">
-      <h2>6) Требования к продукту</h2>
-      <div class="small">Фиксируем требования к продукту (для roadmap/оценки). Индекс — по «возможности».</div>
-
-      <div class="btns" style="margin:10px 0 6px">
-        <button class="btn ghost" id="btnAddProdReq">+ Добавить требование</button>
-        <button class="btn ghost" id="btnClearProdReq">Очистить</button>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:54px">№</th>
-              <th style="min-width:260px">Бизнес требование</th>
-              <th style="min-width:340px">Функциональное требование</th>
-              <th style="width:160px">Тип</th>
-              <th style="width:140px">Обязат.</th>
-              <th style="width:220px">Возможность</th>
-            </tr>
-          </thead>
-          <tbody id="prodReqTbody"></tbody>
-        </table>
-      </div>
-
-
-      
-    </div>
-
-      <div id="projectRisksWrap">
-        <h2>5.1) Риски проекта (контроль качества)</h2>
-        <div class="small">Раздел для внутреннего контроля. В клиентской версии PDF скрыт.</div>
-
-        <div class="table-wrap" style="margin-top:10px">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:220px">Индикатор</th>
-                <th>Условие</th>
-                <th style="width:180px">Статус</th>
-                <th>Комментарий</th>
-              </tr>
-            </thead>
-            <tbody id="projectRisks"></tbody>
-          </table>
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <label>Уровень риска проекта (итог)
-            <input id="riskLevelText" readonly>
-          </label>
-          <label>Что может пойти не так (кратко)
-            <input id="riskNotes" placeholder="Напр.: нет доступа к источникам, нет владельца процесса, размытый периметр...">
-          </label>
-        </div>
-
-        <div class="hr"></div>
-      </div>
-
-      
-
-
-      
 <div class="hr"></div>
-
-      
-
-  </div>
 </div>
-
+<div class="card" id="cardReq">
+<h2>4) Требования к пилоту — реестр</h2>
+<div class="small">Заполняется после интервью/демо. Это основа для ПСИ и приемки. <b>Статус убран</b> — документ статичный.</div>
+<div class="btns" style="margin:10px 0 6px">
+<button class="btn ghost" id="btnAddReq">+ Добавить требование</button>
+<button class="btn ghost" id="btnClearReq">Очистить</button>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th style="width:54px">№</th>
+<th style="min-width:220px">Бизнес потребность</th>
+<th style="min-width:340px">Требование клиента</th>
+<th style="width:160px">Тип</th>
+<th style="width:140px">Обязат.</th>
+<th style="width:220px">Возможность</th>
+<th style="min-width:240px">Метрика проверки</th>
+</tr>
+</thead>
+<tbody id="reqTbody"></tbody>
+</table>
+</div>
+<div class="hr"></div>
+<div class="hr"></div>
+</div>
+<div class="card" id="cardPSI">
+<h2>5) ПСИ — сценарии тестирования и приемка</h2>
+<div class="small">По итогам пилота: фиксируем «ожидание → факт → соответствие» и решение «приняли/не приняли».</div>
+<div class="btns" style="margin:10px 0 6px">
+<button class="btn ghost" id="btnAddPsi">+ Добавить сценарий</button>
+<button class="btn ghost" id="btnClearPsi">Очистить</button>
+</div>
+<div class="table-wrap">
+<table id="psiTable">
+<thead>
+<tr>
+<th style="width:54px">№</th>
+<th style="min-width:260px">Требования</th>
+<th style="min-width:260px">Сценарий проверки</th>
+<th style="min-width:260px">Ожидаемый результат</th>
+<th style="min-width:260px">Фактический результат</th>
+<th style="width:170px">Соотв. (Да/Нет)</th>
+<th style="width:190px">Приняли? (Да/Нет)</th>
+<th style="min-width:260px">Комментарий</th>
+</tr>
+</thead>
+<tbody id="psiTbody"></tbody>
+</table>
+</div>
+<div class="hr"></div>
+<div class="card pad" id="prodReqCard" style="margin-top:12px">
+<h2>6) Требования к продукту</h2>
+<div class="small">Фиксируем требования к продукту (для roadmap/оценки). Индекс — по «возможности».</div>
+<div class="btns" style="margin:10px 0 6px">
+<button class="btn ghost" id="btnAddProdReq">+ Добавить требование</button>
+<button class="btn ghost" id="btnClearProdReq">Очистить</button>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th style="width:54px">№</th>
+<th style="min-width:260px">Бизнес требование</th>
+<th style="min-width:340px">Функциональное требование</th>
+<th style="width:160px">Тип</th>
+<th style="width:140px">Обязат.</th>
+<th style="width:220px">Возможность</th>
+</tr>
+</thead>
+<tbody id="prodReqTbody"></tbody>
+</table>
+</div>
+</div>
+<div id="projectRisksWrap">
+<h2>5.1) Риски проекта (контроль качества)</h2>
+<div class="small">Раздел для внутреннего контроля. В клиентской версии PDF скрыт.</div>
+<div class="table-wrap" style="margin-top:10px">
+<table>
+<thead>
+<tr>
+<th style="width:220px">Индикатор</th>
+<th>Условие</th>
+<th style="width:180px">Статус</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody id="projectRisks"></tbody>
+</table>
+</div>
+<div class="row" style="margin-top:10px">
+<label>Уровень риска проекта (итог)
+            <input id="riskLevelText" readonly=""/>
+</label>
+<label>Что может пойти не так (кратко)
+            <input id="riskNotes" placeholder="Напр.: нет доступа к источникам, нет владельца процесса, размытый периметр..."/>
+</label>
+</div>
+<div class="hr"></div>
+</div>
+<div class="hr"></div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const TECH = [
@@ -2791,7 +2714,7 @@ function seedPsi(){
   presets.forEach(p=>addPsiRow(p));
 }
 
-document.getElementById("btnRecalc").addEventListener("click", recalc);
+document.getElementById("btnRecalc").addEventListener("click", ()=>{ try{ recalc(); }catch(e){ console.warn("recalc failed",e);} try{ syncToGoogleSheets("recalc"); }catch(e){ console.warn("sync failed",e);} });
 // ===== v7: Excel export + Google Sheets sync =====
 const GOOGLE_SHEETS_WEBAPP_URL = (window.GS_WEBAPP_URL || "").trim();
 console.log("✅ Using Google Sheets WebApp URL:", GOOGLE_SHEETS_WEBAPP_URL);
@@ -4082,8 +4005,6 @@ async function syncToGoogleSheets(){
 /* ===== end patch ===== */
 
 </script>
-
-
 <script id="gs-reverse-sync-js">
 /* =========================================================
    Reverse sync with Google Sheets (PSI_Log)
@@ -4680,58 +4601,53 @@ const run = debounce(async ()=>{
   }
 })();
 </script>
-
-
 <!-- KPI Explain Modal -->
-<div class="kpiModal" id="kpiModal" aria-hidden="true">
-  <div class="backdrop" data-kpi-close="1" onclick="kpiModalClose()"></div>
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="kpiModalTitle">
-    <div class="head">
-      <div>
-        <div class="title" id="kpiModalTitle">Индекс</div>
-        <div class="sub" id="kpiModalSub"></div>
-      </div>
-      <button class="closeBtn" id="kpiModalClose" aria-label="Закрыть" onclick="kpiModalClose()">✕</button>
-    </div>
-    <div class="body">
-      <div class="sect">
-        <h3>1) Что это простыми словами</h3>
-        <p id="kpiModalWhat">—</p>
-      </div>
-      <div class="sect">
-        <h3>2) Логика расчёта</h3>
-        <p id="kpiModalHow">—</p>
-      </div>
-      <div class="sect">
-        <h3>2.5) Данные и достоверность</h3>
-        <p id="kpiModalData">—</p>
-        <div id="kpiModalUnc" class="small" style="margin-top:8px;display:none">
-          <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:6px">
-            <span>Диапазон (P25–P75) по бенчмарку</span><span class="mono" id="kpiModalRange">—</span>
-          </div>
-          <div style="height:10px;border-radius:999px;border:1px solid var(--border);background:rgba(0,0,0,.06);overflow:hidden">
-            <div id="kpiModalRangeBar" style="height:100%;width:0%"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="sect">
-        <h3>3) На что влияет</h3>
-        <p id="kpiModalImpact">—</p>
-      </div>
-      <div class="sect">
-        <h3>4) Что делать с результатом</h3>
-        <div id="kpiModalDo">—</div>
-      </div>
-      <div class="note" id="kpiModalNote"></div>
-    </div>
-  </div>
+<div aria-hidden="true" class="kpiModal" id="kpiModal">
+<div class="backdrop" data-kpi-close="1" onclick="kpiModalClose()"></div>
+<div aria-labelledby="kpiModalTitle" aria-modal="true" class="dialog" role="dialog">
+<div class="head">
+<div>
+<div class="title" id="kpiModalTitle">Индекс</div>
+<div class="sub" id="kpiModalSub"></div>
 </div>
-
-
+<button aria-label="Закрыть" class="closeBtn" id="kpiModalClose" onclick="kpiModalClose()">✕</button>
+</div>
+<div class="body">
+<div class="sect">
+<h3>1) Что это простыми словами</h3>
+<p id="kpiModalWhat">—</p>
+</div>
+<div class="sect">
+<h3>2) Логика расчёта</h3>
+<p id="kpiModalHow">—</p>
+</div>
+<div class="sect">
+<h3>2.5) Данные и достоверность</h3>
+<p id="kpiModalData">—</p>
+<div class="small" id="kpiModalUnc" style="margin-top:8px;display:none">
+<div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:6px">
+<span>Диапазон (P25–P75) по бенчмарку</span><span class="mono" id="kpiModalRange">—</span>
+</div>
+<div style="height:10px;border-radius:999px;border:1px solid var(--border);background:rgba(0,0,0,.06);overflow:hidden">
+<div id="kpiModalRangeBar" style="height:100%;width:0%"></div>
+</div>
+</div>
+</div>
+<div class="sect">
+<h3>3) На что влияет</h3>
+<p id="kpiModalImpact">—</p>
+</div>
+<div class="sect">
+<h3>4) Что делать с результатом</h3>
+<div id="kpiModalDo">—</div>
+</div>
+<div class="note" id="kpiModalNote"></div>
+</div>
+</div>
+</div>
 <script id="field-status-dots">
 (function(){
-  const REQUIRED = new Set(["company","industry","sales","lpr"]);
+  const REQUIRED = new Set(["company"]);
   const DOT_STYLE = `
     .statusDot{display:inline-block;width:8px;height:8px;border-radius:999px;margin-left:8px;vertical-align:middle;box-shadow:0 0 0 2px rgba(15,23,42,.08) inset}
     .dotRed{background:#ef4444}
@@ -4827,16 +4743,12 @@ const run = debounce(async ()=>{
   });
 })();
 </script>
-
-
-  <!-- Hidden form/iframe for cross-origin POST (bypasses fetch/beacon CSP on GitHub Pages) -->
-  <iframe id="gsyncFrame" name="gsyncFrame" style="display:none"></iframe>
-  <form id="gsyncForm" target="gsyncFrame" method="POST" style="display:none">
-    <input type="hidden" name="action" value="save">
-    <input type="hidden" name="payload" value="">
-  </form>
-
-
+<!-- Hidden form/iframe for cross-origin POST (bypasses fetch/beacon CSP on GitHub Pages) -->
+<iframe id="gsyncFrame" name="gsyncFrame" style="display:none"></iframe>
+<form id="gsyncForm" method="POST" style="display:none" target="gsyncFrame">
+<input name="action" type="hidden" value="save"/>
+<input name="payload" type="hidden" value=""/>
+</form>
 <script>
 
 /* === ITMEN CSP-SAFE SAVE OVERRIDE (FORM POST) === */
@@ -4925,7 +4837,6 @@ function syncToGoogleSheets(){
     }
   }
 </script>
-
 <script>
   // QuickDock (search + link company param)
   (function(){
@@ -5018,17 +4929,14 @@ function syncToGoogleSheets(){
     }
   })();
 </script>
-
-
-<div id="globalLoader" aria-hidden="true">
-  <div class="box" role="status" aria-live="polite">
-    <div class="spinner"></div>
-    <div>
-      <p class="title" id="globalLoaderTitle">Загружаю…</p>
-      <p class="sub" id="globalLoaderSub">Google Sheets отвечает, это может занять несколько секунд.</p>
-    </div>
-  </div>
+<div aria-hidden="true" id="globalLoader">
+<div aria-live="polite" class="box" role="status">
+<div class="spinner"></div>
+<div>
+<p class="title" id="globalLoaderTitle">Загружаю…</p>
+<p class="sub" id="globalLoaderSub">Google Sheets отвечает, это может занять несколько секунд.</p>
 </div>
-
+</div>
+</div>
 </body>
 </html>
