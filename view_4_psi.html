@@ -3904,7 +3904,14 @@ const run = debounce(async ()=>{
           showLoader("Загружаю последнюю запись…", "Получаю данные компании из Google Sheets");
           const got = await gsGetByCompany(name);
           if(got && got.ok){
-            const payload = (got.payload || (got.item && got.item.payload) || got.data || got.item) || null;
+            let payload = (got.payload || (got.item && got.item.payload) || got.data || got.item) || null;
+            if(typeof payload === 'string'){
+              let s = payload.trim();
+              for(let i=0;i<2;i++){
+                if(s.startsWith('"') && s.endsWith('"')){ try{ s = JSON.parse(s); }catch(_e){} }
+              }
+              try{ payload = JSON.parse(s); }catch(_e){}
+            }
             if(payload){
               showLoader("Применяю данные…", "Заполняю форму значениями из базы");
               applyPayload(payload);
@@ -4245,7 +4252,14 @@ function syncToGoogleSheets(){
   showLoader('Загружаю компанию…', 'Тяну последнюю запись из Google Sheets');
   jsonp(WEBAPP_URL + '?action=get&company=' + encodeURIComponent(c))
     .then(data=>{
-      const payload = (data && (data.payload || (data.item && data.item.payload) || data.data)) || null;
+      let payload = (data && (data.payload || (data.item && data.item.payload) || data.data)) || null;
+      if(typeof payload === 'string'){
+        let s = payload.trim();
+        for(let i=0;i<2;i++){
+          if(s.startsWith('"') && s.endsWith('"')){ try{ s = JSON.parse(s); }catch(_e){} }
+        }
+        try{ payload = JSON.parse(s); }catch(_e){}
+      }
       if(payload && typeof applyPayload==='function') applyPayload(payload);
       if(typeof recalc==='function') try{recalc();}catch(e){}
     })
