@@ -3415,7 +3415,7 @@ async function gsSearch(q){
     return await jsonp(url); // JSONP to bypass CORS for local HTML
   }
 
-  async function gsGetByCompany(company){
+  async async function gsGetByCompany(company){
     const base = (typeof GOOGLE_SHEETS_WEBAPP_URL === "string" && GOOGLE_SHEETS_WEBAPP_URL) ? GOOGLE_SHEETS_WEBAPP_URL : "";
     if(!base) throw new Error("GOOGLE_SHEETS_WEBAPP_URL is not set");
     const url = `${base}?action=get&company=${encodeURIComponent(company)}`;
@@ -4135,7 +4135,25 @@ function syncToGoogleSheets(){
   // QuickDock (search + link company param)
   (function(){
     const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
-    const dockCompany = document.getElementById('dockCompany');
+    
+  function __extractPayload(data){
+    let raw = (data && (data.payload || (data.item && data.item.payload) || data.data)) || null;
+    if(raw==null) return null;
+    const parseMaybe = (v)=>{
+      if(typeof v!=='string') return v;
+      let s=v.trim();
+      for(let i=0;i<2;i++){
+        if(s.startsWith('"') && s.endsWith('"')){ try{ s=JSON.parse(s);}catch(e){} }
+      }
+      try{ return JSON.parse(s);}catch(e){ return v; }
+    };
+    raw = parseMaybe(raw);
+    if(raw && typeof raw==='object' && raw.payload!=null){
+      raw = parseMaybe(raw.payload);
+    }
+    return raw;
+  }
+const dockCompany = document.getElementById('dockCompany');
     const dockSuggest = document.getElementById('dockSuggest');
     if(!dockCompany) return;
     function jsonp(url, timeoutMs=15000){
