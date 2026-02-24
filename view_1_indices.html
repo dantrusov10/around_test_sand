@@ -4059,7 +4059,8 @@ const run = debounce(async ()=>{
             try{
         if(typeof normalizePayload==="function" && typeof apply==="function"){
           apply(normalizePayload(got.item));
-        } else if(typeof applyPayload==="function"){
+            try{ if(typeof recalc==="function") recalc(); }catch(e){}
+} else if(typeof applyPayload==="function"){
           applyLoadedItem(got.item);
         }
       }catch(_e){

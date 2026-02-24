@@ -4151,5 +4151,25 @@ function syncToGoogleSheets(){
   </div>
 </div>
 
+
+<script id="disable-kpi-modal">
+/* Hard-disable KPI modal on PSI page */
+(function(){
+  try{
+    const css = document.createElement('style');
+    css.textContent = '.kpiModal{display:none !important}';
+    document.head.appendChild(css);
+  }catch(e){}
+  window.kpiModalOpen = function(){ /* disabled */ };
+  window.kpiBuildDataHtml = window.kpiBuildDataHtml || function(){ return ""; };
+  window.kpiModalClose = function(){
+    try{
+      const m = document.getElementById('kpiModal');
+      if(m){ m.setAttribute('aria-hidden','true'); m.style.display='none'; }
+    }catch(e){}
+  };
+})();
+</script>
+
 </body>
 </html>
