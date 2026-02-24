@@ -331,6 +331,7 @@ body.no-kpi .kpiBar{display:none !important;}
 
 </head>
 <body class="view-indices">
+<div id=\"__hiddenMatrices\" style=\"display:none\"></div>
   <div class="quickDock">
     <div class="card pad">
       <div class="dockTitle">Быстрый вход</div>
@@ -1750,6 +1751,46 @@ function paintIf(id, pct, isPct){
   paintStat(id, pct, isPct);
 }
 
+
+function ensureHiddenMatrices(){
+  try{
+    const host=document.getElementById('__hiddenMatrices');
+    if(!host) return;
+    // already built?
+    if(host.dataset.built==='1') return;
+    const mkSelect=(cls, max)=>{
+      const sel=document.createElement('select');
+      sel.className=cls;
+      sel.style.display='none';
+      sel.innerHTML = Array.from({length:max+1},(_,i)=>`<option value="${i}">${i}</option>`).join('');
+      return sel;
+    };
+    const mkNote=(cls)=>{
+      const inp=document.createElement('input');
+      inp.className=cls;
+      inp.type='text';
+      inp.value='';
+      inp.style.display='none';
+      return inp;
+    };
+
+    // Build 1:1 arrays for TECH/PROC/RISK used by recalc()/apply()
+    const techN = (typeof TECH!=='undefined' && Array.isArray(TECH)) ? TECH.length : 0;
+    const procN = (typeof PROC!=='undefined' && Array.isArray(PROC)) ? PROC.length : 0;
+    const riskN = (typeof RISK!=='undefined' && Array.isArray(RISK)) ? RISK.length : 0;
+
+    for(let i=0;i<techN;i++){ host.appendChild(mkSelect('tech-score',2)); host.appendChild(mkNote('tech-note')); }
+    for(let i=0;i<procN;i++){ host.appendChild(mkSelect('proc-score',2)); host.appendChild(mkNote('proc-note')); }
+    for(let i=0;i<riskN;i++){ host.appendChild(mkSelect('risk-score',1)); host.appendChild(mkNote('risk-note')); }
+
+    host.dataset.built='1';
+  }catch(e){ console.warn('ensureHiddenMatrices failed', e); }
+}
+
+// ensure matrices exist before any load/apply/recalc
+try{ document.addEventListener('DOMContentLoaded', ensureHiddenMatrices); }catch(_e){}
+
+
 function recalc(){
   console.log("recalc() clicked", new Date().toISOString());
   try{ applyQuickSynthetics(); }catch(e){}
@@ -2218,6 +2259,7 @@ function flattenForSheets(raw){
 
 
 function apply(data){
+  try{ ensureHiddenMatrices(); }catch(_e){}
   if(!data) return;
   const set=(id,v)=>{const el=document.getElementById(id); if(el) el.value = v ?? "";};
 

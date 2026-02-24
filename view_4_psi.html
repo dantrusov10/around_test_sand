@@ -257,7 +257,7 @@ body.no-kpi .kpiBar{display:none !important;}
 
 <style id="kpi-modal-css">
 /* ===== KPI explain modal ===== */
-.kpiModal{position:fixed;inset:0;display:none;z-index:9999}
+.kpiModal{position:fixed;inset:0;display:none !important;z-index:9999}
 .kpiModal[aria-hidden="false"]{display:block}
 .kpiModal .backdrop{position:absolute;inset:0;background:rgba(17,24,39,.45);backdrop-filter: blur(6px);}
 .kpiModal .dialog{
@@ -2859,59 +2859,11 @@ const KPI_META = {
   }
 };
 
-function kpiModalOpen(kpiId){
-  const meta = KPI_META[kpiId];
-  if(!meta) return;
-  const m = document.getElementById("kpiModal");
-  if(!m) return;
-  // Defensive: modal markup may vary across pages
-  const tEl = document.getElementById("kpiModalTitle");
-  if(tEl) tEl.textContent = meta.title || "Индекс";
-  const sEl = document.getElementById("kpiModalSub");
-  if(sEl) sEl.textContent = meta.sub || "";
-  const wEl = document.getElementById("kpiModalWhat");
-  if(wEl) wEl.textContent = meta.what || "—";
-  const hEl = document.getElementById("kpiModalHow");
-  if(hEl) hEl.textContent = meta.how || "—";
-  const iEl = document.getElementById("kpiModalImpact");
-  if(iEl) iEl.textContent = meta.impact || "—";
-  const dEl = document.getElementById("kpiModalDo");
-  if(dEl) dEl.innerHTML = meta.doHtml || "—";
-  // Data + confidence (synthetic benchmarks)
-  const dataEl = document.getElementById("kpiModalData");
-  if(dataEl) dataEl.innerHTML = kpiBuildDataHtml(kpiId);
-
-  const unc = document.getElementById("kpiModalUnc");
-  const rngEl = document.getElementById("kpiModalRange");
-  const barEl = document.getElementById("kpiModalRangeBar");
-  if(unc && rngEl && barEl){
-    let r = null;
-    if(kpiId === "kRecover") r = recoverRange();
-    if(r){
-      unc.style.display = "block";
-      rngEl.textContent = `${r[0]}–${r[1]}%`;
-      // visualize as 0..100
-      const w = Math.max(2, Math.min(100, r[1]-r[0]));
-      barEl.style.width = `${w}%`;
-      barEl.style.marginLeft = `${Math.max(0, Math.min(98, r[0]))}%`;
-      barEl.style.background = "rgba(59,130,246,.65)";
-    } else {
-      unc.style.display = "none";
-    }
-  }
-
-  const nEl = document.getElementById("kpiModalNote");
-  if(nEl) nEl.textContent = meta.note || "";
-  m.setAttribute("aria-hidden","false");
-  // focus close for accessibility
-  const closeBtn = document.getElementById("kpiModalClose");
-  closeBtn && closeBtn.focus && closeBtn.focus();
-}
+function kpiModalOpen(kpiId){ return; }
 
 function kpiModalClose(){
-  const m = document.getElementById("kpiModal");
-  if(!m) return;
-  m.setAttribute("aria-hidden","true");
+  const m=document.getElementById('kpiModal');
+  if(m){ m.setAttribute('aria-hidden','true'); m.style.display='none'; }
 }
 
 function setupKpiExplain(){
