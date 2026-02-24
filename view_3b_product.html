@@ -81,10 +81,10 @@
       <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
       <div class="toolGrid">
         <a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-<a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы и риски</div><div class="tDesc">борд итогов</div></div></a>
+<a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
         <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-        <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Требования к пилоту</div><div class="tDesc">раздел 4</div></div></a>
-        <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Требования к продукту</div><div class="tDesc">раздел 6</div></div></a>
+        <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+        <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
         <a class="tool" href="view_4_psi.html"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
         <a class="tool" href="view_5_full.html"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё целиком</div></div></a>
       </div>
@@ -223,19 +223,33 @@
 
     setStatus('Загружаю последнюю запись…', true);
     const data = await jsonp(WEBAPP_URL + '?action=get&company=' + encodeURIComponent(company));
-    if(!data || !data.ok || !data.payload){ setStatus('Не удалось загрузить данные (action=get)', false); return; }
+    if(!data || !data.ok){ setStatus('Не удалось загрузить данные (action=get)', false); return; }
 
-    const p = data.payload;
-    const parsed = p._payload_parsed && typeof p._payload_parsed === 'object' ? p._payload_parsed : null;
-    loadedBase = parsed || { company: (p.company||company) };
-    loadedCompany = (p.company || company);
+    // Apps Script may return payload in different shapes:
+    // 1) {ok:true, payload: <object>} where <object> is the saved payload
+    // 2) {ok:true, payload: "{...}"} as JSON string
+    // 3) {ok:true, item:{payload:<object|string>}} or {ok:true, data:{...}}
+    let raw = data.payload || (data.item && data.item.payload) || data.data || null;
+    if(!raw){ setStatus('Не удалось загрузить данные: payload пустой', false); return; }
+    if(typeof raw === 'string'){
+      let s = raw.trim();
+      for(let i=0;i<2;i++){
+        if(s.startsWith('"') && s.endsWith('"')){ try{ s = JSON.parse(s); }catch(_e){} }
+      }
+      try{ raw = JSON.parse(s); }catch(_e){}
+    }
+    // If wrapper contains nested payload
+    const base = (raw && typeof raw === 'object' && raw.payload) ? (typeof raw.payload==='string' ? (()=>{try{return JSON.parse(raw.payload);}catch(_e){return raw.payload;}})() : raw.payload) : raw;
+
+    loadedBase = (base && typeof base === 'object') ? base : { company };
+    loadedCompany = (loadedBase.company || loadedBase.companyName || company);
 
     const cn = document.getElementById('companyName');
     if(cn) cn.value = loadedCompany;
     const ind = document.getElementById('industry');
     if(ind && (loadedBase.industry||loadedBase.industryName)) ind.value = (loadedBase.industry||loadedBase.industryName);
 
-    const pr = loadedBase.productRequirements || loadedBase.prodRequirements || loadedBase.prodreq || [];
+    const pr = loadedBase.productRequirements || loadedBase.prodRequirements || loadedBase.prodreq || loadedBase.productReqs || [];
     render(Array.isArray(pr) ? pr : []);
     setStatus('✅ Загружено: ' + loadedCompany);
   }
