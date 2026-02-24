@@ -3501,17 +3501,21 @@ function extractPayloadFromItem(item){
 function applyLoadedItem(item){
   const payload = extractPayloadFromItem(item);
   try{
-    if(typeof normalizePayload==="function" && typeof apply==="function"){
-      apply(normalizePayload(payload));
+    // IMPORTANT: these pages must apply FLAT payload from Sheets (not nested structured model).
+    if(typeof applyPayload==="function"){
+      applyPayload(payload);
     } else if(typeof apply==="function"){
       apply(payload);
-    } else if(typeof applyPayload==="function"){
-      applyPayload(payload);
     }
   }catch(e){
+    console.warn("applyLoadedItem failed", e);
     try{ if(typeof applyPayload==="function") applyPayload(payload); }catch(_e){}
   }
-  try{ if(typeof recalc==="function") recalc(); }catch(e){}
+  try{
+    const btn = document.getElementById("btnRecalc");
+    if(btn) btn.click();
+  }catch(_e){}
+  try{ if(typeof recalc==="function") recalc(); }catch(_e){}
 }
 
 
