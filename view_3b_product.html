@@ -48,6 +48,11 @@ function applyLoadedItem(item){
   --field-focus:#ffffff;
   --shadow: 0 10px 30px rgba(0,0,0,.08);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+
+  --line: rgba(15,23,42,.12);
+  --radius:16px;
+  --card:#ffffff;
+  --accent:#ef4444;
 }
     *{box-sizing:border-box}
     body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
@@ -388,6 +393,195 @@ function applyLoadedItem(item){
   else render([]);
 </script>
 
+
+<script>
+/* === Unified QuickDock + Sheets loader (no page reload) === */
+(function(){
+  const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
+  window.WEBAPP_URL = WEBAPP_URL; // expose for legacy code
+  const dockCompany = document.getElementById("dockCompany");
+  const dockSuggest = document.getElementById("dockSuggest");
+  const dockLoadBtn = document.getElementById("dockLoadBtn");
+  if(!dockCompany || !dockSuggest) return;
+
+  function setUrlCompany(company){
+    try{
+      const u = new URL(location.href);
+      if(company) u.searchParams.set("company", company); else u.searchParams.delete("company");
+      history.replaceState(null, "", u.toString());
+    }catch(e){}
+  }
+
+  function showGlobalLoader(title, sub){
+    const gl = document.getElementById("globalLoader");
+    if(!gl) return;
+    const t = document.getElementById("globalLoaderTitle");
+    const s = document.getElementById("globalLoaderSub");
+    if(t && title) t.textContent = title;
+    if(s && sub) s.textContent = sub;
+    gl.style.display = "flex";
+    gl.setAttribute("aria-hidden","false");
+  }
+  function hideGlobalLoader(){
+    const gl = document.getElementById("globalLoader");
+    if(!gl) return;
+    gl.style.display = "none";
+    gl.setAttribute("aria-hidden","true");
+  }
+
+  function jsonp(url, timeoutMs=20000){
+    return new Promise((resolve, reject)=>{
+      const cb = "cb_" + Math.random().toString(36).slice(2) + "_" + Date.now();
+      const sep = url.includes("?") ? "&" : "?";
+      const full = url + sep + "callback=" + encodeURIComponent(cb);
+      const s = document.createElement("script");
+      s.async = true;
+      let done=false;
+      const cleanup = ()=>{
+        if(done) return; done=true;
+        try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
+        try{ s.remove(); }catch(e){}
+      };
+      const timer = setTimeout(()=>{ cleanup(); reject(new Error("JSONP timeout")); }, timeoutMs);
+      window[cb] = (data)=>{ clearTimeout(timer); cleanup(); resolve(data); };
+      s.onerror = ()=>{ clearTimeout(timer); cleanup(); reject(new Error("JSONP error")); };
+      s.src = full;
+      document.body.appendChild(s);
+    });
+  }
+  window.__gs_jsonp = jsonp;
+
+  async function gsSearch(q){
+    if(!WEBAPP_URL) return [];
+    const data = await jsonp(WEBAPP_URL + "?action=search&q=" + encodeURIComponent(q) + "&limit=10");
+    return (data && data.ok && Array.isArray(data.items)) ? data.items : [];
+  }
+  async function gsGetRow(row){
+    if(!WEBAPP_URL) throw new Error("WEBAPP_URL empty");
+    const data = await jsonp(WEBAPP_URL + "?action=get&row=" + encodeURIComponent(row));
+    return (data && (data.payload || data.item)) || null;
+  }
+
+  function applyAnyPayload(obj){
+    if(!obj) return;
+    try{
+      if(typeof applyLoadedItem === "function"){ applyLoadedItem(obj); return; }
+    }catch(e){}
+    try{
+      if(typeof applyPayload === "function"){ applyPayload(obj); }
+      else if(typeof apply === "function"){ apply(obj); }
+    }catch(e){ console.warn("applyAnyPayload failed", e); }
+    try{ if(typeof recalc==="function") recalc(); }catch(e){}
+  }
+
+  async function loadCompanyByRow(row, companyLabel){
+    showGlobalLoader("Загружаю данные…", "Читаю последнюю строку из Google Sheets.");
+    try{
+      const item = await gsGetRow(row);
+      applyAnyPayload(item);
+      if(companyLabel){
+        dockCompany.value = companyLabel;
+        setUrlCompany(companyLabel);
+        setCompanyInLinks(companyLabel);
+      }
+    }catch(e){
+      console.error("Load company failed", e);
+      alert("Ошибка загрузки данных из Google Sheets. Проверь доступ к WebApp и структуру ответа.");
+    }finally{
+      hideGlobalLoader();
+    }
+  }
+
+  async function loadCompanyByName(name){
+    const q = (name||"").trim();
+    if(!q) return;
+    showGlobalLoader("Ищу компанию…", "Сверяю по списку в Google Sheets.");
+    try{
+      const items = await gsSearch(q);
+      if(!items.length){ alert("Компания не найдена в Google Sheets"); return; }
+      items.sort((a,b)=> (Number(b.row||0)-Number(a.row||0)));
+      await loadCompanyByRow(items[0].row, items[0].company);
+    }finally{
+      hideGlobalLoader();
+    }
+  }
+  window.loadCompanyByName = loadCompanyByName;
+
+  function setCompanyInLinks(company){
+    const qs = company ? ("?company="+encodeURIComponent(company)) : "";
+    document.querySelectorAll(".quickDock a.tool").forEach(a=>{
+      const href = a.getAttribute("href") || "";
+      if(!href || href.startsWith("http")) return;
+      a.setAttribute("href", href.split("?")[0] + qs);
+    });
+  }
+
+  // UI behaviour
+  let timer=null;
+  dockCompany.addEventListener("input", ()=>{
+    clearTimeout(timer);
+    const q = dockCompany.value.trim();
+    setUrlCompany(q);
+    setCompanyInLinks(q);
+    if(q.length < 2){
+      dockSuggest.style.display="none"; dockSuggest.innerHTML="";
+      return;
+    }
+    dockSuggest.style.display="block";
+    dockSuggest.innerHTML = '<div class="dockItem"><b>Поиск…</b><span style="color:#6b7280;font-size:12px">ожидайте</span></div>';
+    timer=setTimeout(async ()=>{
+      try{
+        const items = await gsSearch(q);
+        if(!items.length){ dockSuggest.style.display="none"; dockSuggest.innerHTML=""; return; }
+        dockSuggest.innerHTML = items.map(it=>{
+          const name = String(it.company||"").replaceAll('"','&quot;');
+          const meta = it.timestamp ? ('<span style="color:#6b7280;font-size:12px">обновлено: '+String(it.timestamp).replaceAll('<','&lt;')+'</span>') : '';
+          return '<div class="dockItem" data-row="'+it.row+'" data-company="'+name+'"><b>'+name+'</b>'+meta+'</div>';
+        }).join("");
+        dockSuggest.style.display="block";
+        dockSuggest.querySelectorAll(".dockItem").forEach(el=>{
+          const row = Number(el.getAttribute("data-row")||0);
+          const comp = el.getAttribute("data-company")||"";
+          if(!row) return;
+          el.addEventListener("click", ()=>{
+            dockSuggest.style.display="none";
+            dockSuggest.innerHTML="";
+            loadCompanyByRow(row, comp);
+          });
+        });
+      }catch(e){
+        dockSuggest.style.display="none"; dockSuggest.innerHTML="";
+      }
+    }, 250);
+  });
+
+  dockCompany.addEventListener("keydown", (ev)=>{
+    if(ev.key === "Enter"){
+      ev.preventDefault();
+      const name = dockCompany.value.trim();
+      loadCompanyByName(name);
+    }
+  });
+
+  if(dockLoadBtn){
+    dockLoadBtn.addEventListener("click", ()=>{
+      const name = dockCompany.value.trim();
+      loadCompanyByName(name);
+    });
+  }
+
+  // autoload from URL
+  try{
+    const u = new URL(location.href);
+    const c = (u.searchParams.get("company")||"").trim();
+    if(c){
+      dockCompany.value = c;
+      setCompanyInLinks(c);
+      loadCompanyByName(c);
+    }
+  }catch(e){}
+})();
+</script>
 
 <div id="globalLoader" aria-hidden="true">
   <div class="box" role="status" aria-live="polite">

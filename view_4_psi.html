@@ -3981,122 +3981,193 @@ function syncToGoogleSheets(){
 
 
 <script>
-  // QuickDock (search + link company param)
-  (function(){
-    const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
-    const dockCompany = document.getElementById('dockCompany');
-    const dockSuggest = document.getElementById('dockSuggest');
-    if(!dockCompany) return;
-    function jsonp(url, timeoutMs=15000){
-      return new Promise((resolve, reject)=>{
-        const cb = 'cb_' + Math.random().toString(36).slice(2);
-        const s = document.createElement('script');
-        const t = setTimeout(()=>{ cleanup(); reject(new Error('JSONP timeout')); }, timeoutMs);
-        function cleanup(){
-          clearTimeout(t);
-          try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
-          if(s.parentNode) s.parentNode.removeChild(s);
-        }
-        window[cb] = (data)=>{ cleanup(); resolve(data); };
-        const sep = url.includes('?') ? '&' : '?';
-        s.src = url + sep + 'callback=' + encodeURIComponent(cb);
-        s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
-        document.body.appendChild(s);
-      });
-    }
-    function getCompanyFromUrl(){
-      try{ return (new URL(location.href)).searchParams.get('company') || ''; }catch(e){ return ''; }
-    }
-    function setCompanyInLinks(company){
-      const qs = company ? ('?company='+encodeURIComponent(company)) : '';
-      document.querySelectorAll('.quickDock a.tool').forEach(a=>{
-        const href = a.getAttribute('href') || '';
-        if(!href || href.startsWith('http')) return;
-        const clean = href.split('?')[0];
-        a.setAttribute('href', clean + qs);
-      });
-    }
-    const initial = getCompanyFromUrl();
-    dockCompany.value = initial;
-    setCompanyInLinks(initial);
-    let timer=null;
-    dockCompany.addEventListener('input', ()=>{
-      clearTimeout(timer);
-      const q = dockCompany.value.trim();
-      setCompanyInLinks(q);
-      if(q.length < 3){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
-      timer = setTimeout(()=>runSearch(q), 250);
+/* === Unified QuickDock + Sheets loader (no page reload) === */
+(function(){
+  const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
+  window.WEBAPP_URL = WEBAPP_URL; // expose for legacy code
+  const dockCompany = document.getElementById("dockCompany");
+  const dockSuggest = document.getElementById("dockSuggest");
+  const dockLoadBtn = document.getElementById("dockLoadBtn");
+  if(!dockCompany || !dockSuggest) return;
+
+  function setUrlCompany(company){
+    try{
+      const u = new URL(location.href);
+      if(company) u.searchParams.set("company", company); else u.searchParams.delete("company");
+      history.replaceState(null, "", u.toString());
+    }catch(e){}
+  }
+
+  function showGlobalLoader(title, sub){
+    const gl = document.getElementById("globalLoader");
+    if(!gl) return;
+    const t = document.getElementById("globalLoaderTitle");
+    const s = document.getElementById("globalLoaderSub");
+    if(t && title) t.textContent = title;
+    if(s && sub) s.textContent = sub;
+    gl.style.display = "flex";
+    gl.setAttribute("aria-hidden","false");
+  }
+  function hideGlobalLoader(){
+    const gl = document.getElementById("globalLoader");
+    if(!gl) return;
+    gl.style.display = "none";
+    gl.setAttribute("aria-hidden","true");
+  }
+
+  function jsonp(url, timeoutMs=20000){
+    return new Promise((resolve, reject)=>{
+      const cb = "cb_" + Math.random().toString(36).slice(2) + "_" + Date.now();
+      const sep = url.includes("?") ? "&" : "?";
+      const full = url + sep + "callback=" + encodeURIComponent(cb);
+      const s = document.createElement("script");
+      s.async = true;
+      let done=false;
+      const cleanup = ()=>{
+        if(done) return; done=true;
+        try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
+        try{ s.remove(); }catch(e){}
+      };
+      const timer = setTimeout(()=>{ cleanup(); reject(new Error("JSONP timeout")); }, timeoutMs);
+      window[cb] = (data)=>{ clearTimeout(timer); cleanup(); resolve(data); };
+      s.onerror = ()=>{ clearTimeout(timer); cleanup(); reject(new Error("JSONP error")); };
+      s.src = full;
+      document.body.appendChild(s);
     });
-    dockCompany.addEventListener('keydown', (ev)=>{
-      if(ev.key === 'Enter'){
-        const c = dockCompany.value.trim();
-        const u = new URL(location.href);
-        if(c) u.searchParams.set('company', c); else u.searchParams.delete('company');
-        location.href = u.toString();
+  }
+  window.__gs_jsonp = jsonp;
+
+  async function gsSearch(q){
+    if(!WEBAPP_URL) return [];
+    const data = await jsonp(WEBAPP_URL + "?action=search&q=" + encodeURIComponent(q) + "&limit=10");
+    return (data && data.ok && Array.isArray(data.items)) ? data.items : [];
+  }
+  async function gsGetRow(row){
+    if(!WEBAPP_URL) throw new Error("WEBAPP_URL empty");
+    const data = await jsonp(WEBAPP_URL + "?action=get&row=" + encodeURIComponent(row));
+    return (data && (data.payload || data.item)) || null;
+  }
+
+  function applyAnyPayload(obj){
+    if(!obj) return;
+    try{
+      if(typeof applyLoadedItem === "function"){ applyLoadedItem(obj); return; }
+    }catch(e){}
+    try{
+      if(typeof applyPayload === "function"){ applyPayload(obj); }
+      else if(typeof apply === "function"){ apply(obj); }
+    }catch(e){ console.warn("applyAnyPayload failed", e); }
+    try{ if(typeof recalc==="function") recalc(); }catch(e){}
+  }
+
+  async function loadCompanyByRow(row, companyLabel){
+    showGlobalLoader("Загружаю данные…", "Читаю последнюю строку из Google Sheets.");
+    try{
+      const item = await gsGetRow(row);
+      applyAnyPayload(item);
+      if(companyLabel){
+        dockCompany.value = companyLabel;
+        setUrlCompany(companyLabel);
+        setCompanyInLinks(companyLabel);
       }
+    }catch(e){
+      console.error("Load company failed", e);
+      alert("Ошибка загрузки данных из Google Sheets. Проверь доступ к WebApp и структуру ответа.");
+    }finally{
+      hideGlobalLoader();
+    }
+  }
+
+  async function loadCompanyByName(name){
+    const q = (name||"").trim();
+    if(!q) return;
+    showGlobalLoader("Ищу компанию…", "Сверяю по списку в Google Sheets.");
+    try{
+      const items = await gsSearch(q);
+      if(!items.length){ alert("Компания не найдена в Google Sheets"); return; }
+      items.sort((a,b)=> (Number(b.row||0)-Number(a.row||0)));
+      await loadCompanyByRow(items[0].row, items[0].company);
+    }finally{
+      hideGlobalLoader();
+    }
+  }
+  window.loadCompanyByName = loadCompanyByName;
+
+  function setCompanyInLinks(company){
+    const qs = company ? ("?company="+encodeURIComponent(company)) : "";
+    document.querySelectorAll(".quickDock a.tool").forEach(a=>{
+      const href = a.getAttribute("href") || "";
+      if(!href || href.startsWith("http")) return;
+      a.setAttribute("href", href.split("?")[0] + qs);
     });
-    const dockLoadBtn = document.getElementById('dockLoadBtn');
-    if(dockLoadBtn){ dockLoadBtn.addEventListener('click', ()=>{ const ev = new KeyboardEvent('keydown',{key:'Enter'}); dockCompany.dispatchEvent(ev); }); }
-    async function runSearch(q){
-      if(!WEBAPP_URL) return;
+  }
+
+  // UI behaviour
+  let timer=null;
+  dockCompany.addEventListener("input", ()=>{
+    clearTimeout(timer);
+    const q = dockCompany.value.trim();
+    setUrlCompany(q);
+    setCompanyInLinks(q);
+    if(q.length < 2){
+      dockSuggest.style.display="none"; dockSuggest.innerHTML="";
+      return;
+    }
+    dockSuggest.style.display="block";
+    dockSuggest.innerHTML = '<div class="dockItem"><b>Поиск…</b><span style="color:#6b7280;font-size:12px">ожидайте</span></div>';
+    timer=setTimeout(async ()=>{
       try{
-        const data = await jsonp(WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=10');
-        const items = (data && data.ok && Array.isArray(data.items)) ? data.items : [];
-        if(!items.length){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
+        const items = await gsSearch(q);
+        if(!items.length){ dockSuggest.style.display="none"; dockSuggest.innerHTML=""; return; }
         dockSuggest.innerHTML = items.map(it=>{
-          const name = (it.company||'').replaceAll('"','&quot;');
+          const name = String(it.company||"").replaceAll('"','&quot;');
           const meta = it.timestamp ? ('<span style="color:#6b7280;font-size:12px">обновлено: '+String(it.timestamp).replaceAll('<','&lt;')+'</span>') : '';
-          return '<div class="dockItem" data-company="'+name+'"><b>'+name+'</b>'+meta+'</div>';
-        }).join('');
-        dockSuggest.style.display='block';
-        dockSuggest.querySelectorAll('.dockItem').forEach(el=>{
-          el.addEventListener('click', ()=>{
-            const c = el.getAttribute('data-company')||'';
-            dockSuggest.style.display='none';
-            dockCompany.value = c;
-            setCompanyInLinks(c);
-            const u = new URL(location.href);
-            u.searchParams.set('company', c);
-            location.href = u.toString();
+          return '<div class="dockItem" data-row="'+it.row+'" data-company="'+name+'"><b>'+name+'</b>'+meta+'</div>';
+        }).join("");
+        dockSuggest.style.display="block";
+        dockSuggest.querySelectorAll(".dockItem").forEach(el=>{
+          const row = Number(el.getAttribute("data-row")||0);
+          const comp = el.getAttribute("data-company")||"";
+          if(!row) return;
+          el.addEventListener("click", ()=>{
+            dockSuggest.style.display="none";
+            dockSuggest.innerHTML="";
+            loadCompanyByRow(row, comp);
           });
         });
-      }catch(e){ dockSuggest.style.display='none'; }
-    }
-  })();
+      }catch(e){
+        dockSuggest.style.display="none"; dockSuggest.innerHTML="";
+      }
+    }, 250);
+  });
 
-// AUTOLOAD_COMPANY
-(function(){
-  const u=new URL(location.href);
-  const c=(u.searchParams.get('company')||'').trim();
-  if(!c) return;
-  // Try to load latest row for this company via search+get
-  const dock=document.getElementById('dockCompany');
-  if(dock) dock.value=c;
+  dockCompany.addEventListener("keydown", (ev)=>{
+    if(ev.key === "Enter"){
+      ev.preventDefault();
+      const name = dockCompany.value.trim();
+      loadCompanyByName(name);
+    }
+  });
+
+  if(dockLoadBtn){
+    dockLoadBtn.addEventListener("click", ()=>{
+      const name = dockCompany.value.trim();
+      loadCompanyByName(name);
+    });
+  }
+
+  // autoload from URL
   try{
-    if(typeof loadCompanyByName==='function') { loadCompanyByName(c); return; }
-  }catch(e){}
-  try{
-    // fallback: use search endpoint and take newest row
-    const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(c) + '&limit=20';
-    jsonp(url).then(res=>{
-      const items = (res && (res.items||res.results||res.data)) || [];
-      const list = Array.isArray(items)?items:[];
-      if(!list.length) return;
-      // pick newest by row/timestamp
-      list.sort((a,b)=> (Number(b.row||b.r||0)-Number(a.row||a.r||0)) || String(b.timestamp||b.ts||'').localeCompare(String(a.timestamp||a.ts||'')) );
-      const row = list[0].row || list[0].r;
-      if(!row) return;
-      const gurl = WEBAPP_URL + '?action=get&row=' + encodeURIComponent(row);
-      return jsonp(gurl);
-    }).then(data=>{
-      const payload = (data && (data.payload || data.data || data.item && data.item.payload)) || null;
-      if(payload && typeof applyPayload==='function') applyPayload(payload);
-      if(typeof recalc==='function') try{recalc();}catch(e){}
-    }).catch(()=>{});
+    const u = new URL(location.href);
+    const c = (u.searchParams.get("company")||"").trim();
+    if(c){
+      dockCompany.value = c;
+      setCompanyInLinks(c);
+      loadCompanyByName(c);
+    }
   }catch(e){}
 })();
 </script>
-
 <div id="globalLoader" aria-hidden="true">
   <div class="box" role="status" aria-live="polite">
     <div class="spinner"></div>
@@ -4137,6 +4208,23 @@ document.addEventListener("DOMContentLoaded", ()=>{
     try{ el.remove(); }catch(e){ el.style.display="none"; }
   });
 });
+</script>
+
+
+<script id="KPI_MODAL_KILL">
+(function(){
+  // Remove any KPI explain modal/backdrop remnants (they block PSI)
+  try{
+    document.querySelectorAll('.kpiModal, #kpiModal, [data-kpi-modal], .modal-backdrop, .backdrop').forEach(el=>{
+      if(el && el.classList && el.classList.contains('kpiModal')) el.remove();
+    });
+    const km = document.getElementById('kpiModal'); if(km) km.remove();
+    // In case something sets display:block later
+    const st = document.createElement('style');
+    st.textContent = '.kpiModal, #kpiModal{display:none!important;visibility:hidden!important;pointer-events:none!important;}';
+    document.head.appendChild(st);
+  }catch(e){}
+})();
 </script>
 
 </body>
