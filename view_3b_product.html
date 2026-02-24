@@ -2,10 +2,34 @@
 <html lang="ru">
 <head>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;">
-  <script src="config.js"></script>
+  <script src="config.js">
+function extractPayloadFromItem(item){
+  let p = item;
+  if(item && item.payload !== undefined) p = item.payload;
+  if(typeof p === "string"){ try{ p = JSON.parse(p); }catch(e){} }
+  if(p && typeof p === "object" && typeof p.payload === "string"){ try{ p.payload = JSON.parse(p.payload);}catch(e){} }
+  if(p && typeof p === "object" && p.payload && typeof p.payload === "object") p = p.payload;
+  return p;
+}
+function applyLoadedItem(item){
+  const payload = extractPayloadFromItem(item);
+  try{
+    if(typeof normalizePayload==="function" && typeof apply==="function"){
+      apply(normalizePayload(payload));
+    } else if(typeof apply==="function"){
+      apply(payload);
+    } else if(typeof applyPayload==="function"){
+      applyPayload(payload);
+    }
+  }catch(e){
+    try{ if(typeof applyPayload==="function") applyPayload(payload); }catch(_e){}
+  }
+  try{ if(typeof recalc==="function") recalc(); }catch(e){}
+}
+</script>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Требования к продукту — Инферит ИТМен</title>
+  <title>Продукт — Инферит ИТМен</title>
   <style>
     :root{
       --bg:#f6f7fb;--card:#fff;--text:#0b1220;--muted:#5b6475;--line:rgba(15,23,42,.12);
@@ -81,7 +105,7 @@
       <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
       <div class="toolGrid">
         <a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-<a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+<a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">борд итогов</div></div></a>
         <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
         <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
         <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
@@ -113,7 +137,7 @@
         </div>
       </div>
 
-      <h1>Требования к продукту</h1>
+      <h1>Продукт</h1>
       <div class="sub">Фиксируем требования к продукту (roadmap/оценка). При сохранении данные не стирают остальные разделы: мы берём последнюю запись из Google Sheets и обновляем только блок 6.</div>
 
       <div class="btns">
@@ -223,33 +247,19 @@
 
     setStatus('Загружаю последнюю запись…', true);
     const data = await jsonp(WEBAPP_URL + '?action=get&company=' + encodeURIComponent(company));
-    if(!data || !data.ok){ setStatus('Не удалось загрузить данные (action=get)', false); return; }
+    if(!data || !data.ok || !data.payload){ setStatus('Не удалось загрузить данные (action=get)', false); return; }
 
-    // Apps Script may return payload in different shapes:
-    // 1) {ok:true, payload: <object>} where <object> is the saved payload
-    // 2) {ok:true, payload: "{...}"} as JSON string
-    // 3) {ok:true, item:{payload:<object|string>}} or {ok:true, data:{...}}
-    let raw = data.payload || (data.item && data.item.payload) || data.data || null;
-    if(!raw){ setStatus('Не удалось загрузить данные: payload пустой', false); return; }
-    if(typeof raw === 'string'){
-      let s = raw.trim();
-      for(let i=0;i<2;i++){
-        if(s.startsWith('"') && s.endsWith('"')){ try{ s = JSON.parse(s); }catch(_e){} }
-      }
-      try{ raw = JSON.parse(s); }catch(_e){}
-    }
-    // If wrapper contains nested payload
-    const base = (raw && typeof raw === 'object' && raw.payload) ? (typeof raw.payload==='string' ? (()=>{try{return JSON.parse(raw.payload);}catch(_e){return raw.payload;}})() : raw.payload) : raw;
-
-    loadedBase = (base && typeof base === 'object') ? base : { company };
-    loadedCompany = (loadedBase.company || loadedBase.companyName || company);
+    const p = data.payload;
+    const parsed = p._payload_parsed && typeof p._payload_parsed === 'object' ? p._payload_parsed : null;
+    loadedBase = parsed || { company: (p.company||company) };
+    loadedCompany = (p.company || company);
 
     const cn = document.getElementById('companyName');
     if(cn) cn.value = loadedCompany;
     const ind = document.getElementById('industry');
     if(ind && (loadedBase.industry||loadedBase.industryName)) ind.value = (loadedBase.industry||loadedBase.industryName);
 
-    const pr = loadedBase.productRequirements || loadedBase.prodRequirements || loadedBase.prodreq || loadedBase.productReqs || [];
+    const pr = loadedBase.productRequirements || loadedBase.prodRequirements || loadedBase.prodreq || [];
     render(Array.isArray(pr) ? pr : []);
     setStatus('✅ Загружено: ' + loadedCompany);
   }
@@ -316,7 +326,6 @@
   // Dock search
   const dockCompany = document.getElementById('dockCompany');
   const dockSuggest = document.getElementById('dockSuggest');
-  const dockLoadBtn = document.getElementById('dockLoadBtn');
   let dockTimer=null;
 
   dockCompany.value = getCompanyFromUrl();
