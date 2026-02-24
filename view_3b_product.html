@@ -80,7 +80,8 @@
       <div style="height:12px"></div>
       <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
       <div class="toolGrid">
-        <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы и риски</div><div class="tDesc">борд итогов</div></div></a>
+        <a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+<a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы и риски</div><div class="tDesc">борд итогов</div></div></a>
         <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
         <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Требования к пилоту</div><div class="tDesc">раздел 4</div></div></a>
         <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Требования к продукту</div><div class="tDesc">раздел 6</div></div></a>
@@ -92,10 +93,31 @@
 
   <div class="wrap">
     <div class="card pad">
+
+      <div class="card" style="padding:14px; margin-bottom:12px">
+        <h2 style="margin:0;font-size:16px;font-weight:950">1) Паспорт проекта</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+          <label style="display:block">
+            <div style="font-size:12px;color:var(--muted);font-weight:900;margin-bottom:6px">Компания</div>
+            <input id="companyName" class="dockSearch" style="padding-left:12px" placeholder="Введите или подгрузите компанию"/>
+          </label>
+          <label style="display:block">
+            <div style="font-size:12px;color:var(--muted);font-weight:900;margin-bottom:6px">Отрасль</div>
+            <select id="industry" class="dockSearch" style="padding-left:12px">
+              <option value="">— выбрать —</option>
+              <option>Промышленность</option><option>Финансы</option><option>Ритейл</option><option>Телеком</option>
+              <option>Госсектор</option><option>Энергетика</option><option>Транспорт/Логистика</option>
+              <option>Медицина</option><option>ИТ/Разработка</option><option>Другое</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
       <h1>Требования к продукту</h1>
       <div class="sub">Фиксируем требования к продукту (roadmap/оценка). При сохранении данные не стирают остальные разделы: мы берём последнюю запись из Google Sheets и обновляем только блок 6.</div>
 
       <div class="btns">
+        <button class="btn ghost" id="btnLoadCompany">Подгрузить</button>
         <button class="btn" id="btnSave">Сохранить</button>
         <button class="btn ghost" id="btnAdd">+ Добавить требование</button>
         <button class="btn ghost" id="btnClear">Очистить</button>
@@ -208,6 +230,11 @@
     loadedBase = parsed || { company: (p.company||company) };
     loadedCompany = (p.company || company);
 
+    const cn = document.getElementById('companyName');
+    if(cn) cn.value = loadedCompany;
+    const ind = document.getElementById('industry');
+    if(ind && (loadedBase.industry||loadedBase.industryName)) ind.value = (loadedBase.industry||loadedBase.industryName);
+
     const pr = loadedBase.productRequirements || loadedBase.prodRequirements || loadedBase.prodreq || [];
     render(Array.isArray(pr) ? pr : []);
     setStatus('✅ Загружено: ' + loadedCompany);
@@ -215,7 +242,7 @@
 
   async function save(){
     if(!WEBAPP_URL) { setStatus('GS_WEBAPP_URL пустой. Проверь config.js', false); return; }
-    const company = loadedCompany || getCompanyFromUrl();
+    const company = (document.getElementById('companyName')?.value || loadedCompany || getCompanyFromUrl() || '').trim();
     if(!company){ setStatus('Сначала выбери компанию', false); return; }
 
     const prod = collect();
@@ -223,6 +250,8 @@
     // Merge into last loaded payload (so we don't wipe other sections)
     const base = loadedBase && typeof loadedBase === 'object' ? JSON.parse(JSON.stringify(loadedBase)) : { company };
     base.company = company;
+    const ind = (document.getElementById('industry')?.value||'').trim();
+    if(ind) base.industry = ind;
     base.productRequirements = prod;
 
     const baseNoPayload = JSON.parse(JSON.stringify(base));
@@ -250,6 +279,25 @@
   });
   document.getElementById('btnClear').addEventListener('click', ()=>render([]));
   document.getElementById('btnSave').addEventListener('click', ()=>save().catch(e=>setStatus('Ошибка сохранения: '+(e?.message||e), false)));
+
+
+  document.getElementById('btnLoadCompany')?.addEventListener('click', ()=> {
+    const c = (document.getElementById('dockCompany')?.value || document.getElementById('companyName')?.value || '').trim();
+    if(!c) return setStatus('Сначала выбери компанию', false);
+    const cn = document.getElementById('companyName'); if(cn) cn.value = c;
+    loadCompany(c).catch(e=>setStatus('Ошибка загрузки: '+(e?.message||e), false));
+  });
+
+  document.getElementById('dockLoadBtn')?.addEventListener('click', ()=> {
+    const c = (document.getElementById('dockCompany')?.value || '').trim();
+    if(!c) return;
+    const u = new URL(location.href); u.searchParams.set('company', c);
+    // не перезагружаем страницу — просто грузим
+    history.replaceState(null,'',u.toString());
+    const cn = document.getElementById('companyName'); if(cn) cn.value = c;
+    loadCompany(c).catch(e=>setStatus('Ошибка загрузки: '+(e?.message||e), false));
+  });
+
 
   // Dock search
   const dockCompany = document.getElementById('dockCompany');
@@ -288,33 +336,6 @@
   const initialCompany = getCompanyFromUrl();
   if(initialCompany){ loadCompany(initialCompany).catch(e=>setStatus('Ошибка загрузки: '+(e?.message||e), false)); }
   else render([]);
-</script>
-
-<script>
-// AUTOLOAD_COMPANY
-(function(){
-  const u=new URL(location.href);
-  const c=(u.searchParams.get('company')||'').trim();
-  if(!c) return;
-  const dock=document.getElementById('dockCompany');
-  if(dock) dock.value=c;
-  try{
-    const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(c) + '&limit=20';
-    jsonp(url).then(res=>{
-      const items = (res && (res.items||res.results||res.data)) || [];
-      const list = Array.isArray(items)?items:[];
-      if(!list.length) return;
-      list.sort((a,b)=> (Number(b.row||0)-Number(a.row||0)) );
-      const row = list[0].row;
-      if(!row) return;
-      return jsonp(WEBAPP_URL + '?action=get&row=' + encodeURIComponent(row));
-    }).then(data=>{
-      const payload = data && (data.payload || (data.item && data.item.payload));
-      if(payload && typeof applyPayload==='function') applyPayload(payload);
-      if(typeof recalc==='function') try{recalc();}catch(e){}
-    }).catch(()=>{});
-  }catch(e){}
-})();
 </script>
 
 </body>
