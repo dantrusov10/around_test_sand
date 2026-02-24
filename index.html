@@ -199,6 +199,162 @@
     .miniStat b{color:var(--text)}
   
 .benchWrap{display:none!important;}
+/* === v41 unified width + floating company dropdown === */
+:root{--content-max:1120px;}
+.container{max-width:none !important;}
+/* center ALL major blocks (including grids/tables) inside the padded container */
+.container > .header,
+.container > .grid,
+.container > .card,
+.container > .section,
+.container > section,
+.container > .tableWrap,
+.container > .block,
+.container > .hr,
+.container > .divider{
+  max-width:var(--content-max) !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  width:100% !important;
+}
+/* safety: keep inner wide wrappers constrained */
+.wide, .wideWrap, .wideSection, .contentWide, .fullWidthBlock{
+  max-width:var(--content-max) !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  width:100% !important;
+}
+/* tables should not force horizontal scroll unless truly necessary */
+.tableWrap{overflow-x:auto;}
+
+.companySuggestDropdown{z-index:999999 !important;}
+
+
+
+/* v43b: hard unify width for passport + nested blocks (some blocks are not direct children) */
+#cardPassport,
+#passportCard,
+.cardPassport,
+.passportRow,
+.passportWrap,
+.passportExtra,
+.passportBlock,
+.container #cardPassport,
+.container #passportCard,
+.container .cardPassport,
+.container .passportRow,
+.container .passportWrap,
+.container .passportExtra,
+.container .passportBlock{
+  max-width:var(--content-max) !important;
+  width:100% !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+
+
+
+/* UNIFIED_WIDTH_FIX_V44 */
+/* Make all top-level blocks align perfectly under each other */
+:root{ --pageMax: 1120px; }
+.kpiBar{ max-width: var(--pageMax); margin-left:auto; margin-right:auto; }
+.container > .card,
+.container > section,
+.container > .section,
+.container > .tableWrap,
+.container > .block,
+.container > .blockWrap,
+.container > .formSection{
+  max-width: var(--pageMax);
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* allow dropdowns to overlay next blocks */
+.card, .section, .tableWrap{ overflow: visible; }
+</style>
+
+<style id="unifiedWidthAndDropdownFix">
+/* BUILD v42: unify content width across blocks + fix company dropdown clipping */
+:root{
+  --dockW: 340px;
+  --contentW: 1120px;
+  --pagePad: 24px;
+}
+
+/* Keep overall page layout (dock on left) but make ALL content blocks одинаковой ширины */
+.container{
+  max-width: calc(var(--dockW) + var(--contentW) + (var(--pagePad) * 2));
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Every direct block in the main column has the same width and left edge */
+.container > header,
+.container > .card,
+.container > section,
+.container > div{
+  max-width: var(--contentW);
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Don’t accidentally constrain the left dock itself */
+.quickDock{ max-width:none !important; width:auto !important; margin:0 !important; }
+
+/* Tables should not create horizontal page scroll; scroll only inside table card */
+.tableWrap{ overflow-x:auto; }
+
+/* Fix: company suggestions were hidden under card due to overflow:hidden */
+.card{ overflow: visible; }
+.dockSearchWrap{ overflow: visible; }
+.companySuggest{ z-index: 99999; }
+
+ (max-width: 1180px){
+  :root{ --dockW: 0px; --contentW: 980px; }
+  .container{ max-width:none; margin:0; }
+  .container{ padding-left: 24px; }
+}
+
+/* === FORCE unified content width + alignment (v45) === */
+:root{
+  --contentW: 1120px;
+  --contentPad: 22px;
+}
+.container{
+  max-width: var(--contentW) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.card, .section, .block, .panel, .kpiBar, .heatWrap, .tableWrap, .table-card, .grid, .grid2, .grid3, .wide, .content, .contentWrap{
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+#passportCard, #passportProject, .passportCard, .passport-project, .passport, .project-passport{
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.center, .centerRow, .passportWrap, .passportRow, .rowCenter{
+  justify-content: flex-start !important;
+}
+.searchWrap, .companySearch, .company-search, .quickSearch, .fastSearch, .inputWrap{
+  position: relative !important;
+  overflow: visible !important;
+  z-index: 50 !important;
+}
+.suggestions, .dropdown, .autocomplete, .companyList, .suggestList{
+  position: absolute !important;
+  z-index: 9999 !important;
+}
+.card, .section, .block, .panel{
+  overflow: visible !important;
+}
+
 </style>
 </head>
 <body>
@@ -234,26 +390,26 @@
             <div class="miniStat"><b id="miniUpd">—</b> обновлено (МСК)</div>
           </div>
           <div class="miniRow" style="margin-top:10px">
-            <a class="btn secondary" id="openFullBtn" href="view_5_full.html?v=35">Открыть полную карту</a>
-            <a class="btn ghost" id="openInterviewBtn" href="view_2_interview.html?v=35">Интервью</a>
+            <a class="btn secondary" id="openFullBtn" href="view_5_full.html?v=42">Открыть полную карту</a>
+            <a class="btn ghost" id="openInterviewBtn" href="view_2_interview.html?v=42">Интервью</a>
           </div>
           <div class="miniRow" style="margin-top:8px">
-            <a class="btn ghost" id="openIndicesBtn" href="view_1_indices.html?v=35">Индексы</a>
-            <a class="btn ghost" id="openReqBtn" href="view_3_requirements.html?v=35">Требования</a>
-            <a class="btn ghost" id="openProdBtn" href="view_3b_product.html?v=35">Продукт</a>
-            <a class="btn ghost" id="openPsiBtn" href="view_4_psi.html?v=35">ПСИ</a>
+            <a class="btn ghost" id="openIndicesBtn" href="view_1_indices.html?v=42">Индексы</a>
+            <a class="btn ghost" id="openReqBtn" href="view_3_requirements.html?v=42">Требования</a>
+            <a class="btn ghost" id="openProdBtn" href="view_3b_product.html?v=42">Продукт</a>
+            <a class="btn ghost" id="openPsiBtn" href="view_4_psi.html?v=42">ПСИ</a>
           </div>
         </div>
 
         <div style="height:12px"></div>
         <div class="sectionTitle">Инструменты</div>
         <div class="toolGrid">
-          <a class="tool" href="view_1_indices.html?v=35"><div class="tIcon">📊</div><div><div class="tName">Индексы и риски</div><div class="tDesc">борд итогов</div></div></a>
-          <a class="tool" href="view_2_interview.html?v=35"><div class="tIcon">🎯</div><div><div class="tName">Интервью (1–3)</div><div class="tDesc">быстро/глубоко</div></div></a>
-          <a class="tool" href="view_3_requirements.html?v=35"><div class="tIcon">🧪</div><div><div class="tName">Требования к пилоту</div><div class="tDesc">раздел 4</div></div></a>
-          <a class="tool" href="view_3b_product.html?v=35"><div class="tIcon">🧩</div><div><div class="tName">Требования к продукту</div><div class="tDesc">раздел 6</div></div></a>
-          <a class="tool" href="view_4_psi.html?v=35"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-          <a class="tool" href="view_5_full.html?v=35"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё целиком</div></div></a>
+          <a class="tool" href="view_1_indices.html?v=42"><div class="tIcon">📊</div><div><div class="tName">Индексы и риски</div><div class="tDesc">борд итогов</div></div></a>
+          <a class="tool" href="view_2_interview.html?v=42"><div class="tIcon">🎯</div><div><div class="tName">Интервью (1–3)</div><div class="tDesc">быстро/глубоко</div></div></a>
+          <a class="tool" href="view_3_requirements.html?v=42"><div class="tIcon">🧪</div><div><div class="tName">Требования к пилоту</div><div class="tDesc">раздел 4</div></div></a>
+          <a class="tool" href="view_3b_product.html?v=42"><div class="tIcon">🧩</div><div><div class="tName">Требования к продукту</div><div class="tDesc">раздел 6</div></div></a>
+          <a class="tool" href="view_4_psi.html?v=42"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+          <a class="tool" href="view_5_full.html?v=42"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё целиком</div></div></a>
         </div>
         </div>
 
