@@ -242,6 +242,29 @@ body.view-psi #cardPassport .virt-wrapper,
 body.view-psi #cardPassport .virt-hint,
 body.view-psi #cardPassport .row:not(:first-of-type){ display:none !important; }
 
+/* Product-only view: show only 6) Требования к продукту (prodReqCard) */
+body.view-product #cardMaturity,
+body.view-product #cardFinance,
+body.view-product #cardReq{ display:none !important; }
+
+/* Keep cardPSI container but hide PSI parts; show only nested prodReqCard */
+body.view-product #cardPSI > h2,
+body.view-product #cardPSI > .small,
+body.view-product #cardPSI > .btns,
+body.view-product #cardPSI > .table-wrap,
+body.view-product #cardPSI > .hr,
+body.view-product #projectRisksWrap{ display:none !important; }
+
+body.view-product #prodReqCard{ margin-top:0 !important; }
+
+/* Collapse Passport card to only company (+industry) row */
+body.view-product #cardPassport .hr,
+body.view-product #cardPassport h3,
+body.view-product #cardPassport .small,
+body.view-product #cardPassport .virt-wrapper,
+body.view-product #cardPassport .virt-hint,
+body.view-product #cardPassport .row:not(:first-of-type){ display:none !important; }
+
 
 /* === Suggest timestamp formatting === */
 .companySuggestMeta{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
@@ -372,12 +395,10 @@ body{overflow-x:hidden;}
 
 
 <style id="pageVisibilityRules">
-/* Page: Product requirements */
-.kpiBar, #riskHeatmapCard, #cLevelBlock { display:none !important; }
-#cardPassport, #cardMaturity, #cardFinance, #cardReq, #cardPSI, #projectRisksWrap { display:none !important; }
+/* Page: Full */
 </style>
 </head>
-<body class="view-full">
+<body class="view-product">
   <div class="quickDock">
     <div class="card pad">
       <div class="dockTitle">Быстрый вход</div>
@@ -3152,13 +3173,6 @@ function validateRequired(){
   const missing = [];
   const v = (id)=> (document.getElementById(id)?.value || "").trim();
   if(!v("company")) missing.push("Компания");
-const psiRows = [...document.querySelectorAll("#psiTbody tr")];
-  const hasPsi = psiRows.some(r=>{
-    const scn=(r.querySelector(".psi-scn")?.value||"").trim();
-    const exp=(r.querySelector(".psi-exp")?.value||"").trim();
-    return scn && exp;
-  });
-  if(!hasPsi) missing.push("ПСИ: хотя бы 1 сценарий (сценарий + ожидаемый результат)");
   return missing;
 }
 function updateRequiredUI(){
