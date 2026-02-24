@@ -3422,6 +3422,14 @@ async function gsSearch(q){
     return await jsonp(url); // JSONP to bypass CORS for local HTML
   }
 
+  // Preferred API: load latest record by company name
+  async function gsGetByCompany(company){
+    const base = (typeof GOOGLE_SHEETS_WEBAPP_URL === "string" && GOOGLE_SHEETS_WEBAPP_URL) ? GOOGLE_SHEETS_WEBAPP_URL : "";
+    if(!base) throw new Error("GOOGLE_SHEETS_WEBAPP_URL is not set");
+    const url = `${base}?action=get&company=${encodeURIComponent(company||"")}`;
+    return await jsonp(url);
+  }
+
 
   // Build a fast lookup: normalizedId -> real element id
   function normalizeKey(k){
@@ -3699,9 +3707,12 @@ const run = debounce(async ()=>{
         try{
           showLoader("Загружаю последнюю запись…", "Получаю данные компании из Google Sheets");
           const got = await gsGetByCompany(name);
-          if(got && got.ok && got.item){
-            showLoader("Применяю данные…", "Заполняю форму значениями из базы");
-            applyPayload(got.item);
+          if(got && got.ok){
+            const payload = (got.payload || (got.item && got.item.payload) || got.data || got.item) || null;
+            if(payload){
+              showLoader("Применяю данные…", "Заполняю форму значениями из базы");
+              applyPayload(payload);
+            }
             showLoader("Пересчитываю индексы…", "Обновляю KPI и индексы реализуемости");
             try{ recalc(); }catch(_e){}
           }
