@@ -258,7 +258,7 @@ body.no-kpi .kpiBar{display:none !important;}
 <style id="kpi-modal-css">
 /* ===== KPI explain modal ===== */
 .kpiModal{position:fixed;inset:0;display:none !important;z-index:9999}
-.kpiModal[aria-hidden="false"]{display:block}
+.kpiModal[aria-hidden="false"]{display:none !important}
 .kpiModal .backdrop{position:absolute;inset:0;background:rgba(17,24,39,.45);backdrop-filter: blur(6px);}
 .kpiModal .dialog{
   position:relative;max-width:920px;margin:6vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:18px;
@@ -3433,17 +3433,21 @@ function extractPayloadFromItem(item){
 function applyLoadedItem(item){
   const payload = extractPayloadFromItem(item);
   try{
-    if(typeof normalizePayload==="function" && typeof apply==="function"){
-      apply(normalizePayload(payload));
+    // IMPORTANT: these pages must apply FLAT payload from Sheets (not nested structured model).
+    if(typeof applyPayload==="function"){
+      applyPayload(payload);
     } else if(typeof apply==="function"){
       apply(payload);
-    } else if(typeof applyPayload==="function"){
-      applyPayload(payload);
     }
   }catch(e){
+    console.warn("applyLoadedItem failed", e);
     try{ if(typeof applyPayload==="function") applyPayload(payload); }catch(_e){}
   }
-  try{ if(typeof recalc==="function") recalc(); }catch(e){}
+  try{
+    const btn = document.getElementById("btnRecalc");
+    if(btn) btn.click();
+  }catch(_e){}
+  try{ if(typeof recalc==="function") recalc(); }catch(_e){}
 }
 
 
@@ -4121,6 +4125,18 @@ function syncToGoogleSheets(){
     }catch(e){}
   };
 })();
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+  const m = document.getElementById("kpiModal") || document.querySelector(".kpiModal");
+  if(m){ try{ m.remove(); }catch(e){ m.style.display="none"; m.setAttribute("aria-hidden","true"); } }
+  // also remove any stray backdrops/overlays
+  document.querySelectorAll(".backdrop,.modalBackdrop,.overlay,.modalOverlay").forEach(el=>{
+    try{ el.remove(); }catch(e){ el.style.display="none"; }
+  });
+});
 </script>
 
 </body>
