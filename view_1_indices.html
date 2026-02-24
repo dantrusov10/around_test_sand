@@ -262,7 +262,24 @@ body.no-kpi .kpiBar{display:none !important;}
 .dockLoadBtn{border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer}
 .dockLoadBtn:hover{filter:brightness(0.98)}
 .dockTop{display:flex;gap:10px;align-items:center}
-</style>
+
+.dockSearchStatus{
+  margin-top:6px;
+  font-size:12px;
+  color:var(--muted);
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.dockSearchStatus .miniSpinner{
+  width:14px;height:14px;border-radius:999px;
+  border:2px solid rgba(0,0,0,.12);
+  border-top-color: rgba(0,0,0,.55);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+\1
 
 <style id="kpi-modal-css">
 /* ===== KPI explain modal ===== */
@@ -341,6 +358,8 @@ body.no-kpi .kpiBar{display:none !important;}
         <button id="dockLoadBtn" class="dockLoadBtn" type="button" title="Загрузить">Загрузить</button>
       </div>
       <div id="dockSuggest" class="dockSuggest"></div>
+      <div id="dockSearchStatus" class="dockSearchStatus" style="display:none"></div>
+
 
       <div style="height:12px"></div>
       <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
@@ -4358,8 +4377,8 @@ function syncToGoogleSheets(){
   const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
   window.WEBAPP_URL = WEBAPP_URL; // expose for legacy code
   const dockCompany = document.getElementById("dockCompany");
-  const dockSuggest = document.getElementById("dockSuggest");
-  const dockLoadBtn = document.getElementById("dockLoadBtn");
+  \1
+    const dockSearchStatus = document.getElementById("dockSearchStatus");const dockLoadBtn = document.getElementById("dockLoadBtn");
   if(!dockCompany || !dockSuggest) return;
 
   function setUrlCompany(company){
@@ -4414,10 +4433,11 @@ function syncToGoogleSheets(){
     const data = await jsonp(WEBAPP_URL + "?action=search&q=" + encodeURIComponent(q) + "&limit=10");
     return (data && data.ok && Array.isArray(data.items)) ? data.items : [];
   }
-  async function gsGetRow(row){
-    if(!WEBAPP_URL) throw new Error("WEBAPP_URL empty");
-    const data = await jsonp(WEBAPP_URL + "?action=get&row=" + encodeURIComponent(row));
-    return (data && (data.payload || data.item)) || null;
+  async async function gsGetRow(row){
+    const base = (typeof GOOGLE_SHEETS_WEBAPP_URL === "string" && GOOGLE_SHEETS_WEBAPP_URL) ? GOOGLE_SHEETS_WEBAPP_URL : (typeof WEBAPP_URL==="string"?WEBAPP_URL:"");
+    if(!base) throw new Error("GOOGLE_SHEETS_WEBAPP_URL is not set");
+    const data = await jsonp(base + "?action=get&row=" + encodeURIComponent(row));
+    return (data && (data.payload || data.item || data.data)) || null;
   }
 
   function applyAnyPayload(obj){
@@ -4455,8 +4475,10 @@ function syncToGoogleSheets(){
     if(!q) return;
     showGlobalLoader("Ищу компанию…", "Сверяю по списку в Google Sheets.");
     try{
+      if(dockSearchStatus){dockSearchStatus.innerHTML = `<span class="miniSpinner"></span><span>Поиск…</span>`; dockSearchStatus.style.display="flex";}
       const items = await gsSearch(q);
-      if(!items.length){ alert("Компания не найдена в Google Sheets"); return; }
+      
+      if(dockSearchStatus){dockSearchStatus.style.display="none";}if(!items.length){ alert("Компания не найдена в Google Sheets"); return; }
       items.sort((a,b)=> (Number(b.row||0)-Number(a.row||0)));
       await loadCompanyByRow(items[0].row, items[0].company);
     }finally{
@@ -4489,8 +4511,10 @@ function syncToGoogleSheets(){
     dockSuggest.innerHTML = '<div class="dockItem"><b>Поиск…</b><span style="color:#6b7280;font-size:12px">ожидайте</span></div>';
     timer=setTimeout(async ()=>{
       try{
-        const items = await gsSearch(q);
-        if(!items.length){ dockSuggest.style.display="none"; dockSuggest.innerHTML=""; return; }
+        if(dockSearchStatus){dockSearchStatus.innerHTML = `<span class="miniSpinner"></span><span>Поиск…</span>`; dockSearchStatus.style.display="flex";}
+      const items = await gsSearch(q);
+        
+      if(dockSearchStatus){dockSearchStatus.style.display="none";}if(!items.length){ dockSuggest.style.display="none"; dockSuggest.innerHTML=""; return; }
         dockSuggest.innerHTML = items.map(it=>{
           const name = String(it.company||"").replaceAll('"','&quot;');
           const meta = it.timestamp ? ('<span style="color:#6b7280;font-size:12px">обновлено: '+String(it.timestamp).replaceAll('<','&lt;')+'</span>') : '';
