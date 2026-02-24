@@ -455,7 +455,7 @@ body.mode-product .passportOnly{display:none!important;}
 <body class="view-pilot" class="pageMode-pilot">
 
 <div id="buildBadge" style="position:fixed;z-index:99999;bottom:12px;right:12px;background:#111827;color:#fff;padding:8px 10px;border-radius:10px;font:12px/1.2 system-ui;box-shadow:0 10px 30px rgba(0,0,0,.15);opacity:.92">
-  BUILD <b>v35</b> • pilot
+  BUILD <b>v36</b> • pilot
 </div>
 
 <div class="quickDock">
@@ -470,13 +470,13 @@ body.mode-product .passportOnly{display:none!important;}
 <div style="height:12px"></div>
 <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
 <div class="toolGrid">
-<a class="tool" href="index.html?v=35"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-<a class="tool" href="view_1_indices.html?v=35"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-<a class="tool" href="view_2_interview.html?v=35"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-<a class="tool" href="view_3_requirements.html?v=35"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-<a class="tool" href="view_3b_product.html?v=35"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-<a class="tool" href="view_4_psi.html?v=35"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-<a class="tool" href="view_5_full.html?v=35"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+<a class="tool" href="index.html?v=36"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+<a class="tool" href="view_1_indices.html?v=36"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+<a class="tool" href="view_2_interview.html?v=36"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+<a class="tool" href="view_3_requirements.html?v=36"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+<a class="tool" href="view_3b_product.html?v=36"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+<a class="tool" href="view_4_psi.html?v=36"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+<a class="tool" href="view_5_full.html?v=36"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
 </div>
 </div>
 </div>
@@ -5004,7 +5004,10 @@ function syncToGoogleSheets(){
   // 4) for pages that should not show KPI bars / top indices, hide them unless mode=indices/full/interview
   const mode = 'pilot';
   if(['pilot','product','psi'].includes(mode)){
-    document.querySelectorAll('.kpiBar, #riskHeatmapCard').forEach(el=>el.style.display='none');
+    // Hard-remove KPI / indices blocks for focused pages to avoid any CSS !important overrides
+    document.querySelectorAll('.kpiBar').forEach(el=>el.remove());
+    const rh = document.getElementById('riskHeatmapCard');
+    if(rh) rh.remove();
     // also hide any "risk & readiness" blocks if present
     document.querySelectorAll('[data-section="risk"], .riskGrid, .riskRow').forEach(el=>el.style.display='none');
   }
