@@ -3215,7 +3215,7 @@ async function syncToGoogleSheets(reason){
       await fetch(url + (url.includes("?") ? "&" : "?") + "action=save", {
         method: "POST",
         mode: "no-cors",
-        headers: {"Content-Type":"text/plain;charset=utf-8"},
+        headers: {"Content-Type":"application/x-www-form-urlencoded;charset=utf-8"},
         body: JSON.stringify(payload)
       });
 
@@ -4239,14 +4239,14 @@ async function syncToGoogleSheets(){
   // 1) Beacon (no CORS / no preflight)
   try{
     if(navigator.sendBeacon){
-      const ok = navigator.sendBeacon(url, new Blob([body], {type:"text/plain;charset=utf-8"}));
+      const ok = navigator.sendBeacon(url, new Blob([body], {type:"application/x-www-form-urlencoded;charset=utf-8"}));
       if(ok){ console.log("✅ Sheets sync sent (beacon)"); return; }
     }
   }catch(e){ console.warn("Beacon failed", e); }
 
   // 2) Fetch no-cors fallback
   try{
-    await fetch(url, {method:"POST", mode:"no-cors", body, keepalive:true, headers: {"Content-Type":"text/plain;charset=utf-8"}});
+    await fetch(url, {method:"POST", mode:"no-cors", body, keepalive:true, headers: {"Content-Type":"application/x-www-form-urlencoded;charset=utf-8"}});
     console.log("✅ Sheets sync sent (fetch no-cors)");
   }catch(e){
     console.error("❌ Sheets sync failed", e);
