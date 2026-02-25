@@ -4150,6 +4150,26 @@ function buildSheetPayloadExact(){
       : _numFromText(raw);
   });
 
+  // === Derived fields for "Риски и готовность" + Heatmap + Cost of Inaction breakdown (match Google Sheets headers) ===
+  // These values are rendered as <div>/<span>, so we must explicitly add them to payload.
+  out.pilot_readiness_pct = _numFromText(_val("pilotReady"));
+  out.main_problem_zone   = String(_val("mainProblem")||"").trim();
+  out.rec_modules         = String(_val("recModules")||"").trim();
+  out.demo_focus          = String(_val("demoFocus")||"").trim();
+
+  out.risk_grey_pct = _numFromText(_val("riskGreyPct"));
+  out.risk_lic_pct  = _numFromText(_val("riskLicPct"));
+  out.risk_ops_pct  = _numFromText(_val("riskOpsPct"));
+  out.risk_gov_pct  = _numFromText(_val("riskGovPct"));
+
+  // COI components (store as numbers in ₽/год)
+  out.coi_license_loss  = _numFromText(_val("coiLic"));
+  out.coi_downtime_loss = _numFromText(_val("coiDown"));
+  out.coi_manual_loss   = _numFromText(_val("coiManual"));
+  out.coi_total_loss    = _numFromText(_val("coiTotal"));
+
+
+
   // Counts
   const techRows=[...document.querySelectorAll("#techTbody tr")];
   const procRows=[...document.querySelectorAll("#procTbody tr")];
