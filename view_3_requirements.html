@@ -5315,5 +5315,99 @@ function syncToGoogleSheets(){
 })();
 </script>
 
+
+<script>
+(function(){
+  try{
+    window.BUILD_VERSION = "v62";
+    // Update any build badges if present
+    const badge = document.querySelector('#buildBadge, .buildBadge, [data-build-badge]');
+    if(badge) badge.textContent = "BUILD v62";
+    console.log("✅ BUILD v62 loaded");
+  }catch(_){}
+  const _id = (x)=>document.getElementById(x);
+
+  // Required validation: ONLY company is required
+  window.validateRequired = window.validateRequired || function(){
+    const c = _id('company') || _id('dockCompany');
+    return !!(c && String(c.value||'').trim());
+  };
+
+  // Some pages call setMode(); keep it as a safe no-op (mode toggles handled elsewhere)
+  window.setMode = window.setMode || function(){};
+
+  // Fallback payload builder: collect all fields by id (unknown keys are ignored by Sheets writer)
+  function fallbackPayload(){
+    const obj = {};
+    document.querySelectorAll('input,select,textarea').forEach(el=>{
+      if(!el || !el.id) return;
+      if(el.disabled) return;
+      const t = (el.type||'').toLowerCase();
+      if(t === 'radio'){
+        if(!el.checked) return;
+        obj[el.name || el.id] = el.value;
+        return;
+      }
+      if(t === 'checkbox'){
+        obj[el.id] = el.checked ? 'да' : 'нет';
+        return;
+      }
+      obj[el.id] = el.value;
+    });
+    // ensure company key exists
+    if(!obj.company){
+      const c = _id('company') || _id('dockCompany');
+      if(c && String(c.value||'').trim()) obj.company = String(c.value||'').trim();
+    }
+    return obj;
+  }
+
+  // Make buildSheetPayloadExact safe
+  if(typeof window.buildSheetPayloadExact === 'function'){
+    const _orig = window.buildSheetPayloadExact;
+    window.buildSheetPayloadExact = function(){
+      try{
+        return _orig();
+      }catch(e){
+        console.warn("buildSheetPayloadExact failed → using fallback payload", e);
+        return fallbackPayload();
+      }
+    };
+  } else {
+    window.buildSheetPayloadExact = fallbackPayload;
+  }
+
+  // Make recalc safe (must not block save/excel)
+  if(typeof window.recalc === 'function' && typeof window.safeRecalc !== 'function'){
+    window.safeRecalc = function(){
+      try{ return window.recalc(); }
+      catch(e){ console.warn("recalc failed (ignored)", e); return null; }
+    };
+  }
+
+  // Patch recalc button handlers (if any) to use safeRecalc then sync
+  if(typeof window.handleRecalcClick === 'function'){
+    const _h = window.handleRecalcClick;
+    window.handleRecalcClick = function(ev){
+      try{
+        if(typeof window.safeRecalc === 'function') window.safeRecalc();
+        return _h(ev);
+      }catch(e){
+        console.warn("handleRecalcClick failed", e);
+      }
+    };
+  }
+
+  // Ensure Excel export doesn't crash due to recalc
+  if(typeof window.exportExcel === 'function'){
+    const _ex = window.exportExcel;
+    window.exportExcel = function(){
+      try{ if(typeof window.safeRecalc === 'function') window.safeRecalc(); }catch(_){}
+      return _ex.apply(this, arguments);
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
