@@ -1327,6 +1327,20 @@ body.mode-product main > section:not(#companyCard):not(.productBlock):not(#produ
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
+
+function __itmen_mergeMissingFromLatest(payload){
+  try{
+    const keys = (window.SHEET_KEYS && Array.isArray(window.SHEET_KEYS)) ? window.SHEET_KEYS : [];
+    const cache = (window.__ITMEN_LATEST_CACHE && typeof window.__ITMEN_LATEST_CACHE === 'object') ? window.__ITMEN_LATEST_CACHE : null;
+    if(!cache) return payload;
+    for(const k of keys){
+      if(!(k in payload) || payload[k] === undefined){
+        if(k in cache) payload[k] = cache[k];
+      }
+    }
+  }catch(_e){}
+  return payload;
+}
 const TECH = [
   {label:"T1. Есть ли единый источник достоверной информации об устройствах и установленном ПО?", mode:"both"},
   {label:"T2. Автоматизирован ли сбор данных об инфраструктуре (без ручного ввода)?", mode:"both"},
@@ -4612,6 +4626,12 @@ async function gsSearch(q){
       }
     }catch(e){}
 
+    // Cache latest loaded snapshot (even if this page doesn't contain all fields)
+    try{
+      if(!window.__ITMEN_LATEST_CACHE || typeof window.__ITMEN_LATEST_CACHE !== 'object') window.__ITMEN_LATEST_CACHE = {};
+      window.__ITMEN_LATEST_CACHE = Object.assign({}, window.__ITMEN_LATEST_CACHE, payload);
+    }catch(_e){}
+
 
     // 1) basic fields by id
     Object.entries(payload).forEach(([id, val]) => {
@@ -5087,6 +5107,7 @@ function syncToGoogleSheets(){
   const actionUrl = base + (base.includes("?") ? "&" : "?") + "action=save";
   const payload = (typeof buildSheetPayloadExact==="function") ? buildSheetPayloadExact() : {};
   try{ if(!payload.company){ const c=document.getElementById("company")?.value || document.getElementById("dockCompany")?.value || ""; payload.company = String(c||"").trim(); } }catch(_e){}
+  __itmen_mergeMissingFromLatest(payload);
   // create hidden iframe + form
   let ifr = document.getElementById("gsHiddenFrame");
   if(!ifr){
