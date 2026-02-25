@@ -445,6 +445,53 @@ body.view-full .card{
 }
 /* allow dropdowns to overlay next blocks */
 .card, .section, .tableWrap{ overflow: visible; }
+
+/* Dock collapse */
+.dockHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
+body.dockCollapsed .quickDock .dockHeader{flex-direction:column;justify-content:flex-start;align-items:center;gap:8px;padding-top:8px}
+body.dockCollapsed .quickDock .dockTitle{width:100%;text-align:center;font-weight:700;font-size:14px;line-height:1.1;white-space:normal}
+body.dockCollapsed .quickDock .dockToggle{width:44px;height:34px;border-radius:12px;padding:0;display:flex;align-items:center;justify-content:center}
+.dockToggle{border:1px solid rgba(0,0,0,.08);background:#fff;border-radius:10px;padding:6px 10px;cursor:pointer;font-weight:700;line-height:1;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.dockToggle:hover{transform:translateY(-1px)}
+/* --- QuickDock collapsed: icon-only, clean spacing --- */
+body.dockCollapsed .quickDock{width:86px !important; overflow:hidden !important}
+body.dockCollapsed .quickDock .dockSearchWrap,
+body.dockCollapsed .quickDock .dockTitle:not(.dockHeader .dockTitle),
+body.dockCollapsed .quickDock .dockDesc,
+body.dockCollapsed .quickDock .dockToolsTitle,
+body.dockCollapsed .quickDock .dockItemText,
+body.dockCollapsed .quickDock .dockItemSub{display:none !important}
+body.dockCollapsed .quickDock .dockCard{padding:12px !important}
+body.dockCollapsed .quickDock .dockToolBtn{justify-content:center !important}
+body.dockCollapsed .quickDock .dockToolBtn .dockIcon{margin-right:0 !important}
+
+/* tools: single column, only icon */
+body.dockCollapsed .quickDock .toolGrid{grid-template-columns:1fr !important; gap:10px !important}
+body.dockCollapsed .quickDock a.tool{justify-content:center !important; padding:10px !important; gap:0 !important}
+body.dockCollapsed .quickDock a.tool > div:not(.tIcon){display:none !important}
+body.dockCollapsed .quickDock a.tool .tName,
+body.dockCollapsed .quickDock a.tool .tDesc{display:none !important}
+body.dockCollapsed .quickDock a.tool .tIcon{margin:0 !important; width:42px !important; height:42px !important; display:flex !important; align-items:center !important; justify-content:center !important; border-radius:14px !important}
+
+
+/* Dock collapse (v2) */
+.quickDock a.tool{display:flex;align-items:center;gap:10px}
+.quickDock a.tool .toolIcon{flex:0 0 auto;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(0,0,0,.04)}
+.quickDock a.tool .toolText{display:flex;flex-direction:column;gap:2px}
+.quickDock a.tool .toolText small{opacity:.7}
+body.dockCollapsed .quickDock .dockTitle{display:none !important}
+body.dockCollapsed .quickDock .dockHeader .dockTitle{display:block !important}
+body.dockCollapsed .quickDock a.tool{justify-content:center !important}
+body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
+
+
+
+  /* Dock expanded state must look like the original (wide, with text) */
+  body:not(.dockCollapsed) .quickDock{ width:320px !important; max-width:320px !important; }
+  body:not(.dockCollapsed) .quickDock .dockTitle{ white-space:nowrap; }
+  body:not(.dockCollapsed) .quickDock a.tool{ flex-direction:row; justify-content:flex-start; }
+  body:not(.dockCollapsed) .quickDock a.tool .tIcon{ margin-right:10px; }
+
 </style>
 <style id="kpi-modal-css">
 /* ===== KPI explain modal ===== */
@@ -596,7 +643,6 @@ body.mode-product .passportOnly{display:none!important;}
 }
 
 /* Don’t accidentally constrain the left dock itself */
-.quickDock{ max-width:none !important; width:auto !important; margin:0 !important; }
 
 /* Tables should not create horizontal page scroll; scroll only inside table card */
 .tableWrap{ overflow-x:auto; }
@@ -679,9 +725,9 @@ body.mode-product .passportOnly{display:none!important;}
   BUILD <b>v42</b> • pilot
 </div>
 
-<div class="quickDock">
+<div class="quickDock" id="quickDock">
 <div class="card pad">
-<div class="dockTitle">Быстрый вход</div>
+<div class="dockHeader"><div class="dockTitle">Быстрый вход</div><button type="button" class="dockToggle" id="dockToggle" aria-label="Свернуть/развернуть панель" title="Свернуть панель">◀</button></div>
 <div class="dockSearchWrap dockTop">
 <div class="dockIcon">🔎</div>
 <input autocomplete="off" class="dockSearch" id="dockCompany" placeholder="Введите компанию"/>
@@ -3310,74 +3356,13 @@ if(interviewModeEl){
   setInterviewMode(interviewModeEl.value || "quick");
 } else {
   setInterviewMode("quick");
+}
 
 const benchModeEl = document.getElementById("benchMode");
 if(benchModeEl){
-  benchModeEl.addEventListener("change",(e)=>{ recalc(); });
+  benchModeEl.addEventListener("change",()=>{ recalc(); });
   if(!benchModeEl.value) benchModeEl.value = "mixed";
-} else {
-  // noop
 }
-
-}
-
-
-/* ===================== Governance V2 additions ===================== */
-function maturityLevel(maturityPct){
-  if(!isFinite(maturityPct)) return "—";
-  if(maturityPct >= 75) return "Высокая";
-  if(maturityPct >= 50) return "Средняя";
-  if(maturityPct >= 35) return "Ниже среднего";
-  return "Низкая";
-}
-function criticalityLabel(score){
-  if(!isFinite(score)) return "—";
-  if(score >= 75) return "Стратегическая";
-  if(score >= 50) return "Высокая";
-  if(score >= 25) return "Значимая";
-  return "Низкая";
-}
-function computeCriticality(coiRub, riskIdx01to5, maturityAvgPct){
-  const projCostBase2 = ( (+document.getElementById("workplaces")?.value||0) + (+document.getElementById("servers")?.value||0) ) * 1300;
-  const cap = projCostBase2 > 0 ? projCostBase2 : 5_000_000; // нормализация по правилу: 5 млн = 100 баллов
-  const coiScore = Math.min(100, (coiRub / cap) * 100);
-  const riskScale = Math.min(5, Math.max(1, riskIdx01to5 || 0)); // 1..5
-  const crit = (coiScore * riskScale * (100 - maturityAvgPct)) / 500; // ~0..100
-  return Math.max(0, Math.min(100, Math.round(crit)));
-}
-function setMode(mode){
-  document.body.classList.remove("client-mode","internal-mode");
-  document.body.classList.add(mode === "client" ? "client-mode" : "internal-mode");
-}
-
-function setInterviewMode(mode){
-  document.body.classList.remove("quick-mode","deep-mode");
-  document.body.classList.add(mode === "deep" ? "deep-mode" : "quick-mode");
-}
-
-function validateRequired(){
-  const missing = [];
-  const v = (id)=> (document.getElementById(id)?.value || "").trim();
-  if(!v("company")) missing.push("Компания");
-  return missing;
-}
-function updateRequiredUI(){
-  const missing = validateRequired();
-  const btnPrint = document.getElementById("btnPrint");
-  const st = document.getElementById("reqStatus");
-  const ok = missing.length === 0;
-  if(btnPrint){
-    btnPrint.disabled = !ok;
-    btnPrint.style.opacity = ok ? "1" : ".45";
-    btnPrint.style.cursor = ok ? "pointer" : "not-allowed";
-  }
-  if(st){
-    st.style.display = ok ? "none" : "block";
-    st.textContent = "Заполните обязательные поля: " + missing.join(", ");
-  }
-}
-/* =================================================================== */
-
 
 /* ===== KPI Explain Modal logic (safe, no impact on calculations) ===== *
 
@@ -5224,12 +5209,9 @@ function syncToGoogleSheets(){
 (function(){
   const KEEP = new Set(["cardPassport", "cardReq"]);
   // 1) remove passport extra fields on focused pages
+  const mode = 'pilot';
   const extra = document.getElementById('passportExtra');
-  if(extra) extra.remove();
-  // 2) kill any modal/backdrop that may block clicks
-  ['kpiModal','modal','backdrop','overlay'].forEach(cls=>{
-    document.querySelectorAll('#'+cls+',.'+cls).forEach(el=>el.remove());
-  });
+    if (extra && ['indices','pilot','product','psi'].includes(mode)) { extra.remove(); }
   // 3) hide cards not in KEEP (only when KEEP provided)
   if(KEEP.size){
     document.querySelectorAll('.card[id]').forEach(card=>{
@@ -5237,7 +5219,6 @@ function syncToGoogleSheets(){
     });
   }
   // 4) for pages that should not show KPI bars / top indices, hide them unless mode=indices/full/interview
-  const mode = 'pilot';
   if(['pilot','product','psi'].includes(mode)){
     // Hard-remove KPI / indices blocks for focused pages to avoid any CSS !important overrides
     document.querySelectorAll('.kpiBar').forEach(el=>el.remove());
@@ -5251,6 +5232,36 @@ function syncToGoogleSheets(){
     const pr=document.getElementById('prodReqCard');
     if(pr) pr.style.display='';
   }
+})();
+</script>
+
+<!-- Dock collapse/expand (shared for all pages) -->
+<script>
+(function(){
+  function initDockToggle(){
+    const btn = document.getElementById("dockToggle");
+    const dock = document.getElementById("quickDock");
+    if(!btn || !dock) return;
+    const KEY = "itmenDockCollapsed";
+    const body = document.body;
+    function apply(collapsed){
+      body.classList.toggle("dockCollapsed", !!collapsed);
+      btn.setAttribute("aria-expanded", String(!collapsed));
+      btn.textContent = collapsed ? "▶" : "◀";
+      btn.title = collapsed ? "Развернуть панель" : "Свернуть панель";
+    }
+    let collapsed = false;
+    try{ collapsed = localStorage.getItem(KEY) === "1"; }catch(e){}
+    apply(collapsed);
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      collapsed = !collapsed;
+      apply(collapsed);
+      try{ localStorage.setItem(KEY, collapsed ? "1" : "0"); }catch(e){}
+    });
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", initDockToggle);
+  else initDockToggle();
 })();
 </script>
 
