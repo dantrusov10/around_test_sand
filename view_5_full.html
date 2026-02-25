@@ -3361,6 +3361,67 @@ document.getElementById("btnClearPsi").addEventListener("click", ()=>{
 ensureBaseTables();
 recalc();
 
+
+/* ===== v66 HOTFIX: restore missing helpers (setMode / validateRequired) ===== */
+if(typeof window.setMode !== "function"){
+  window.setMode = function(mode){
+    try{
+      mode = String(mode||"internal");
+      window.__ITMEN_PDF_MODE = mode;
+      document.documentElement.setAttribute("data-pdf-mode", mode);
+      // Toggle any blocks that declare data-show-modes="internal,client"
+      document.querySelectorAll("[data-show-modes]").forEach(el=>{
+        const list = String(el.getAttribute("data-show-modes")||"").split(",").map(s=>s.trim()).filter(Boolean);
+        if(!list.length) return;
+        el.style.display = list.includes(mode) ? "" : "none";
+      });
+    }catch(_e){}
+  };
+}
+
+if(typeof window.validateRequired !== "function"){
+  window.validateRequired = function(){
+    const missing = [];
+    try{
+      const company = (document.getElementById("company")?.value || document.getElementById("dockCompany")?.value || "").trim();
+      if(!company) missing.push("Компания");
+
+      const sources = (document.getElementById("sources")?.value || "").trim();
+      if(!sources) missing.push("Источники");
+
+      // PSI: at least one meaningful row (scenario or expected) to consider PSI block present
+      const psiRows = Array.from(document.querySelectorAll("#psiTable tbody tr"));
+      const psiHas = psiRows.some(tr=>{
+        const scn = (tr.querySelector('input[name^="psi_"][name$="_scn"]')?.value || "").trim();
+        const exp = (tr.querySelector('input[name^="psi_"][name$="_exp"]')?.value || "").trim();
+        const act = (tr.querySelector('input[name^="psi_"][name$="_act"]')?.value || "").trim();
+        return (scn || exp || act);
+      });
+      if(!psiHas) missing.push("ПСИ: сценарии/ожидания");
+
+      // Product requirements: at least one requirement row text filled
+      const prodRows = Array.from(document.querySelectorAll("#prodReqTable tbody tr"));
+      const prodHas = prodRows.some(tr=>{
+        const biz = (tr.querySelector('textarea[name^="prod_"][name$="_biz"]')?.value || "").trim();
+        const func = (tr.querySelector('textarea[name^="prod_"][name$="_func"]')?.value || "").trim();
+        return (biz || func);
+      });
+      if(!prodHas) missing.push("Продукт: требования");
+
+      // Pilot requirements: at least one row
+      const reqRows = Array.from(document.querySelectorAll("#reqTable tbody tr"));
+      const reqHas = reqRows.some(tr=>{
+        const txt = (tr.querySelector('textarea[name^="req_"][name$="_text"]')?.value || "").trim();
+        return !!txt;
+      });
+      if(!reqHas) missing.push("Пилот: требования");
+
+    }catch(_e){}
+    return Array.isArray(missing) ? missing : [];
+  };
+}
+/* ===== end v66 hotfix ===== */
+
 const pdfModeEl = document.getElementById("pdfMode");
 if(pdfModeEl){
   pdfModeEl.addEventListener("change", (e)=>{ setMode(e.target.value); recalc(); });
@@ -5063,7 +5124,20 @@ function syncToGoogleSheets(){
   const actionUrl = base + (base.includes("?") ? "&" : "?") + "action=save";
   const payload = (typeof buildSheetPayloadExact==="function") ? buildSheetPayloadExact() : {};
   try{ if(!payload.company){ const c=document.getElementById("company")?.value || document.getElementById("dockCompany")?.value || ""; payload.company = String(c||"").trim(); } }catch(_e){}
-  // create hidden iframe + form
+  
+  // Prefer sendBeacon (no CORS + no iframe response issues). Falls back to form-post.
+  try{
+    if(navigator && typeof navigator.sendBeacon === "function"){
+      const body = new URLSearchParams({ action:"save", payload: JSON.stringify(payload) }).toString();
+      const ok = navigator.sendBeacon(base, new Blob([body], {type:"application/x-www-form-urlencoded;charset=UTF-8"}));
+      if(ok){
+        try{ window.__itmenCompanyCacheClear && window.__itmenCompanyCacheClear(); }catch(_e){}
+        console.log("✅ Sheets sync sent (beacon)");
+        return;
+      }
+    }
+  }catch(_e){}
+// create hidden iframe + form
   let ifr = document.getElementById("gsHiddenFrame");
   if(!ifr){
     ifr = document.createElement("iframe");
