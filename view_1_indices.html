@@ -775,9 +775,9 @@ body.mode-product .passportOnly{display:none!important;}
 <input id="benchMode" type="hidden" value="client"/>
 <div id="reqStatus" style="align-self:end;color:#b91c1c;font-size:12px;display:none;max-width:260px;line-height:1.2"></div>
 <button class="btn ghost" id="btnLoadCompany">Подгрузить</button>
-<button class="btn" id="btnRecalc">Пересчитать</button>
+<button class="btn" id="btnRecalc" onclick="return handleRecalcClick(event)">Пересчитать</button>
 <button class="btn ghost" id="btnPrint">Печать / PDF</button>
-<button class="btn ghost" id="btnExportXlsx">Выгрузить Excel</button>
+<button class="btn ghost" id="btnExportXlsx" onclick="exportExcel()">Выгрузить Excel</button>
 <button class="btn ghost" id="btnCLevel">C-level вывод</button>
 </div>
 <!-- KPI moved to header -->
@@ -5261,6 +5261,37 @@ function syncToGoogleSheets(){
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", initDockToggle);
   else initDockToggle();
 })();
+
+
+function handleRecalcClick(ev){
+  try{ if (ev && ev.stopImmediatePropagation) ev.stopImmediatePropagation(); }catch(e){}
+  try{ if (ev && ev.preventDefault) ev.preventDefault(); }catch(e){}
+
+  try{ if (typeof recalc === "function") recalc(); }catch(e){ console.error(e); }
+  try{ if (typeof collectAllFormData === "function") syncToGoogleSheets(collectAllFormData()); }catch(e){ console.error(e); }
+  return false;
+}
+
+
+// === OVERRIDE: reliable save to Google Sheets (works from GitHub Pages) ===
+function syncToGoogleSheets(payload){
+  try{
+    const url = SCRIPT_URL + "?action=save";
+    const body = new URLSearchParams();
+    body.set("payload", JSON.stringify(payload||{}));
+
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body.toString()], { type: "application/x-www-form-urlencoded;charset=UTF-8" });
+      const ok = navigator.sendBeacon(url, blob);
+      if (ok) return Promise.resolve({ ok: true, via: "beacon" });
+    }
+
+    return fetch(url, { method: "POST", mode: "no-cors", body });
+  } catch (e) {
+    console.error("syncToGoogleSheets failed", e);
+    return Promise.resolve(null);
+  }
+}
 </script>
 
 </body>

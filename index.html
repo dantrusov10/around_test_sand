@@ -1016,6 +1016,34 @@ function syncToGoogleSheets(){
 }
 /* === end override === */
 
+
+
+function handleRecalcClick(ev){
+  try{ if (ev && ev.stopImmediatePropagation) ev.stopImmediatePropagation(); }catch(e){}
+  try{ if (ev && ev.preventDefault) ev.preventDefault(); }catch(e){}
+  try{ if (typeof recalc === "function") recalc(); }catch(e){ console.error(e); }
+  try{ if (typeof collectAllFormData === "function") syncToGoogleSheets(collectAllFormData()); }catch(e){ console.error(e); }
+  return false;
+}
+
+
+// === OVERRIDE: reliable save to Google Sheets (works from GitHub Pages) ===
+function syncToGoogleSheets(payload){
+  try{
+    const url = SCRIPT_URL + "?action=save";
+    const body = new URLSearchParams();
+    body.set("payload", JSON.stringify(payload||{}));
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body.toString()], { type: "application/x-www-form-urlencoded;charset=UTF-8" });
+      const ok = navigator.sendBeacon(url, blob);
+      if (ok) return Promise.resolve({ ok: true, via: "beacon" });
+    }
+    return fetch(url, { method: "POST", mode: "no-cors", body });
+  } catch (e) {
+    console.error("syncToGoogleSheets failed", e);
+    return Promise.resolve(null);
+  }
+}
 </script>
 
 </body>
