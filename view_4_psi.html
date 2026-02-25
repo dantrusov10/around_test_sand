@@ -1810,6 +1810,8 @@ function computeHeatmapFromMaturity(){
   handleRows([ ...document.querySelectorAll("#procTbody tr") ]);
 
   const out = {};
+  // Ensure SHEET_KEYS available
+  try{ if(!window.SHEET_KEYS && typeof SHEET_KEYS!=='undefined') window.SHEET_KEYS = SHEET_KEYS; }catch(_){ }
   let totW=0, totS=0;
   Object.keys(zones).forEach(z=>{
     const Zw=zones[z].w;
@@ -4278,11 +4280,12 @@ function buildSheetPayloadExact(){
   // Ensure run identifiers for Sheets
   if(!out.run_id){ out.run_id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('run_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8)); }
   out.timestamp = new Date().toISOString();
-  out.total_fields = SHEET_KEYS.length;
+  out.total_fields = (window.SHEET_KEYS && typeof window.SHEET_KEYS.length==='number') ? window.SHEET_KEYS.length : Object.keys(out).length;
 
   // Return only keys the sheet expects (safe)
   const trimmed = {};
-  SHEET_KEYS.forEach(k=>{ trimmed[k]= (out[k]===undefined? "": out[k]); });
+  const __keys = (window.SHEET_KEYS && Array.isArray(window.SHEET_KEYS)) ? window.SHEET_KEYS : (typeof SHEET_KEYS!=='undefined' ? SHEET_KEYS : Object.keys(out));
+  __keys.forEach(k=>{ trimmed[k]= (out[k]===undefined? "": out[k]); });
   return trimmed;
 }
 
