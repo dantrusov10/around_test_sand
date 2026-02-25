@@ -620,7 +620,7 @@ body.mode-product .passportOnly{display:none!important;}
 }
 </style>
 <style id="unifiedWidthAndDropdownFix">
-/* BUILD v59: unify content width across blocks + fix company dropdown clipping */
+/* BUILD v42: unify content width across blocks + fix company dropdown clipping */
 :root{
   --dockW: 340px;
   --contentW: 1120px;
@@ -740,13 +740,13 @@ body.mode-product .passportOnly{display:none!important;}
 <div style="height:12px"></div>
 <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
 <div class="toolGrid">
-<a class="tool" href="index.html?v=59"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-<a class="tool" href="view_1_indices.html?v=59"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-<a class="tool" href="view_2_interview.html?v=59"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-<a class="tool" href="view_3_requirements.html?v=59"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-<a class="tool" href="view_3b_product.html?v=59"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-<a class="tool" href="view_4_psi.html?v=59"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-<a class="tool" href="view_5_full.html?v=59"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+<a class="tool" href="index.html?v=42"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+<a class="tool" href="view_1_indices.html?v=42"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+<a class="tool" href="view_2_interview.html?v=42"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+<a class="tool" href="view_3_requirements.html?v=42"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+<a class="tool" href="view_3b_product.html?v=42"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+<a class="tool" href="view_4_psi.html?v=42"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+<a class="tool" href="view_5_full.html?v=42"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
 </div>
 </div>
 </div>
@@ -1755,7 +1755,44 @@ function _getBank(){
       if(nk2) exp[nk2] = v;
     });
   }catch(_e){}
-  window.__ITMEN_BANK_EXPANDED = exp;
+
+/* ===== Missing helper guards (maturity/criticality) ===== */
+(function(){
+  // Some builds used these helpers inside recalc()/export, but they may be absent after merges.
+  // Define safe defaults to prevent runtime crashes that break save/export.
+  if(typeof window.maturityLevel !== "function"){
+    window.maturityLevel = function(maturityAvg){
+      const v = Number(maturityAvg||0);
+      if(v >= 75) return "Высокая";
+      if(v >= 50) return "Средняя";
+      if(v >= 25) return "Низкая";
+      return "Очень низкая";
+    };
+  }
+  if(typeof window.criticalityLabel !== "function"){
+    window.criticalityLabel = function(score){
+      const s = Number(score||0);
+      if(s >= 70) return "Критично";
+      if(s >= 40) return "Высокая";
+      if(s >= 20) return "Средняя";
+      return "Низкая";
+    };
+  }
+  if(typeof window.computeCriticality !== "function"){
+    window.computeCriticality = function(lossTotal, riskIndex, maturityAvg){
+      const loss = Math.max(0, Number(lossTotal||0));
+      const risk = Math.max(0, Math.min(1, Number(riskIndex||0)/100));
+      const maturity = Math.max(0, Math.min(1, Number(maturityAvg||0)/100));
+      const lossScore = Math.max(0, Math.min(1, Math.log10(loss + 1) / 6));
+      const maturityPenalty = 1 - maturity;
+      const score01 = (0.45*risk) + (0.35*maturityPenalty) + (0.20*lossScore);
+      return Math.round(Math.max(0, Math.min(1, score01)) * 100);
+    };
+  }
+})();
+/* ======================================================== */
+
+window.__ITMEN_BANK_EXPANDED = exp;
   return exp;
 }
 
@@ -2418,30 +2455,6 @@ function paintIf(id, pct, isPct){
   paintStat(id, pct, isPct);
 }
 
-  // --- Criticality helpers (used by recalc) ---
-  function clamp01(x){ x = Number(x); return isFinite(x) ? Math.min(1, Math.max(0, x)) : 0; }
-  function computeCriticality(lossTotal, riskSum, maturityAvg, riskMax){
-    const loss = Math.max(0, Number(lossTotal) || 0);
-    const maturity = clamp01((Number(maturityAvg) || 0) / 100);
-    const maxRisk = Math.max(1, Number(riskMax) || 10);
-    const risk = clamp01((Number(riskSum) || 0) / maxRisk);
-
-    // log-like normalization for COI: 0..50m+ => 0..1
-    const lossNorm = clamp01(Math.log10(loss + 1) / Math.log10(50_000_000 + 1));
-
-    const score = Math.round(100 * (0.45 * risk + 0.35 * lossNorm + 0.20 * (1 - maturity)));
-    return clamp01(score / 100) * 100;
-  }
-  function criticalityLabel(score){
-    const s = Number(score) || 0;
-    if (s >= 75) return "Критичный";
-    if (s >= 50) return "Высокий";
-    if (s >= 25) return "Средний";
-    return "Низкий";
-  }
-
-
-
 function recalc(){
   let recover = NaN; // prevent TDZ (used before computed)
 
@@ -2569,7 +2582,7 @@ const riskIndex = (riskAnswered.length>0)
 
   // ----- Criticality & client summary -----
   const maturityAvg = Math.round((techIndex + procIndex) / 2);
-  const crit = computeCriticality(lossTotal, riskIndex, maturityAvg, (Array.isArray(riskAnswered)?riskAnswered.length:10));
+  const crit = computeCriticality(lossTotal, riskIndex, maturityAvg);
   const critLbl = criticalityLabel(crit);
 
   const critScoreEl=document.getElementById("critScore"); if(critScoreEl) critScoreEl.textContent = isFinite(crit) ? (crit + "%") : "—%";
@@ -4045,14 +4058,14 @@ function renderBenchHints(){
 
 
 /* ===== v7.6 PATCH: exact Google Sheets header mapping ===== */
-window.SHEET_KEYS = (`run_id	timestamp	pdfMode	interviewMode	benchMode	cLevelText	company	industry	lpr	sources	workplaces	servers	branches	vdi	closed	envNote	virt	hostingModel	adDomains	netSeg	terminalFarms	hwAge	hwAccounting	redundancy	salary	itCount	manualPct	licBudget	unusedPct	finNote	vmUnusedPct	keyPeopleRisk	docScore	obsoletePct	hwBudget	hwPlan	downtimeHours	downtimeCost	incidentsPerMonth	serviceDesk	riskLevelText	riskNotes	psi2Score	psi2Label	techIndex	procIndex	riskIndex	coiTotal	recoverIndex	busIndex	obsolIndex	aiIndex	painIndex	feasScore	readyIndex	readyLabel	probIndex	probLabel	benchCount	benchProfileLabel	req_count	psi_count	project_risks_count	project_risk_level	project_risk_notes	tech_count	proc_count	risk_count	tech_01_label	tech_01_score	tech_01_note	tech_02_label	tech_02_score	tech_02_note	tech_03_label	tech_03_score	tech_03_note	tech_04_label	tech_04_score	tech_04_note	tech_05_label	tech_05_score	tech_05_note	tech_06_label	tech_06_score	tech_06_note	tech_07_label	tech_07_score	tech_07_note	tech_08_label	tech_08_score	tech_08_note	tech_09_label	tech_09_score	tech_09_note	tech_10_label	tech_10_score	tech_10_note	proc_01_label	proc_01_score	proc_01_note	proc_02_label	proc_02_score	proc_02_note	proc_03_label	proc_03_score	proc_03_note	proc_04_label	proc_04_score	proc_04_note	proc_05_label	proc_05_score	proc_05_note	proc_06_label	proc_06_score	proc_06_note	proc_07_label	proc_07_score	proc_07_note	proc_08_label	proc_08_score	proc_08_note	proc_09_label	proc_09_score	proc_09_note	proc_10_label	proc_10_score	proc_10_note	risk_01_label	risk_01_val	risk_01_note	risk_02_label	risk_02_val	risk_02_note	risk_03_label	risk_03_val	risk_03_note	risk_04_label	risk_04_val	risk_04_note	risk_05_label	risk_05_val	risk_05_note	risk_06_label	risk_06_val	risk_06_note	risk_07_label	risk_07_val	risk_07_note	risk_08_label	risk_08_val	risk_08_note	req_01_text	req_01_type	req_01_must	req_01_feas	req_01_metric	req_01_owner	req_02_text	req_02_type	req_02_must	req_02_feas	req_02_metric	req_02_owner	req_03_text	req_03_type	req_03_must	req_03_feas	req_03_metric	req_03_owner	req_04_text	req_04_type	req_04_must	req_04_feas	req_04_metric	req_04_owner	req_05_text	req_05_type	req_05_must	req_05_feas	req_05_metric	req_05_owner	req_06_text	req_06_type	req_06_must	req_06_feas	req_06_metric	req_06_owner	req_07_text	req_07_type	req_07_must	req_07_feas	req_07_metric	req_07_owner	req_08_text	req_08_type	req_08_must	req_08_feas	req_08_metric	req_08_owner	req_09_text	req_09_type	req_09_must	req_09_feas	req_09_metric	req_09_owner	req_10_text	req_10_type	req_10_must	req_10_feas	req_10_metric	req_10_owner	req_11_text	req_11_type	req_11_must	req_11_feas	req_11_metric	req_11_owner	req_12_text	req_12_type	req_12_must	req_12_feas	req_12_metric	req_12_owner	req_13_text	req_13_type	req_13_must	req_13_feas	req_13_metric	req_13_owner	req_14_text	req_14_type	req_14_must	req_14_feas	req_14_metric	req_14_owner	req_15_text	req_15_type	req_15_must	req_15_feas	req_15_metric	req_15_owner	req_16_text	req_16_type	req_16_must	req_16_feas	req_16_metric	req_16_owner	req_17_text	req_17_type	req_17_must	req_17_feas	req_17_metric	req_17_owner	req_18_text	req_18_type	req_18_must	req_18_feas	req_18_metric	req_18_owner	req_19_text	req_19_type	req_19_must	req_19_feas	req_19_metric	req_19_owner	req_20_text	req_20_type	req_20_must	req_20_feas	req_20_metric	req_20_owner	psi_01_scn	psi_01_exp	psi_01_act	psi_01_ok	psi_01_acc	psi_01_note	psi_02_scn	psi_02_exp	psi_02_act	psi_02_ok	psi_02_acc	psi_02_note	psi_03_scn	psi_03_exp	psi_03_act	psi_03_ok	psi_03_acc	psi_03_note	psi_04_scn	psi_04_exp	psi_04_act	psi_04_ok	psi_04_acc	psi_04_note	psi_05_scn	psi_05_exp	psi_05_act	psi_05_ok	psi_05_acc	psi_05_note	psi_06_scn	psi_06_exp	psi_06_act	psi_06_ok	psi_06_acc	psi_06_note	psi_07_scn	psi_07_exp	psi_07_act	psi_07_ok	psi_07_acc	psi_07_note	psi_08_scn	psi_08_exp	psi_08_act	psi_08_ok	psi_08_acc	psi_08_note	psi_09_scn	psi_09_exp	psi_09_act	psi_09_ok	psi_09_acc	psi_09_note	psi_10_scn	psi_10_exp	psi_10_act	psi_10_ok	psi_10_acc	psi_10_note	psi_11_scn	psi_11_exp	psi_11_act	psi_11_ok	psi_11_acc	psi_11_note	psi_12_scn	psi_12_exp	psi_12_act	psi_12_ok	psi_12_acc	psi_12_note	psi_13_scn	psi_13_exp	psi_13_act	psi_13_ok	psi_13_acc	psi_13_note	psi_14_scn	psi_14_exp	psi_14_act	psi_14_ok	psi_14_acc	psi_14_note	psi_15_scn	psi_15_exp	psi_15_act	psi_15_ok	psi_15_acc	psi_15_note	psi_16_scn	psi_16_exp	psi_16_act	psi_16_ok	psi_16_acc	psi_16_note	psi_17_scn	psi_17_exp	psi_17_act	psi_17_ok	psi_17_acc	psi_17_note	psi_18_scn	psi_18_exp	psi_18_act	psi_18_ok	psi_18_acc	psi_18_note	psi_19_scn	psi_19_exp	psi_19_act	psi_19_ok	psi_19_acc	psi_19_note	psi_20_scn	psi_20_exp	psi_20_act	psi_20_ok	psi_20_acc	psi_20_note	project_risk_01_name	project_risk_01_condition	project_risk_01_status	project_risk_01_note	project_risk_02_name	project_risk_02_condition	project_risk_02_status	project_risk_02_note	project_risk_03_name	project_risk_03_condition	project_risk_03_status	project_risk_03_note	project_risk_04_name	project_risk_04_condition	project_risk_04_status	project_risk_04_note	project_risk_05_name	project_risk_05_condition	project_risk_05_status	project_risk_05_note	project_risk_06_name	project_risk_06_condition	project_risk_06_status	project_risk_06_note	project_risk_07_name	project_risk_07_condition	project_risk_07_status	project_risk_07_note	project_risk_08_name	project_risk_08_condition	project_risk_08_status	project_risk_08_note	project_risk_09_name	project_risk_09_condition	project_risk_09_status	project_risk_09_note	project_risk_10_name	project_risk_10_condition	project_risk_10_status	project_risk_10_note	project_risk_11_name	project_risk_11_condition	project_risk_11_status	project_risk_11_note	project_risk_12_name	project_risk_12_condition	project_risk_12_status	project_risk_12_note	project_risk_13_name	project_risk_13_condition	project_risk_13_status	project_risk_13_note	project_risk_14_name	project_risk_14_condition	project_risk_14_status	project_risk_14_note	project_risk_15_name	project_risk_15_condition	project_risk_15_status	project_risk_15_note	project_risk_16_name	project_risk_16_condition	project_risk_16_status	project_risk_16_note	project_risk_17_name	project_risk_17_condition	project_risk_17_status	project_risk_17_note	project_risk_18_name	project_risk_18_condition	project_risk_18_status	project_risk_18_note	project_risk_19_name	project_risk_19_condition	project_risk_19_status	project_risk_19_note	project_risk_20_name	project_risk_20_condition	project_risk_20_status	project_risk_20_note	sales_manager	presale_manager	pilotGoal	pilotScope	pilotSummary	pilotDecision	recommendedConfig	pilotTasks_removed	pilotKpi_removed	psi_01_req	psi_02_req	psi_03_req	psi_04_req	psi_05_req	psi_06_req	psi_07_req	psi_08_req	psi_09_req	psi_10_req	psi_11_req	psi_12_req	psi_13_req	psi_14_req	psi_15_req	psi_16_req	psi_17_req	psi_18_req	psi_19_req	psi_20_req	prod_01_biz	prod_01_func	prod_01_type	prod_01_must	prod_01_feas	prod_02_biz	prod_02_func	prod_02_type	prod_02_must	prod_02_feas	prod_03_biz	prod_03_func	prod_03_type	prod_03_must	prod_03_feas	prod_04_biz	prod_04_func	prod_04_type	prod_04_must	prod_04_feas	prod_05_biz	prod_05_func	prod_05_type	prod_05_must	prod_05_feas	prod_06_biz	prod_06_func	prod_06_type	prod_06_must	prod_06_feas	prod_07_biz	prod_07_func	prod_07_type	prod_07_must	prod_07_feas	prod_08_biz	prod_08_func	prod_08_type	prod_08_must	prod_08_feas	prod_09_biz	prod_09_func	prod_09_type	prod_09_must	prod_09_feas	prod_10_biz	prod_10_func	prod_10_type	prod_10_must	prod_10_feas	prod_11_biz	prod_11_func	prod_11_type	prod_11_must	prod_11_feas	prod_12_biz	prod_12_func	prod_12_type	prod_12_must	prod_12_feas	prod_13_biz	prod_13_func	prod_13_type	prod_13_must	prod_13_feas	prod_14_biz	prod_14_func	prod_14_type	prod_14_must	prod_14_feas	prod_15_biz	prod_15_func	prod_15_type	prod_15_must	prod_15_feas	prod_16_biz	prod_16_func	prod_16_type	prod_16_must	prod_16_feas	prod_17_biz	prod_17_func	prod_17_type	prod_17_must	prod_17_feas	prod_18_biz	prod_18_func	prod_18_type	prod_18_must	prod_18_feas	prod_19_biz	prod_19_func	prod_19_type	prod_19_must	prod_19_feas	prod_20_biz	prod_20_func	prod_20_type	prod_20_must	prod_20_feas	prod_21_biz	prod_21_func	prod_21_type	prod_21_must	prod_21_feas	prod_22_biz	prod_22_func	prod_22_type	prod_22_must	prod_22_feas	prod_23_biz	prod_23_func	prod_23_type	prod_23_must	prod_23_feas	prod_24_biz	prod_24_func	prod_24_type	prod_24_must	prod_24_feas	prod_25_biz	prod_25_func	prod_25_type	prod_25_must	prod_25_feas	prod_26_biz	prod_26_func	prod_26_type	prod_26_must	prod_26_feas	prod_27_biz	prod_27_func	prod_27_type	prod_27_must	prod_27_feas	prod_28_biz	prod_28_func	prod_28_type	prod_28_must	prod_28_feas	prod_29_biz	prod_29_func	prod_29_type	prod_29_must	prod_29_feas	prod_30_biz	prod_30_func	prod_30_type	prod_30_must	prod_30_feas	payload`).split(/\t/);
+const SHEET_KEYS = (`run_id	timestamp	pdfMode	interviewMode	benchMode	cLevelText	company	industry	lpr	sources	workplaces	servers	branches	vdi	closed	envNote	virt	hostingModel	adDomains	netSeg	terminalFarms	hwAge	hwAccounting	redundancy	salary	itCount	manualPct	licBudget	unusedPct	finNote	vmUnusedPct	keyPeopleRisk	docScore	obsoletePct	hwBudget	hwPlan	downtimeHours	downtimeCost	incidentsPerMonth	serviceDesk	riskLevelText	riskNotes	psi2Score	psi2Label	techIndex	procIndex	riskIndex	coiTotal	recoverIndex	busIndex	obsolIndex	aiIndex	painIndex	feasScore	readyIndex	readyLabel	probIndex	probLabel	benchCount	benchProfileLabel	req_count	psi_count	project_risks_count	project_risk_level	project_risk_notes	tech_count	proc_count	risk_count	tech_01_label	tech_01_score	tech_01_note	tech_02_label	tech_02_score	tech_02_note	tech_03_label	tech_03_score	tech_03_note	tech_04_label	tech_04_score	tech_04_note	tech_05_label	tech_05_score	tech_05_note	tech_06_label	tech_06_score	tech_06_note	tech_07_label	tech_07_score	tech_07_note	tech_08_label	tech_08_score	tech_08_note	tech_09_label	tech_09_score	tech_09_note	tech_10_label	tech_10_score	tech_10_note	proc_01_label	proc_01_score	proc_01_note	proc_02_label	proc_02_score	proc_02_note	proc_03_label	proc_03_score	proc_03_note	proc_04_label	proc_04_score	proc_04_note	proc_05_label	proc_05_score	proc_05_note	proc_06_label	proc_06_score	proc_06_note	proc_07_label	proc_07_score	proc_07_note	proc_08_label	proc_08_score	proc_08_note	proc_09_label	proc_09_score	proc_09_note	proc_10_label	proc_10_score	proc_10_note	risk_01_label	risk_01_val	risk_01_note	risk_02_label	risk_02_val	risk_02_note	risk_03_label	risk_03_val	risk_03_note	risk_04_label	risk_04_val	risk_04_note	risk_05_label	risk_05_val	risk_05_note	risk_06_label	risk_06_val	risk_06_note	risk_07_label	risk_07_val	risk_07_note	risk_08_label	risk_08_val	risk_08_note	req_01_text	req_01_type	req_01_must	req_01_feas	req_01_metric	req_01_owner	req_02_text	req_02_type	req_02_must	req_02_feas	req_02_metric	req_02_owner	req_03_text	req_03_type	req_03_must	req_03_feas	req_03_metric	req_03_owner	req_04_text	req_04_type	req_04_must	req_04_feas	req_04_metric	req_04_owner	req_05_text	req_05_type	req_05_must	req_05_feas	req_05_metric	req_05_owner	req_06_text	req_06_type	req_06_must	req_06_feas	req_06_metric	req_06_owner	req_07_text	req_07_type	req_07_must	req_07_feas	req_07_metric	req_07_owner	req_08_text	req_08_type	req_08_must	req_08_feas	req_08_metric	req_08_owner	req_09_text	req_09_type	req_09_must	req_09_feas	req_09_metric	req_09_owner	req_10_text	req_10_type	req_10_must	req_10_feas	req_10_metric	req_10_owner	req_11_text	req_11_type	req_11_must	req_11_feas	req_11_metric	req_11_owner	req_12_text	req_12_type	req_12_must	req_12_feas	req_12_metric	req_12_owner	req_13_text	req_13_type	req_13_must	req_13_feas	req_13_metric	req_13_owner	req_14_text	req_14_type	req_14_must	req_14_feas	req_14_metric	req_14_owner	req_15_text	req_15_type	req_15_must	req_15_feas	req_15_metric	req_15_owner	req_16_text	req_16_type	req_16_must	req_16_feas	req_16_metric	req_16_owner	req_17_text	req_17_type	req_17_must	req_17_feas	req_17_metric	req_17_owner	req_18_text	req_18_type	req_18_must	req_18_feas	req_18_metric	req_18_owner	req_19_text	req_19_type	req_19_must	req_19_feas	req_19_metric	req_19_owner	req_20_text	req_20_type	req_20_must	req_20_feas	req_20_metric	req_20_owner	psi_01_scn	psi_01_exp	psi_01_act	psi_01_ok	psi_01_acc	psi_01_note	psi_02_scn	psi_02_exp	psi_02_act	psi_02_ok	psi_02_acc	psi_02_note	psi_03_scn	psi_03_exp	psi_03_act	psi_03_ok	psi_03_acc	psi_03_note	psi_04_scn	psi_04_exp	psi_04_act	psi_04_ok	psi_04_acc	psi_04_note	psi_05_scn	psi_05_exp	psi_05_act	psi_05_ok	psi_05_acc	psi_05_note	psi_06_scn	psi_06_exp	psi_06_act	psi_06_ok	psi_06_acc	psi_06_note	psi_07_scn	psi_07_exp	psi_07_act	psi_07_ok	psi_07_acc	psi_07_note	psi_08_scn	psi_08_exp	psi_08_act	psi_08_ok	psi_08_acc	psi_08_note	psi_09_scn	psi_09_exp	psi_09_act	psi_09_ok	psi_09_acc	psi_09_note	psi_10_scn	psi_10_exp	psi_10_act	psi_10_ok	psi_10_acc	psi_10_note	psi_11_scn	psi_11_exp	psi_11_act	psi_11_ok	psi_11_acc	psi_11_note	psi_12_scn	psi_12_exp	psi_12_act	psi_12_ok	psi_12_acc	psi_12_note	psi_13_scn	psi_13_exp	psi_13_act	psi_13_ok	psi_13_acc	psi_13_note	psi_14_scn	psi_14_exp	psi_14_act	psi_14_ok	psi_14_acc	psi_14_note	psi_15_scn	psi_15_exp	psi_15_act	psi_15_ok	psi_15_acc	psi_15_note	psi_16_scn	psi_16_exp	psi_16_act	psi_16_ok	psi_16_acc	psi_16_note	psi_17_scn	psi_17_exp	psi_17_act	psi_17_ok	psi_17_acc	psi_17_note	psi_18_scn	psi_18_exp	psi_18_act	psi_18_ok	psi_18_acc	psi_18_note	psi_19_scn	psi_19_exp	psi_19_act	psi_19_ok	psi_19_acc	psi_19_note	psi_20_scn	psi_20_exp	psi_20_act	psi_20_ok	psi_20_acc	psi_20_note	project_risk_01_name	project_risk_01_condition	project_risk_01_status	project_risk_01_note	project_risk_02_name	project_risk_02_condition	project_risk_02_status	project_risk_02_note	project_risk_03_name	project_risk_03_condition	project_risk_03_status	project_risk_03_note	project_risk_04_name	project_risk_04_condition	project_risk_04_status	project_risk_04_note	project_risk_05_name	project_risk_05_condition	project_risk_05_status	project_risk_05_note	project_risk_06_name	project_risk_06_condition	project_risk_06_status	project_risk_06_note	project_risk_07_name	project_risk_07_condition	project_risk_07_status	project_risk_07_note	project_risk_08_name	project_risk_08_condition	project_risk_08_status	project_risk_08_note	project_risk_09_name	project_risk_09_condition	project_risk_09_status	project_risk_09_note	project_risk_10_name	project_risk_10_condition	project_risk_10_status	project_risk_10_note	project_risk_11_name	project_risk_11_condition	project_risk_11_status	project_risk_11_note	project_risk_12_name	project_risk_12_condition	project_risk_12_status	project_risk_12_note	project_risk_13_name	project_risk_13_condition	project_risk_13_status	project_risk_13_note	project_risk_14_name	project_risk_14_condition	project_risk_14_status	project_risk_14_note	project_risk_15_name	project_risk_15_condition	project_risk_15_status	project_risk_15_note	project_risk_16_name	project_risk_16_condition	project_risk_16_status	project_risk_16_note	project_risk_17_name	project_risk_17_condition	project_risk_17_status	project_risk_17_note	project_risk_18_name	project_risk_18_condition	project_risk_18_status	project_risk_18_note	project_risk_19_name	project_risk_19_condition	project_risk_19_status	project_risk_19_note	project_risk_20_name	project_risk_20_condition	project_risk_20_status	project_risk_20_note	sales_manager	presale_manager	pilotGoal	pilotScope	pilotSummary	pilotDecision	recommendedConfig	pilotTasks_removed	pilotKpi_removed	psi_01_req	psi_02_req	psi_03_req	psi_04_req	psi_05_req	psi_06_req	psi_07_req	psi_08_req	psi_09_req	psi_10_req	psi_11_req	psi_12_req	psi_13_req	psi_14_req	psi_15_req	psi_16_req	psi_17_req	psi_18_req	psi_19_req	psi_20_req	prod_01_biz	prod_01_func	prod_01_type	prod_01_must	prod_01_feas	prod_02_biz	prod_02_func	prod_02_type	prod_02_must	prod_02_feas	prod_03_biz	prod_03_func	prod_03_type	prod_03_must	prod_03_feas	prod_04_biz	prod_04_func	prod_04_type	prod_04_must	prod_04_feas	prod_05_biz	prod_05_func	prod_05_type	prod_05_must	prod_05_feas	prod_06_biz	prod_06_func	prod_06_type	prod_06_must	prod_06_feas	prod_07_biz	prod_07_func	prod_07_type	prod_07_must	prod_07_feas	prod_08_biz	prod_08_func	prod_08_type	prod_08_must	prod_08_feas	prod_09_biz	prod_09_func	prod_09_type	prod_09_must	prod_09_feas	prod_10_biz	prod_10_func	prod_10_type	prod_10_must	prod_10_feas	prod_11_biz	prod_11_func	prod_11_type	prod_11_must	prod_11_feas	prod_12_biz	prod_12_func	prod_12_type	prod_12_must	prod_12_feas	prod_13_biz	prod_13_func	prod_13_type	prod_13_must	prod_13_feas	prod_14_biz	prod_14_func	prod_14_type	prod_14_must	prod_14_feas	prod_15_biz	prod_15_func	prod_15_type	prod_15_must	prod_15_feas	prod_16_biz	prod_16_func	prod_16_type	prod_16_must	prod_16_feas	prod_17_biz	prod_17_func	prod_17_type	prod_17_must	prod_17_feas	prod_18_biz	prod_18_func	prod_18_type	prod_18_must	prod_18_feas	prod_19_biz	prod_19_func	prod_19_type	prod_19_must	prod_19_feas	prod_20_biz	prod_20_func	prod_20_type	prod_20_must	prod_20_feas	prod_21_biz	prod_21_func	prod_21_type	prod_21_must	prod_21_feas	prod_22_biz	prod_22_func	prod_22_type	prod_22_must	prod_22_feas	prod_23_biz	prod_23_func	prod_23_type	prod_23_must	prod_23_feas	prod_24_biz	prod_24_func	prod_24_type	prod_24_must	prod_24_feas	prod_25_biz	prod_25_func	prod_25_type	prod_25_must	prod_25_feas	prod_26_biz	prod_26_func	prod_26_type	prod_26_must	prod_26_feas	prod_27_biz	prod_27_func	prod_27_type	prod_27_must	prod_27_feas	prod_28_biz	prod_28_func	prod_28_type	prod_28_must	prod_28_feas	prod_29_biz	prod_29_func	prod_29_type	prod_29_must	prod_29_feas	prod_30_biz	prod_30_func	prod_30_type	prod_30_must	prod_30_feas	payload`).split(/\t/);
 
 // Compat layer: the Sheet template uses prodreq_* columns for product requirements.
-// If we trim payload by window.SHEET_KEYS and prodreq_* aren't present, they get dropped on save.
+// If we trim payload by SHEET_KEYS and prodreq_* aren't present, they get dropped on save.
 (function ensureSheetKeysCompat(){
   try{
     const need = [];
-    const has = (k)=>window.SHEET_KEYS.indexOf(k)>=0;
+    const has = (k)=>SHEET_KEYS.indexOf(k)>=0;
     if(!has("prodreq_count")) need.push("prodreq_count");
     for(let i=1;i<=30;i++){
       const n = String(i).padStart(2,"0");
@@ -4061,7 +4074,7 @@ window.SHEET_KEYS = (`run_id	timestamp	pdfMode	interviewMode	benchMode	cLevelTex
         if(!has(k)) need.push(k);
       });
     }
-    if(need.length) window.SHEET_KEYS.push(...need);
+    if(need.length) SHEET_KEYS.push(...need);
   }catch(e){ console.warn("ensureSheetKeysCompat failed", e); }
 })();
 
@@ -4240,11 +4253,11 @@ function buildSheetPayloadExact(){
   // Synthetic analytics aliases
   const benchNum = parseInt(String(out.benchCount||"0"),10);
   if(isFinite(benchNum)) out.synthetic_count = benchNum;
-  out.total_fields = window.SHEET_KEYS.length;
+  out.total_fields = SHEET_KEYS.length;
 
   // Return only keys the sheet expects (safe)
   const trimmed = {};
-  window.SHEET_KEYS.forEach(k=>{ trimmed[k]= (out[k]===undefined? "": out[k]); });
+  SHEET_KEYS.forEach(k=>{ trimmed[k]= (out[k]===undefined? "": out[k]); });
   return trimmed;
 }
 
