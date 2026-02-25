@@ -272,6 +272,53 @@
 }
 /* allow dropdowns to overlay next blocks */
 .card, .section, .tableWrap{ overflow: visible; }
+
+/* Dock collapse */
+.dockHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
+body.dockCollapsed .quickDock .dockHeader{flex-direction:column;justify-content:flex-start;align-items:center;gap:8px;padding-top:8px}
+body.dockCollapsed .quickDock .dockTitle{width:100%;text-align:center;font-weight:700;font-size:14px;line-height:1.1;white-space:normal}
+body.dockCollapsed .quickDock .dockToggle{width:44px;height:34px;border-radius:12px;padding:0;display:flex;align-items:center;justify-content:center}
+.dockToggle{border:1px solid rgba(0,0,0,.08);background:#fff;border-radius:10px;padding:6px 10px;cursor:pointer;font-weight:700;line-height:1;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.dockToggle:hover{transform:translateY(-1px)}
+/* --- QuickDock collapsed: icon-only, clean spacing --- */
+body.dockCollapsed .quickDock{width:86px !important; overflow:hidden !important}
+body.dockCollapsed .quickDock .dockSearchWrap,
+body.dockCollapsed .quickDock .dockTitle:not(.dockHeader .dockTitle),
+body.dockCollapsed .quickDock .dockDesc,
+body.dockCollapsed .quickDock .dockToolsTitle,
+body.dockCollapsed .quickDock .dockItemText,
+body.dockCollapsed .quickDock .dockItemSub{display:none !important}
+body.dockCollapsed .quickDock .dockCard{padding:12px !important}
+body.dockCollapsed .quickDock .dockToolBtn{justify-content:center !important}
+body.dockCollapsed .quickDock .dockToolBtn .dockIcon{margin-right:0 !important}
+
+/* tools: single column, only icon */
+body.dockCollapsed .quickDock .toolGrid{grid-template-columns:1fr !important; gap:10px !important}
+body.dockCollapsed .quickDock a.tool{justify-content:center !important; padding:10px !important; gap:0 !important}
+body.dockCollapsed .quickDock a.tool > div:not(.tIcon){display:none !important}
+body.dockCollapsed .quickDock a.tool .tName,
+body.dockCollapsed .quickDock a.tool .tDesc{display:none !important}
+body.dockCollapsed .quickDock a.tool .tIcon{margin:0 !important; width:42px !important; height:42px !important; display:flex !important; align-items:center !important; justify-content:center !important; border-radius:14px !important}
+
+
+/* Dock collapse (v2) */
+.quickDock a.tool{display:flex;align-items:center;gap:10px}
+.quickDock a.tool .toolIcon{flex:0 0 auto;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(0,0,0,.04)}
+.quickDock a.tool .toolText{display:flex;flex-direction:column;gap:2px}
+.quickDock a.tool .toolText small{opacity:.7}
+body.dockCollapsed .quickDock .dockTitle{display:none !important}
+body.dockCollapsed .quickDock .dockHeader .dockTitle{display:block !important}
+body.dockCollapsed .quickDock a.tool{justify-content:center !important}
+body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
+
+
+
+  /* Dock expanded state must look like the original (wide, with text) */
+  body:not(.dockCollapsed) .quickDock{ width:320px !important; max-width:320px !important; }
+  body:not(.dockCollapsed) .quickDock .dockTitle{ white-space:nowrap; }
+  body:not(.dockCollapsed) .quickDock a.tool{ flex-direction:row; justify-content:flex-start; }
+  body:not(.dockCollapsed) .quickDock a.tool .tIcon{ margin-right:10px; }
+
 </style>
 
 <style id="unifiedWidthAndDropdownFix">
@@ -301,7 +348,6 @@
 }
 
 /* Don’t accidentally constrain the left dock itself */
-.quickDock{ max-width:none !important; width:auto !important; margin:0 !important; }
 
 /* Tables should not create horizontal page scroll; scroll only inside table card */
 .tableWrap{ overflow-x:auto; }
