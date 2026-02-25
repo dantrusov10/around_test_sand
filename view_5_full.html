@@ -4652,6 +4652,12 @@ async function gsSearch(q){
       }
     }catch(e){}
 
+    // Cache latest loaded snapshot (used as merge source for partial pages)
+    try{
+      if(!window.__ITMEN_LATEST_CACHE || typeof window.__ITMEN_LATEST_CACHE !== 'object') window.__ITMEN_LATEST_CACHE = {};
+      window.__ITMEN_LATEST_CACHE = Object.assign({}, window.__ITMEN_LATEST_CACHE, payload);
+    }catch(_e){}
+
 
     // 1) basic fields by id
     Object.entries(payload).forEach(([id, val]) => {
