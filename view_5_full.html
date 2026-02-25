@@ -5399,5 +5399,84 @@ function syncToGoogleSheets(){
 })();
 </script>
 
+<script>
+/* HOTFIX v64: run_id/timestamp + missing helpers guard (all pages) */
+(function(){
+  try{
+    // 1) Ensure SHEET_KEYS contains meta columns
+    if(Array.isArray(window.SHEET_KEYS)){
+      if(!window.SHEET_KEYS.includes('run_id')) window.SHEET_KEYS.unshift('run_id');
+      if(!window.SHEET_KEYS.includes('timestamp')) window.SHEET_KEYS.unshift('timestamp');
+    }
+
+    // 2) Meta generators
+    function genRunId(){
+      const r = Math.random().toString(36).slice(2,10);
+      return 'run_' + Date.now() + '_' + r;
+    }
+    function isoNow(){
+      return new Date().toISOString();
+    }
+
+    function ensureMetaOnRow(row){
+      if(!row || typeof row !== 'object') return row;
+      if(!row.run_id) row.run_id = genRunId();
+      if(!row.timestamp) row.timestamp = isoNow();
+      return row;
+    }
+
+    // 3) Patch buildSheetPayloadExact to always include meta
+    if(typeof window.buildSheetPayloadExact === 'function'){
+      const origBuild = window.buildSheetPayloadExact;
+      window.buildSheetPayloadExact = function(){
+        const p = origBuild.apply(this, arguments);
+        // expected shape: {sheet_name, row}
+        if(p && typeof p === 'object'){
+          if(p.row && typeof p.row === 'object') ensureMetaOnRow(p.row);
+          else ensureMetaOnRow(p);
+        }
+        return p;
+      };
+    }
+
+    // 4) Guard missing helpers so recalc/save/export never crashes
+    if(typeof window.validateRequired !== 'function'){
+      window.validateRequired = function(){ return true; };
+    }
+    if(typeof window.setMode !== 'function'){
+      window.setMode = function(){ /* noop */ };
+    }
+    if(typeof window.computeCriticality !== 'function'){
+      window.computeCriticality = function(){ return { criticality: 0, label: '—' }; };
+    }
+    if(typeof window.maturityLevel !== 'function'){
+      window.maturityLevel = function(v){
+        const n = Number(v);
+        if(!isFinite(n)) return { level: '—', score: 0 };
+        if(n >= 0.66) return { level: 'Высокая', score: n };
+        if(n >= 0.33) return { level: 'Средняя', score: n };
+        return { level: 'Низкая', score: n };
+      };
+    }
+
+    // 5) If syncToGoogleSheets exists, ensure meta before sending (defensive)
+    if(typeof window.syncToGoogleSheets === 'function'){
+      const origSync = window.syncToGoogleSheets;
+      window.syncToGoogleSheets = async function(){
+        try{
+          if(typeof window.buildSheetPayloadExact === 'function'){
+            const p = window.buildSheetPayloadExact();
+            if(p && p.row) ensureMetaOnRow(p.row);
+          }
+        }catch(e){ /* ignore */ }
+        return origSync.apply(this, arguments);
+      };
+    }
+
+  }catch(e){
+    console.warn('HOTFIX v64 failed to apply', e);
+  }
+})();
+</script>
 </body>
 </html>
