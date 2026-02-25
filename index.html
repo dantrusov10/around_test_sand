@@ -322,7 +322,7 @@ body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
 </style>
 
 <style id="unifiedWidthAndDropdownFix">
-/* BUILD v42: unify content width across blocks + fix company dropdown clipping */
+/* BUILD v60: unify content width across blocks + fix company dropdown clipping */
 :root{
   --dockW: 340px;
   --contentW: 1120px;
@@ -436,26 +436,26 @@ body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
             <div class="miniStat"><b id="miniUpd">—</b> обновлено (МСК)</div>
           </div>
           <div class="miniRow" style="margin-top:10px">
-            <a class="btn secondary" id="openFullBtn" href="view_5_full.html?v=42">Открыть полную карту</a>
-            <a class="btn ghost" id="openInterviewBtn" href="view_2_interview.html?v=42">Интервью</a>
+            <a class="btn secondary" id="openFullBtn" href="view_5_full.html?v=60">Открыть полную карту</a>
+            <a class="btn ghost" id="openInterviewBtn" href="view_2_interview.html?v=60">Интервью</a>
           </div>
           <div class="miniRow" style="margin-top:8px">
-            <a class="btn ghost" id="openIndicesBtn" href="view_1_indices.html?v=42">Индексы</a>
-            <a class="btn ghost" id="openReqBtn" href="view_3_requirements.html?v=42">Требования</a>
-            <a class="btn ghost" id="openProdBtn" href="view_3b_product.html?v=42">Продукт</a>
-            <a class="btn ghost" id="openPsiBtn" href="view_4_psi.html?v=42">ПСИ</a>
+            <a class="btn ghost" id="openIndicesBtn" href="view_1_indices.html?v=60">Индексы</a>
+            <a class="btn ghost" id="openReqBtn" href="view_3_requirements.html?v=60">Требования</a>
+            <a class="btn ghost" id="openProdBtn" href="view_3b_product.html?v=60">Продукт</a>
+            <a class="btn ghost" id="openPsiBtn" href="view_4_psi.html?v=60">ПСИ</a>
           </div>
         </div>
 
         <div style="height:12px"></div>
         <div class="sectionTitle">Инструменты</div>
         <div class="toolGrid">
-          <a class="tool" href="view_1_indices.html?v=42"><div class="tIcon">📊</div><div><div class="tName">Индексы и риски</div><div class="tDesc">борд итогов</div></div></a>
-          <a class="tool" href="view_2_interview.html?v=42"><div class="tIcon">🎯</div><div><div class="tName">Интервью (1–3)</div><div class="tDesc">быстро/глубоко</div></div></a>
-          <a class="tool" href="view_3_requirements.html?v=42"><div class="tIcon">🧪</div><div><div class="tName">Требования к пилоту</div><div class="tDesc">раздел 4</div></div></a>
-          <a class="tool" href="view_3b_product.html?v=42"><div class="tIcon">🧩</div><div><div class="tName">Требования к продукту</div><div class="tDesc">раздел 6</div></div></a>
-          <a class="tool" href="view_4_psi.html?v=42"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-          <a class="tool" href="view_5_full.html?v=42"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё целиком</div></div></a>
+          <a class="tool" href="view_1_indices.html?v=60"><div class="tIcon">📊</div><div><div class="tName">Индексы и риски</div><div class="tDesc">борд итогов</div></div></a>
+          <a class="tool" href="view_2_interview.html?v=60"><div class="tIcon">🎯</div><div><div class="tName">Интервью (1–3)</div><div class="tDesc">быстро/глубоко</div></div></a>
+          <a class="tool" href="view_3_requirements.html?v=60"><div class="tIcon">🧪</div><div><div class="tName">Требования к пилоту</div><div class="tDesc">раздел 4</div></div></a>
+          <a class="tool" href="view_3b_product.html?v=60"><div class="tIcon">🧩</div><div><div class="tName">Требования к продукту</div><div class="tDesc">раздел 6</div></div></a>
+          <a class="tool" href="view_4_psi.html?v=60"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+          <a class="tool" href="view_5_full.html?v=60"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё целиком</div></div></a>
         </div>
         </div>
 
@@ -1016,35 +1016,37 @@ function syncToGoogleSheets(){
 }
 /* === end override === */
 
-
-
-function handleRecalcClick(ev){
-  try{ if (ev && ev.stopImmediatePropagation) ev.stopImmediatePropagation(); }catch(e){}
-  try{ if (ev && ev.preventDefault) ev.preventDefault(); }catch(e){}
-  try{ if (typeof recalc === "function") recalc(); }catch(e){ console.error(e); }
-  try{ if (typeof collectAllFormData === "function") syncToGoogleSheets(collectAllFormData()); }catch(e){ console.error(e); }
-  return false;
-}
-
-
-// === OVERRIDE: reliable save to Google Sheets (works from GitHub Pages) ===
-function syncToGoogleSheets(payload){
-  try{
-    const url = SCRIPT_URL + "?action=save";
-    const body = new URLSearchParams();
-    body.set("payload", JSON.stringify(payload||{}));
-    if (navigator.sendBeacon) {
-      const blob = new Blob([body.toString()], { type: "application/x-www-form-urlencoded;charset=UTF-8" });
-      const ok = navigator.sendBeacon(url, blob);
-      if (ok) return Promise.resolve({ ok: true, via: "beacon" });
-    }
-    return fetch(url, { method: "POST", mode: "no-cors", body });
-  } catch (e) {
-    console.error("syncToGoogleSheets failed", e);
-    return Promise.resolve(null);
-  }
-}
 </script>
 
 </body>
 </html>
+
+<script>
+// ===== v60 FIX: missing helpers used by recalc/export/sync =====
+function clamp(n, a, b){ n=Number(n); if(!isFinite(n)) return a; return Math.max(a, Math.min(b, n)); }
+function maturityLevel(avg){
+  avg = Number(avg); if(!isFinite(avg)) return "—";
+  if(avg < 40) return "Низкая";
+  if(avg < 70) return "Средняя";
+  return "Высокая";
+}
+function computeCriticality(lossTotal, riskIndex, maturityAvg){
+  // lossTotal may be in money; convert to a 0-100 signal using log scaling.
+  const loss = Number(lossTotal);
+  const lossScore = isFinite(loss) && loss>0 ? clamp((Math.log10(loss+1)/7)*100, 0, 100) : 0; // ~ up to 10^7
+  const r = clamp(riskIndex, 0, 100);
+  const m = clamp(maturityAvg, 0, 100);
+  // higher risk + higher loss + lower maturity => higher criticality
+  const crit = 0.45*lossScore + 0.35*r + 0.20*(100-m);
+  return Math.round(clamp(crit, 0, 100));
+}
+function criticalityLabel(crit){
+  crit = Number(crit); if(!isFinite(crit)) return "—";
+  if(crit < 30) return "Низкая";
+  if(crit < 60) return "Средняя";
+  if(crit < 80) return "Высокая";
+  return "Критическая";
+}
+
+
+</script>
