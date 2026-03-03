@@ -51,6 +51,7 @@
   let ACTIVE_ROW = null; // latest row object from Sheets (parsed)
   let HEATMAP = null;    // zone risks 0..1
   let THEME_RISKS = {};  // theme -> 0..1
+  let THEME_ABM = {};    // theme -> ABM object {abm01, tier, reasons...}
   let ACTIVE_THEME = '';
   let ACTIVE_BN_ID = '';
 
@@ -223,6 +224,8 @@
     out.__overall = (totW>0) ? (totS/totW) : null;
     return out;
   }
+  // expose for debugging
+  try{ window.computeThemeABM = computeThemeABM; }catch(_e){}
 
   function computeThemeRisks(heatmap){
     const m = heatmap || {};
@@ -918,7 +921,18 @@ ACTIVE_ROW = rowObj;
       // 2) compute heatmap from saved tech/proc answers
       HEATMAP = computeHeatmapFromRow(rowObj);
       THEME_RISKS = computeThemeRisks(HEATMAP);
-      THEME_ABM = computeThemeABM(rowObj, THEME_RISKS);
+            // ABM scoring (hardened)
+      try{
+        if(typeof computeThemeABM==='function'){
+          THEME_ABM = computeThemeABM(rowObj, THEME_RISKS) || {};
+        }else{
+          console.warn('computeThemeABM is not defined — fallback to base risk ordering');
+          THEME_ABM = {};
+        }
+      }catch(e){
+        console.error('computeThemeABM error:', e);
+        THEME_ABM = {};
+      }
 
       // 3) render
       setStatus('Данные загружены. Выбери тематику и BN.', 'ok');
