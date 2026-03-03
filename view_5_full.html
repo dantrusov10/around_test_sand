@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0"/>
 <meta content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;" http-equiv="Content-Security-Policy"/>
 <script src="config.js"></script>
-<script src="build_info.js?v=v70"></script>
+<script src="build_info.js?v=v93"></script>
 <script src="question_bank.js"></script>
 <meta charset="utf-8">
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
@@ -708,13 +708,16 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 <div style="height:12px"></div>
 <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
 <div class="toolGrid">
-<a class="tool" href="index.html?v=61"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-<a class="tool" href="view_1_indices.html?v=61"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-<a class="tool" href="view_2_interview.html?v=61"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-<a class="tool" href="view_3_requirements.html?v=61"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-<a class="tool" href="view_3b_product.html?v=61"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-<a class="tool" href="view_4_psi.html?v=61"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-<a class="tool" href="view_5_full.html?v=61"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+<a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+<a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+<a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+<a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+<a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+<a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+<a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+<a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+
+<a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
 </div>
 </div>
 </div>
@@ -748,7 +751,7 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 <button class="btn" id="btnRecalc">Пересчитать</button>
 <button class="btn ghost" id="btnPrint">Печать / PDF</button>
 <button class="btn ghost" id="btnExportXlsx">Выгрузить Excel</button>
-<button class="btn ghost" id="btnCLevel">C-level вывод</button>
+<button class="btn ghost" id="btnCLevel">Выводы</button>
 </div>
 <!-- KPI moved to header -->
 <div class="kpiBar">
@@ -802,6 +805,7 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 <div class="stat" id="kProb">
 <div class="label">Вероятность сделки</div>
 <div class="value mono" id="probIndex">—%</div>
+<input type="hidden" id="riskIndex" value=""/>
 <div class="small" id="probLabel">—</div>
 </div>
 <div class="kpiBar riskReady" style="margin-top:8px">
@@ -894,7 +898,7 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 </div>
 </div>
 <div class="card" id="cLevelBlock" style="display:none">
-<h2>C-level вывод (авто)</h2>
+<h2>Выводы (авто)</h2>
 <div class="small">Сформируйте краткий вывод для CEO/CFO/CIO: «где проседаем относительно рынка», «финансовый эффект», «следующий шаг».</div>
 <div class="row" style="margin-top:10px">
 <div style="grid-column:1 / -1;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -928,7 +932,7 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 </div>
 <div class="row" style="margin-top:10px">
 <label style="grid-column:1 / -1">Текст вывода
-        <textarea id="cLevelText" placeholder="Нажмите «C-level вывод» вверху — сюда подставится текст."></textarea>
+        <textarea id="cLevelText" placeholder="Нажмите «Выводы» вверху — сюда подставится текст."></textarea>
 </label>
 </div>
 <div class="btns" style="margin-top:10px">
@@ -2471,6 +2475,10 @@ const riskIndex = (riskAnswered.length>0)
   ? riskAnswered.reduce((a,b)=>a+b,0)
   : (modeTop==="client" ? NaN : Math.round(clamp(estM.riskProb.v,0,1)*riskSel.length));
 
+// Persist riskIndex as percent (0..100) for saving / charts
+const riskIndexPct = (isFinite(riskIndex) && riskSel && riskSel.length) ? Math.round((riskIndex / Math.max(1,riskSel.length))*100) : NaN;
+try{ const _ri=document.getElementById('riskIndex'); if(_ri) _ri.value = (isFinite(riskIndexPct)? String(riskIndexPct): ''); }catch(_e){}
+
   setText("techIndex", isFinite(techIndex)? `${techIndex}%` : "—%");
   setText("procIndex", isFinite(procIndex)? `${procIndex}%` : "—%");
   setText("riskIndex", isFinite(riskIndex)? `${riskIndex}` : "—");
@@ -3302,7 +3310,7 @@ document.getElementById("btnCLevel").addEventListener("click", ()=>{
 
     const nextStep = "Рекомендуемый следующий шаг: пилот 4–6 недель на выбранном периметре (офис/филиал/VDI) с подтверждением экономического эффекта и формированием единого реестра активов.";
     const text =
-`C-level summary — ${company}
+`Выводы summary — ${company}
 
 PSI 2.0: ${isFinite(psi2n)?psi2n+"%":"—"} (${zone})
 
@@ -4194,6 +4202,64 @@ function buildSheetPayloadExact(){
       : _numFromText(raw);
   });
 
+
+  // ===== Derived blocks shown on Indexes page (Risk/Readiness/Heatmap/COI breakdown) =====
+  // These must be sent in *snake_case* to match Google Sheets headers.
+  // When saving from "Полная карта", we take values from the rendered widgets.
+  function _textOrEmpty(id){
+    const el = document.getElementById(id);
+    return el ? String(el.value ?? el.textContent ?? "").trim() : "";
+  }
+  function _numTextOrEmpty(id){
+    // Extract numeric token from text like "60%", "61 692 160 ₽", "—"
+    const s = _numFromText(_textOrEmpty(id));
+    return s === "" ? "" : s; // keep as string for sheets
+  }
+
+  // Readiness / problem / config / demo
+  out.pilot_readiness_pct = _numTextOrEmpty("pilotReady");
+  out.main_problem_zone   = _textOrEmpty("mainProblem");
+  // "Рекомендуемая конфигурация" — value lives in #recModules, container is #kModules
+  out.rec_modules         = _textOrEmpty("recModules") || _textOrEmpty("kModules");
+  // "Приоритет демо" — hint lives in #demoFocusHint (value in #demoFocus)
+  out.demo_focus          = _textOrEmpty("demoFocusHint") || _textOrEmpty("demoFocus");
+
+  // Heatmap (4 zones)
+  // NOTE: on some builds the visible % lives only in bar width (style.width) while the label can be empty.
+  function _pctFromBar(barId){
+    const el = document.getElementById(barId);
+    if(!el) return "";
+    const w = (el.style && el.style.width) ? String(el.style.width) : "";
+    const m = w.match(/([0-9]+(?:\.[0-9]+)?)\s*%/);
+    if(m) return String(Math.round(parseFloat(m[1])));
+    // fallback: try computed width vs parent
+    try{
+      const p = el.parentElement;
+      if(p){
+        const ew = el.getBoundingClientRect().width;
+        const pw = p.getBoundingClientRect().width;
+        if(pw > 0){
+          return String(Math.round((ew/pw)*100));
+        }
+      }
+    }catch(_e){}
+    return "";
+  }
+  function _pctTextOrBar(pctId, barId){
+    const t = _numTextOrEmpty(pctId);
+    return t !== "" ? t : _pctFromBar(barId);
+  }
+  out.risk_grey_pct = _pctTextOrBar("riskGreyPct","riskGreyBar");
+  out.risk_lic_pct  = _pctTextOrBar("riskLicPct","riskLicBar");
+  out.risk_ops_pct  = _pctTextOrBar("riskOpsPct","riskOpsBar");
+  out.risk_gov_pct  = _pctTextOrBar("riskGovPct","riskGovBar");
+
+  // Cost of Inaction breakdown
+  out.coi_license_loss  = _numTextOrEmpty("coiLic");
+  out.coi_downtime_loss = _numTextOrEmpty("coiDown");
+  out.coi_manual_loss   = _numTextOrEmpty("coiManual");
+  out.coi_total_loss    = _numTextOrEmpty("coiTotal");
+
   // Counts
   const techRows=[...document.querySelectorAll("#techTbody tr")];
   const procRows=[...document.querySelectorAll("#procTbody tr")];
@@ -4323,6 +4389,18 @@ function buildSheetPayloadExact(){
     if(cache && typeof cache === "object"){
       const keysRef = (window.SHEET_KEYS && Array.isArray(window.SHEET_KEYS)) ? window.SHEET_KEYS : (typeof SHEET_KEYS !== "undefined" ? SHEET_KEYS : Object.keys(cache));
       keysRef.forEach(k=>{ if(out[k] === undefined && cache[k] !== undefined) out[k] = cache[k]; });
+
+      // Critical keys: не затираем сохранённые значения пустотой при сохранении из частичных разделов
+      const __criticalKeys = ["sales_manager", "presale_manager", "lpr", "sources", "workplaces", "servers", "branches", "vdi", "closed", "envNote", "virt", "hostingModel", "adDomains", "netSeg", "terminalFarms", "hwAge", "hwAccounting", "redundancy", "psi2Score", "psi2Label", "techIndex", "procIndex", "riskIndex", "coiTotal", "recoverIndex", "busIndex", "obsolIndex", "aiIndex", "painIndex", "feasScore", "readyIndex", "readyLabel", "probIndex", "probLabel", "benchCount", "benchProfileLabel"];
+      __criticalKeys.forEach(k=>{
+        if(out[k] === '' || out[k] === null || typeof out[k] === 'undefined'){
+          const v = cache[k];
+          if(v !== '' && v !== null && typeof v !== 'undefined'){
+            out[k] = v;
+          }
+        }
+      });
+
     }
   }catch(e){ console.warn("mergeLatestCache failed", e); }
 
@@ -4718,8 +4796,25 @@ async function gsSearch(q){
     try{ rebuildTablesFromFlat_(payload); }catch(e){ console.warn("rebuildTablesFromFlat_ failed", e); }
 
     // 4) kick recalculation (if button exists)
+    // IMPORTANT: loading a row from Google Sheets must NOT create a new row.
+    // Some pages bind btnRecalc click -> recalc() + syncToGoogleSheets().
+    // When we hydrate fields from an existing row we want the UI recalculated,
+    // but we must skip any sync (otherwise we duplicate rows and may distort data).
     const btn = document.getElementById("btnRecalc");
-    if(btn) btn.click();
+    if(btn){
+      const __origSync = window.syncToGoogleSheets;
+      try{
+        if(typeof __origSync === 'function'){
+          window.syncToGoogleSheets = async function(){
+            console.log("ℹ️ Sheets sync skipped (reverse-sync load)");
+            return;
+          };
+        }
+        btn.click();
+      } finally {
+        if(typeof __origSync === 'function') window.syncToGoogleSheets = __origSync;
+      }
+    }
     // 3) maturity tables (tech/proc) and risk table are stored in Sheets as tech_01_score etc.
     try{
       function pad2(n){ return String(n).padStart(2,"0"); }
