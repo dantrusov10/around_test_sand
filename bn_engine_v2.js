@@ -777,14 +777,27 @@ setStatus('Сохранено.', 'ok');
       // 1) get latest row for company
       const url = WEBAPP_URL + '?action=latest&company=' + encodeURIComponent(company);
       const data = await jsonp(url);
-      if(!data || !data.ok || !data.row || !Array.isArray(data.row)){
+      if(!data || !data.ok){
         setStatus('Не найдено данных по компании. Сначала заполни интервью/индексы.', 'err');
         return;
       }
 
-      // row is array aligned to SHEET_KEYS
-      const keys = (window.SHEET_KEYS || []);
-      const rowObj = parseTSVRowToObject(data.row, keys);
+      // Backward/forward compatible: some backends return {row:[...]} (legacy), others return {payload:{...}}
+      let rowObj = null;
+      if(data.row && Array.isArray(data.row)){
+        // row is array aligned to SHEET_KEYS
+        const keys = (window.SHEET_KEYS || []);
+        rowObj = parseTSVRowToObject(data.row, keys);
+      } else if(data.payload && typeof data.payload === 'object') {
+        rowObj = data.payload;
+      } else if(data.item && typeof data.item === 'object') {
+        rowObj = data.item;
+      }
+
+      if(!rowObj){
+        setStatus('Не найдено данных по компании. Сначала заполни интервью/индексы.', 'err');
+        return;
+      }
       ACTIVE_ROW = rowObj;
 
       // 1.5) try to load latest BN session snapshot (BN_Log). If exists — merge into payload for UI.
