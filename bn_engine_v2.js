@@ -44,23 +44,39 @@
       .replaceAll("'",'&#039;');
   }
 
-  function jsonp(url, timeoutMs=45000){
-    return new Promise((resolve, reject) => {
-      const cb = 'cb_' + Math.random().toString(36).slice(2);
-      const script = document.createElement('script');
-      const timer = setTimeout(() => { cleanup(); reject(new Error('JSONP timeout')); }, timeoutMs);
-      function cleanup(){
-        clearTimeout(timer);
-        try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
-        if(script.parentNode) script.parentNode.removeChild(script);
-      }
-      window[cb] = (data)=>{ cleanup(); resolve(data); };
-      const sep = url.includes('?') ? '&' : '?';
-      script.src = url + sep + 'callback=' + encodeURIComponent(cb);
-      script.onerror = ()=>{ cleanup(); reject(new Error('JSONP load error')); };
-      document.body.appendChild(script);
-    });
+  async function jsonp(url, timeoutMs = 45000, retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await new Promise((resolve, reject) => {
+        const cbName = 'cb_' + Math.random().toString(36).slice(2);
+        let script = null;
+        const t = setTimeout(() => {
+          cleanup();
+          reject(new Error('JSONP timeout'));
+        }, timeoutMs);
+
+        function cleanup() {
+          clearTimeout(t);
+          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+        }
+
+        window[cbName] = (data) => { cleanup(); resolve(data); };
+
+        const sep = url.includes('?') ? '&' : '?';
+        script = document.createElement('script');
+        script.src = url + sep + 'callback=' + encodeURIComponent(cbName) + '&_ts=' + Date.now();
+        script.onerror = () => { cleanup(); reject(new Error('JSONP network error')); };
+        document.head.appendChild(script);
+      });
+
+      return res;
+    } catch (e) {
+      if (attempt === retries) throw e;
+      await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+    }
   }
+}
 
   function setStatus(msg, kind){
     const el = UI.status();
