@@ -44,7 +44,7 @@
       .replaceAll("'",'&#039;');
   }
 
-  function jsonp(url, timeoutMs=12000){
+  function jsonp(url, timeoutMs=45000){
     return new Promise((resolve, reject) => {
       const cb = 'cb_' + Math.random().toString(36).slice(2);
       const script = document.createElement('script');
@@ -645,7 +645,7 @@
     if(!WEBAPP_URL) return;
     try{
       const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
-      const data = await jsonp(url);
+      const data = await jsonp(url, 45000);
       if(mySeq !== searchSeq) return;
       if(!data || !data.ok){ return; }
       const items = Array.isArray(data.items) ? data.items : [];
@@ -695,8 +695,8 @@
     try{
       // 1) get latest row for company
       // Apps Script router uses action=latest (alias of get). Keep legacy getLatest by also supporting alias on backend.
-      const url = WEBAPP_URL + '?action=latest&company=' + encodeURIComponent(company);
-      const data = await jsonp(url);
+      const url = WEBAPP_URL + '?action=latest_bn&company=' + encodeURIComponent(company);
+      const data = await jsonp(url, 45000);
       if(!data || !data.ok || !data.row || !Array.isArray(data.row)){
         setStatus('Не найдено данных по компании. Сначала заполни интервью/индексы.', 'err');
         return;
