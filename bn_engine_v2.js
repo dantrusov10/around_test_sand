@@ -6,6 +6,25 @@
   const WEBAPP_URL = (window.GS_WEBAPP_URL || '').trim();
   const VERSION = (window.BUILD_INFO && window.BUILD_INFO.version) ? window.BUILD_INFO.version : '';
 
+  // Hardening: show JS errors as "data processing" not "Apps Script"
+  window.addEventListener('error', (ev)=>{
+    try{
+      console.error('BN page error:', ev.error || ev.message || ev);
+      if(typeof setStatus==='function'){
+        setStatus('Ошибка обработки данных (см. Console).', 'err');
+      }
+    }catch(_e){}
+  });
+  window.addEventListener('unhandledrejection', (ev)=>{
+    try{
+      console.error('BN unhandledrejection:', ev.reason || ev);
+      if(typeof setStatus==='function'){
+        setStatus('Ошибка обработки данных (см. Console).', 'err');
+      }
+    }catch(_e){}
+  });
+
+
   const THEME_ZONE_MAP = {
     'Видимость и охват': 'Серые зоны (охват / архитектура)',
     'CMDB и классификация': 'Серые зоны (охват / архитектура)',
@@ -916,7 +935,7 @@ ACTIVE_ROW = rowObj;
 
     }catch(e){
       console.error(e);
-      setStatus('Ошибка загрузки из Apps Script.', 'err');
+      setStatus('Ошибка обработки данных (см. Console).', 'err');
     }
   }
 
