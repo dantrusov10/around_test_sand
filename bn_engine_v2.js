@@ -535,7 +535,7 @@
     if(!panel) return;
 
     if(!ACTIVE_ROW){
-      panel.innerHTML = \'<div class="muted">Сначала выбери компанию и нажми «Загрузить».</div>\';
+      panel.innerHTML = '<div class="muted">Сначала выбери компанию и нажми «Загрузить».</div>';
       return;
     }
 
