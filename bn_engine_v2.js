@@ -223,6 +223,148 @@
       'Комплаенс, аудит и импортозамещение': lic,
       'Стратегия, финансы и управляемость': gov,
     };
+
+  // --- ABM scoring (sales-priority) -------------------------------------------------
+  // Uses: client indices + heatmap + deal triggers to prioritize themes for ABM.
+  // Output: THEME_ABM[theme] = { base01, basePct, boostPts, boost01, abm01, abmPct, tier, reasons[] }
+
+  const ABM_MATRIX = {
+    psi: [
+      { when: (v)=> v < 30, add: { 'Видимость и охват': 25, 'CMDB и классификация': 20, 'Стратегия, финансы и управляемость': 20, 'Изменения и DevOps': 15 } },
+      { when: (v)=> v >= 30 && v < 50, add: { 'Видимость и охват': 15, 'CMDB и классификация': 10, 'Стратегия, финансы и управляемость': 10 } },
+    ],
+    tech_index: [
+      { when: (v)=> v < 40, add: { 'Видимость и охват': 20, 'Сетевое окружение и топология': 15, 'Эксплуатация и стабильность': 15 } },
+      { when: (v)=> v >= 40 && v < 60, add: { 'Видимость и охват': 10, 'Сетевое окружение и топология': 8, 'Эксплуатация и стабильность': 8 } },
+    ],
+    proc_index: [
+      { when: (v)=> v < 40, add: { 'Стратегия, финансы и управляемость': 25, 'Изменения и DevOps': 20, 'Эксплуатация и стабильность': 10 } },
+      { when: (v)=> v >= 40 && v < 60, add: { 'Стратегия, финансы и управляемость': 12, 'Изменения и DevOps': 10 } },
+    ],
+    coi_rub: [
+      { when: (v)=> v >= 10_000_000, add: { 'Эксплуатация и стабильность': 25, 'SAM и оптимизация ПО': 20, 'Стратегия, финансы и управляемость': 15 } },
+      { when: (v)=> v >= 3_000_000 && v < 10_000_000, add: { 'Эксплуатация и стабильность': 15, 'SAM и оптимизация ПО': 12 } },
+    ],
+    triggers_yes: [
+      { key: 'risk_01_val', add: { 'Видимость и охват': 12, 'CMDB и классификация': 10 } }, // распределенная инфраструктура
+      { key: 'risk_03_val', add: { 'Эксплуатация и стабильность': 15, 'Стратегия, финансы и управляемость': 10 } }, // много ручных операций
+      { key: 'risk_04_val', add: { 'SAM и оптимизация ПО': 20, 'Комплаенс, аудит и импортозамещение': 15 } }, // риск неучтенного ПО
+      { key: 'risk_05_val', add: { 'Эксплуатация и стабильность': 20, 'Изменения и DevOps': 10 } }, // частые инциденты/простои
+      { key: 'risk_06_val', add: { 'Комплаенс, аудит и импортозамещение': 25, 'SAM и оптимизация ПО': 15 } }, // были внешние проверки
+      { key: 'risk_07_val', add: { 'Изменения и DevOps': 20, 'Стратегия, финансы и управляемость': 10 } }, // планируются крупные изменения
+    ],
+    critical: [
+      { key: 'tech_01_score', when: (v)=> v === 0, add: { 'Видимость и охват': 25, 'CMDB и классификация': 15 } },
+      { key: 'tech_04_score', when: (v)=> v === 0, add: { 'Видимость и охват': 15, 'Сетевое окружение и топология': 15 } },
+      { key: 'proc_01_score', when: (v)=> v === 0, add: { 'Стратегия, финансы и управляемость': 20 } },
+      { key: 'proc_02_score', when: (v)=> v === 0, add: { 'Стратегия, финансы и управляемость': 20 } },
+    ],
+  };
+
+  function toNum(v){
+    if(v==null) return null;
+    if(typeof v === 'number') return isFinite(v) ? v : null;
+    const s = String(v).replace(/[\s\u00A0]/g,'').replace(',','.');
+    const m = s.match(/-?\d+(?:\.\d+)?/);
+    if(!m) return null;
+    const n = Number(m[0]);
+    return isFinite(n) ? n : null;
+  }
+
+  function isYes(v){
+    if(v===true) return true;
+    if(v===false) return false;
+    const s = String(v||'').trim().toLowerCase();
+    return (s==='да' || s==='yes' || s==='y' || s==='true' || s==='1');
+  }
+
+  function addBoost(boostMap, reasonsMap, theme, pts, reason){
+    if(!theme || !isFinite(pts) || pts===0) return;
+    boostMap[theme] = (boostMap[theme] || 0) + pts;
+    if(reason){
+      if(!reasonsMap[theme]) reasonsMap[theme] = [];
+      reasonsMap[theme].push(reason);
+    }
+  }
+
+  function applyRuleSet(value, rules, boostMap, reasonsMap, label){
+    if(value==null) return;
+    for(const r of rules){
+      try{
+        if(r.when(value)){
+          for(const [t,pts] of Object.entries(r.add||{})){
+            addBoost(boostMap, reasonsMap, t, pts, `${label}: ${Math.round(value)} → +${pts}`);
+          }
+        }
+      }catch(_){}
+    }
+  }
+
+  function computeThemeABM(rowObj, themeRisks01){
+    const themes = (BN_CATALOG && BN_CATALOG.themes) ? BN_CATALOG.themes : Object.keys(themeRisks01||{});
+    const boostPts = {};
+    const reasons = {};
+
+    // indices from DB headers: psi2Score, techIndex, procIndex, coi_total_loss
+    const psi = toNum(rowObj?.psi2Score);
+    const tech = toNum(rowObj?.techIndex);
+    const proc = toNum(rowObj?.procIndex);
+    const coi = toNum(rowObj?.coi_total_loss);
+
+    applyRuleSet(psi, ABM_MATRIX.psi, boostPts, reasons, 'PSI');
+    applyRuleSet(tech, ABM_MATRIX.tech_index, boostPts, reasons, 'TechIndex');
+    applyRuleSet(proc, ABM_MATRIX.proc_index, boostPts, reasons, 'ProcIndex');
+    applyRuleSet(coi, ABM_MATRIX.coi_rub, boostPts, reasons, 'COI ₽/год');
+
+    // triggers (yes/no)
+    for(const tr of ABM_MATRIX.triggers_yes){
+      const v = rowObj?.[tr.key];
+      if(isYes(v)){
+        for(const [t,pts] of Object.entries(tr.add||{})){
+          addBoost(boostPts, reasons, t, pts, `Триггер ${tr.key}=Да → +${pts}`);
+        }
+      }
+    }
+
+    // critical flags
+    for(const c of ABM_MATRIX.critical){
+      const v = toNum(rowObj?.[c.key]);
+      if(v==null) continue;
+      try{
+        if(c.when(v)){
+          for(const [t,pts] of Object.entries(c.add||{})){
+            addBoost(boostPts, reasons, t, pts, `Critical ${c.key}=${v} → +${pts}`);
+          }
+        }
+      }catch(_){}
+    }
+
+    // build ABM map
+    const out = {};
+    for(const t of themes){
+      const base01 = Number(themeRisks01?.[t] ?? 0) || 0;
+      const basePct = Math.max(0, Math.min(100, base01*100));
+      const bPts = Math.max(0, boostPts[t] || 0);
+      const b01 = Math.min(1, bPts/100); // normalize by 100 pts
+      const abm01 = Math.max(0, Math.min(1, 0.55*base01 + 0.45*b01));
+      out[t] = {
+        base01, basePct: Math.round(basePct),
+        boostPts: Math.round(bPts), boost01: b01,
+        abm01, abmPct: Math.round(abm01*100),
+        reasons: reasons[t] || [],
+        tier: 'roadmap',
+      };
+    }
+
+    // tiers: top-2 primary, next-2 secondary
+    const sorted = Object.entries(out).sort((a,b)=> (b[1].abm01 - a[1].abm01));
+    sorted.slice(0,2).forEach(([t])=> out[t].tier='primary');
+    sorted.slice(2,4).forEach(([t])=> out[t].tier='secondary');
+
+    return out;
+  }
+  // -------------------------------------------------------------------------------
+
   }
 
   function strengthForBN(bn){
@@ -256,14 +398,28 @@
     const list = UI.themeList();
     if(!list) return;
 
-    const themes = (BN_CATALOG && BN_CATALOG.themes) ? BN_CATALOG.themes : Object.keys(THEME_RISKS);
+    const baseThemes = (BN_CATALOG && BN_CATALOG.themes) ? BN_CATALOG.themes : Object.keys(THEME_RISKS||{});
+    const themes = [...baseThemes].sort((a,b)=>{
+      const aa = (THEME_ABM && THEME_ABM[a]) ? THEME_ABM[a].abm01 : (THEME_RISKS[a]||0);
+      const bb = (THEME_ABM && THEME_ABM[b]) ? THEME_ABM[b].abm01 : (THEME_RISKS[b]||0);
+      return bb - aa;
+    });
+
     const rows = themes.map(t=>{
-      const r = THEME_RISKS[t];
+      const r01 = Number(THEME_RISKS[t] || 0) || 0;
+      const abm = (THEME_ABM && THEME_ABM[t]) ? THEME_ABM[t] : null;
       const active = (t===ACTIVE_THEME) ? ' active' : '';
+      const tier = abm ? abm.tier : 'roadmap';
+      const tierLabel = tier==='primary' ? 'Primary' : (tier==='secondary' ? 'Secondary' : '');
+      const meta = abm
+        ? `Риск: <b>${fmtPct01(r01)}</b> · ABM: <b>${Math.round((abm.abm01||0)*100)}%</b>${tierLabel?` · <span class="tier ${tier}">${tierLabel}</span>`:''}`
+        : `Риск: <b>${fmtPct01(r01)}</b>`;
+      const barPct = abm ? Math.round((abm.abm01||0)*100) : Math.round(r01*100);
+
       return `<button class="themeBtn${active}" data-theme="${esc(t)}">
         <div class="themeName">${esc(t)}</div>
-        <div class="themeMeta">Риск: <b>${fmtPct01(r)}</b></div>
-        <div class="themeBar"><span style="width:${Math.max(0,Math.min(100,Math.round((r||0)*100)))}%"></span></div>
+        <div class="themeMeta">${meta}</div>
+        <div class="themeBar"><span style="width:${Math.max(0,Math.min(100,barPct))}%"></span></div>
       </button>`;
     }).join('');
 
@@ -743,6 +899,7 @@ ACTIVE_ROW = rowObj;
       // 2) compute heatmap from saved tech/proc answers
       HEATMAP = computeHeatmapFromRow(rowObj);
       THEME_RISKS = computeThemeRisks(HEATMAP);
+      THEME_ABM = computeThemeABM(rowObj, THEME_RISKS);
 
       // 3) render
       setStatus('Данные загружены. Выбери тематику и BN.', 'ok');
