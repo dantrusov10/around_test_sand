@@ -81,7 +81,91 @@
     try{ return JSON.parse(raw); }catch(e){ return {}; }
   }
 
-  function normKey(s){
+  
+  // --- BN Log export helpers (for Apps Script bn_log_append) ---
+  let _CATALOG_BY_ID = null;
+  function catalogById_(){
+    if(_CATALOG_BY_ID) return _CATALOG_BY_ID;
+    _CATALOG_BY_ID = {};
+    if(BN_CATALOG && Array.isArray(BN_CATALOG.items)){
+      BN_CATALOG.items.forEach(it=>{ if(it && it.id) _CATALOG_BY_ID[String(it.id).trim()] = it; });
+    }
+    return _CATALOG_BY_ID;
+  }
+
+  function buildBnLogObject(payloadObj, rowObj, company){
+    const out = {};
+    const companyName = String(company || (rowObj && rowObj.company) || payloadObj.company || '').trim();
+    out.company_name = companyName;
+    out.run_id = String((rowObj && rowObj.run_id) || payloadObj.run_id || payloadObj.runId || '').trim();
+
+    // full snapshot for restore
+    out.business_needs_sessions = payloadObj.business_needs_sessions || {};
+    out.__bn_saved_at = payloadObj.__bn_saved_at || new Date().toISOString();
+    out.__bn_version = payloadObj.__bn_version || VERSION;
+
+    const sessions = Object.values(payloadObj.business_needs_sessions || {});
+    const thematicsSet = new Set();
+    const bns = [];
+
+    const map = catalogById_();
+
+    sessions.forEach(sess=>{
+      if(!sess || !sess.bn_id) return;
+      const bnId = String(sess.bn_id).trim();
+      const it = map[bnId] || null;
+      const theme = String(sess.theme || (it && it.theme) || '').trim();
+      if(theme) thematicsSet.add(theme);
+
+      // causes/pains: selected indices -> strings from catalog
+      const causes = [];
+      const pains = [];
+      if(it){
+        const selC = Array.isArray(sess.selected_causes) ? sess.selected_causes : [];
+        const selP = Array.isArray(sess.selected_pains) ? sess.selected_pains : [];
+        selC.forEach(ix=>{
+          const i = Number(ix);
+          if(Number.isFinite(i) && it.causes && it.causes[i]) causes.push(it.causes[i]);
+        });
+        selP.forEach(ix=>{
+          const i = Number(ix);
+          if(Number.isFinite(i) && it.pains && it.pains[i]) pains.push(it.pains[i]);
+        });
+      }
+
+      // answers: object -> array
+      const ansArr = [];
+      if(sess.answers && typeof sess.answers === 'object'){
+        Object.keys(sess.answers).forEach(k=>{
+          const v = sess.answers[k];
+          if(v === undefined || v === null) return;
+          const s = String(v).trim();
+          if(!s) return;
+          ansArr.push({q: k, a: s});
+        });
+      }
+
+      bns.push({
+        bn_id: bnId,
+        bn_name: (it && it.name) ? it.name : '',
+        theme: theme,
+        strength: (sess.strength === undefined || sess.strength === null) ? '' : sess.strength,
+        zone: (it && it.zone) ? it.zone : (theme ? (THEME_ZONE_MAP[theme] || '') : ''),
+        functional: (it && it.functional) ? it.functional : '',
+        causes: causes,
+        pains: pains,
+        answers: ansArr,
+        manager_notes: String(sess.manager_notes || '').trim()
+      });
+    });
+
+    out.thematics = Array.from(thematicsSet);
+    out.bns = bns;
+
+    return out;
+  }
+
+function normKey(s){
     let x = String(s||'').replace(/\s+/g,' ').trim();
     x = x.replace(/^(?:[TPА-ЯA-Z]{0,2}\s*)?\d+(?:[\.:]\d+)*[\.)\.:\-\s]+/i, '');
     x = x.replace(/^[TP]\s*\d+\s*[\.)\.:\-\s]+/i, '');
@@ -541,21 +625,44 @@
 
     try{
       setStatus('Сохраняю…', 'warn');
-      const body = 'action=save&payload=' + encodeURIComponent(JSON.stringify(payloadObj));
-      const res = await fetch(url, {
+      // Build BN_Log append payload (append-only history) + also save merged payload back to MASTER to keep legacy views working
+      const bnLogObj = buildBnLogObject(payloadObj, ACTIVE_ROW, ACTIVE_COMPANY);
+      const bodyBn = 'action=bn_log_append&data=' + encodeURIComponent(JSON.stringify(bnLogObj));
+      const bodyMaster = 'action=save&payload=' + encodeURIComponent(JSON.stringify(payloadObj));
+
+      // POST to Apps Script (do not rely on query action; we pass action in body)
+      const postUrl = base;
+
+      // 1) append BN snapshot to BN_Log (history)
+      const resBn = await fetch(postUrl, {
         method:'POST',
         headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
-        body
+        body: bodyBn
+      });
+      const textBn = await resBn.text();
+      let dataBn = null;
+      try{ dataBn = JSON.parse(textBn); }catch(_e){}
+      if(!dataBn || !dataBn.ok){
+        setStatus('Ошибка сохранения (BN_Log). Проверь Apps Script.', 'err');
+        console.warn('bn_log_append response', textBn);
+        return;
+      }
+
+      // 2) save merged payload back to MASTER (legacy compatibility)
+      const res = await fetch(postUrl, {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+        body: bodyMaster
       });
       const text = await res.text();
       let data = null;
       try{ data = JSON.parse(text); }catch(_e){}
       if(!data || !data.ok){
-        setStatus('Ошибка сохранения (action=save). Проверь Apps Script.', 'err');
+        setStatus('BN сохранено, но ошибка записи в MASTER (action=save).', 'err');
         console.warn('save response', text);
         return;
       }
-      setStatus('Сохранено.', 'ok');
+setStatus('Сохранено.', 'ok');
     }catch(e){
       console.error(e);
       setStatus('Ошибка сети при сохранении.', 'err');
@@ -668,7 +775,7 @@
 
     try{
       // 1) get latest row for company
-      const url = WEBAPP_URL + '?action=getLatest&company=' + encodeURIComponent(company);
+      const url = WEBAPP_URL + '?action=latest&company=' + encodeURIComponent(company);
       const data = await jsonp(url);
       if(!data || !data.ok || !data.row || !Array.isArray(data.row)){
         setStatus('Не найдено данных по компании. Сначала заполни интервью/индексы.', 'err');
@@ -679,6 +786,25 @@
       const keys = (window.SHEET_KEYS || []);
       const rowObj = parseTSVRowToObject(data.row, keys);
       ACTIVE_ROW = rowObj;
+
+      // 1.5) try to load latest BN session snapshot (BN_Log). If exists — merge into payload for UI.
+      try{
+        const bnUrl = WEBAPP_URL + '?action=bn_get_latest&company_name=' + encodeURIComponent(company);
+        const bnData = await jsonp(bnUrl);
+        if(bnData && bnData.ok && bnData.found && bnData.bn_payload_parsed){
+          const masterPayload = tryParsePayload(rowObj || {});
+          const bnPayload = bnData.bn_payload_parsed;
+          if(bnPayload && bnPayload.business_needs_sessions){
+            masterPayload.business_needs_sessions = bnPayload.business_needs_sessions;
+          }
+          if(bnPayload && bnPayload.__bn_saved_at) masterPayload.__bn_saved_at = bnPayload.__bn_saved_at;
+          if(bnPayload && bnPayload.__bn_version) masterPayload.__bn_version = bnPayload.__bn_version;
+          // push back to ACTIVE_ROW so render uses merged store
+          rowObj.payload = JSON.stringify(masterPayload);
+          ACTIVE_ROW = rowObj;
+        }
+      }catch(_e){ /* silent: BN_Log может быть пустым или ручка недоступна */ }
+
 
       // 2) compute heatmap from saved tech/proc answers
       HEATMAP = computeHeatmapFromRow(rowObj);
