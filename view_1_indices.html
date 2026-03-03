@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0"/>
 <meta content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;" http-equiv="Content-Security-Policy"/>
 <script src="config.js"></script>
-<script src="build_info.js?v=v70"></script>
+<script src="build_info.js?v=v93"></script>
 <script src="question_bank.js"></script>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
@@ -739,13 +739,16 @@ body.mode-product .passportOnly{display:none!important;}
 <div style="height:12px"></div>
 <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
 <div class="toolGrid">
-<a class="tool" href="index.html?v=61"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-<a class="tool" href="view_1_indices.html?v=61"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-<a class="tool" href="view_2_interview.html?v=61"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-<a class="tool" href="view_3_requirements.html?v=61"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-<a class="tool" href="view_3b_product.html?v=61"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-<a class="tool" href="view_4_psi.html?v=61"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-<a class="tool" href="view_5_full.html?v=61"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+<a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+<a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+<a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+<a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+<a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+<a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+<a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+<a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+
+<a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
 </div>
 </div>
 </div>
@@ -779,7 +782,7 @@ body.mode-product .passportOnly{display:none!important;}
 <button class="btn" id="btnRecalc">Пересчитать</button>
 <button class="btn ghost" id="btnPrint">Печать / PDF</button>
 <button class="btn ghost" id="btnExportXlsx">Выгрузить Excel</button>
-<button class="btn ghost" id="btnCLevel">C-level вывод</button>
+<button class="btn ghost" id="btnCLevel">Выводы</button>
 </div>
 <!-- KPI moved to header -->
 <div class="kpiBar">
@@ -925,7 +928,7 @@ body.mode-product .passportOnly{display:none!important;}
 </div>
 </div>
 <div class="card" id="cLevelBlock" style="display:none">
-<h2>C-level вывод (авто)</h2>
+<h2>Выводы (авто)</h2>
 <div class="small">Сформируйте краткий вывод для CEO/CFO/CIO: «где проседаем относительно рынка», «финансовый эффект», «следующий шаг».</div>
 <div class="row" style="margin-top:10px">
 <div style="grid-column:1 / -1;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -959,7 +962,7 @@ body.mode-product .passportOnly{display:none!important;}
 </div>
 <div class="row" style="margin-top:10px">
 <label style="grid-column:1 / -1">Текст вывода
-        <textarea id="cLevelText" placeholder="Нажмите «C-level вывод» вверху — сюда подставится текст."></textarea>
+        <textarea id="cLevelText" placeholder="Нажмите «Выводы» вверху — сюда подставится текст."></textarea>
 </label>
 </div>
 <div class="btns" style="margin-top:10px">
@@ -972,6 +975,8 @@ body.mode-product .passportOnly{display:none!important;}
 <div class="row">
 <label>Компания
           <input id="company" placeholder="ООО «Промресурс»"/>
+
+<div id="companySuggest" class="dockSuggest" style="display:none; position:relative; margin-top:6px"></div>
 </label>
 <label>Отрасль
           <select id="industry">
@@ -3345,7 +3350,7 @@ document.getElementById("btnCLevel").addEventListener("click", ()=>{
 
     const nextStep = "Рекомендуемый следующий шаг: пилот 4–6 недель на выбранном периметре (офис/филиал/VDI) с подтверждением экономического эффекта и формированием единого реестра активов.";
     const text =
-`C-level summary — ${company}
+`Выводы summary — ${company}
 
 PSI 2.0: ${isFinite(psi2n)?psi2n+"%":"—"} (${zone})
 
@@ -4167,6 +4172,27 @@ function buildSheetPayloadExact(){
       : _numFromText(raw);
   });
 
+  // === Heatmap / Risk & readiness / COI breakdown (persist to Sheets) ===
+  // На листе "Индексы" эти значения выводятся через textContent (<div>/<span>),
+  // поэтому их нужно явно добавлять в payload.
+  try{
+    out.pilot_readiness_pct = _numFromText(_val('pilotReady'));
+    out.main_problem_zone   = String(_val('mainProblem')||'').trim();
+    out.rec_modules         = String(_val('kModules')||'').trim();
+    out.demo_focus          = String(_val('demoFocusHint')||'').trim();
+
+    out.risk_grey_pct = _numFromText(_val('riskGreyPct'));
+    out.risk_lic_pct  = _numFromText(_val('riskLicPct'));
+    out.risk_ops_pct  = _numFromText(_val('riskOpsPct'));
+    out.risk_gov_pct  = _numFromText(_val('riskGovPct'));
+
+    out.coi_license_loss  = _numFromText(_val('coiLic'));
+    out.coi_downtime_loss = _numFromText(_val('coiDown'));
+    out.coi_manual_loss   = _numFromText(_val('coiManual'));
+    // Итого COI уже есть как coiTotal, но отдельно храним как явный ключ таблицы
+    out.coi_total_loss    = _numFromText(_val('coiTotal'));
+  }catch(e){ console.warn('heatmap/riskReady payload fill failed', e); }
+
   // Counts
   const techRows=[...document.querySelectorAll("#techTbody tr")];
   const procRows=[...document.querySelectorAll("#procTbody tr")];
@@ -4296,6 +4322,21 @@ function buildSheetPayloadExact(){
     if(cache && typeof cache === "object"){
       const keysRef = (window.SHEET_KEYS && Array.isArray(window.SHEET_KEYS)) ? window.SHEET_KEYS : (typeof SHEET_KEYS !== "undefined" ? SHEET_KEYS : Object.keys(cache));
       keysRef.forEach(k=>{ if(out[k] === undefined && cache[k] !== undefined) out[k] = cache[k]; });
+
+      // Critical keys: не затираем сохранённые значения пустотой при сохранении из частичных разделов
+      const __criticalKeys = ["sales_manager", "presale_manager", "lpr", "sources", "workplaces", "servers", "branches", "vdi", "closed", "envNote", "virt", "hostingModel", "adDomains", "netSeg", "terminalFarms", "hwAge", "hwAccounting", "redundancy", "psi2Score", "psi2Label", "techIndex", "procIndex", "riskIndex", "coiTotal", "recoverIndex", "busIndex", "obsolIndex", "aiIndex", "painIndex", "feasScore", "readyIndex", "readyLabel", "probIndex", "probLabel", "benchCount", "benchProfileLabel",
+        // Heatmap / Risk & readiness / COI breakdown
+        "pilot_readiness_pct","main_problem_zone","rec_modules","demo_focus","risk_grey_pct","risk_lic_pct","risk_ops_pct","risk_gov_pct","coi_license_loss","coi_downtime_loss","coi_manual_loss","coi_total_loss"
+      ];
+      __criticalKeys.forEach(k=>{
+        if(out[k] === '' || out[k] === null || typeof out[k] === 'undefined'){
+          const v = cache[k];
+          if(v !== '' && v !== null && typeof v !== 'undefined'){
+            out[k] = v;
+          }
+        }
+      });
+
     }
   }catch(e){ console.warn("mergeLatestCache failed", e); }
 
@@ -4603,6 +4644,31 @@ async function gsSearch(q){
       if(p.recommendedConfig==null && p["pilot.recommendedConfig"]!=null) p.recommendedConfig = p["pilot.recommendedConfig"];
       if(p.pilotTasks_removed==null && p["pilot.tasks"]!=null) p.pilotTasks_removed = p["pilot.tasks"];
       if(p.pilotKpi_removed==null && p["pilot.kpi"]!=null) p.pilotKpi_removed = p["pilot.kpi"];
+// indices aliases (snake_case from Sheets -> camelCase ids on Indices page)
+if(p.psi2Score==null && p.psi_score!=null) p.psi2Score = p.psi_score;
+if(p.probIndex==null && p.prob_index!=null) p.probIndex = p.prob_index;
+if(p.riskIndex==null && p.risk_index!=null) p.riskIndex = p.risk_index;
+if(p.techIndex==null && p.tech_index!=null) p.techIndex = p.tech_index;
+if(p.procIndex==null && p.proc_index!=null) p.procIndex = p.proc_index;
+if(p.readyIndex==null && p.ready_index!=null) p.readyIndex = p.ready_index;
+if(p.feasIndex==null && p.feas_index!=null) p.feasIndex = p.feas_index;
+if(p.recoverIndex==null && p.recover_index!=null) p.recoverIndex = p.recover_index;
+if(p.coiTotal==null && p.coi_total_loss!=null) p.coiTotal = p.coi_total_loss;
+
+// risk & readiness block ids on Indices page
+if(p.pilotReady==null && p.pilot_readiness_pct!=null) p.pilotReady = p.pilot_readiness_pct;
+if(p.mainProblem==null && p.main_problem_zone!=null) p.mainProblem = p.main_problem_zone;
+if(p.kModules==null && p.rec_modules!=null) p.kModules = p.rec_modules;
+if(p.demoFocusHint==null && p.demo_focus!=null) p.demoFocusHint = p.demo_focus;
+
+if(p.riskGreyPct==null && p.risk_grey_pct!=null) p.riskGreyPct = p.risk_grey_pct;
+if(p.riskLicPct==null && p.risk_lic_pct!=null) p.riskLicPct = p.risk_lic_pct;
+if(p.riskOpsPct==null && p.risk_ops_pct!=null) p.riskOpsPct = p.risk_ops_pct;
+if(p.riskGovPct==null && p.risk_gov_pct!=null) p.riskGovPct = p.risk_gov_pct;
+
+if(p.coiLic==null && p.coi_license_loss!=null) p.coiLic = p.coi_license_loss;
+if(p.coiDown==null && p.coi_downtime_loss!=null) p.coiDown = p.coi_downtime_loss;
+if(p.coiManual==null && p.coi_manual_loss!=null) p.coiManual = p.coi_manual_loss;
     }catch(e){}
 
 
@@ -4640,9 +4706,9 @@ async function gsSearch(q){
       if(!window.__ITMEN_LATEST_CACHE || typeof window.__ITMEN_LATEST_CACHE !== 'object') window.__ITMEN_LATEST_CACHE = {};
       window.__ITMEN_LATEST_CACHE = Object.assign({}, window.__ITMEN_LATEST_CACHE, payload);
     }catch(_e){}
-
-
     // 1) basic fields by id
+    // NOTE: on "Индексы" page a lot of KPI blocks are rendered as <div>/<span> (not inputs).
+    // When reverse-sync loading from Sheets we must populate both form controls and text KPI nodes.
     Object.entries(payload).forEach(([id, val]) => {
       const el = findElementByKey(id);
       if(!el) return;
@@ -4657,16 +4723,25 @@ async function gsSearch(q){
         return;
       }
 
-      // select/input/textarea
       if (val === null || val === undefined) return;
-      if (typeof val === "object") {
-        // try stringify for unknown objects
-        try { el.value = JSON.stringify(val); } catch(e) { el.value = String(val); }
+
+      // If element supports .value (inputs/select/textarea), set it as before.
+      // Otherwise, it's a KPI text node (<div>/<span>/etc.) — set textContent.
+      const isValueControl = ("value" in el) && (
+        el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA"
+      );
+
+      const asText = (typeof val === "object")
+        ? (()=>{ try { return JSON.stringify(val); } catch(e){ return String(val); } })()
+        : String(val);
+
+      if (isValueControl) {
+        el.value = asText;
+        el.dispatchEvent(new Event("input", { bubbles:true }));
+        el.dispatchEvent(new Event("change", { bubbles:true }));
       } else {
-        el.value = String(val);
+        el.textContent = asText;
       }
-      el.dispatchEvent(new Event("input", { bubbles:true }));
-      el.dispatchEvent(new Event("change", { bubbles:true }));
     });
 
     // 2) virt multiselect special handling (if payload.virt is array or comma string)
@@ -4691,8 +4766,25 @@ async function gsSearch(q){
     try{ rebuildTablesFromFlat_(payload); }catch(e){ console.warn("rebuildTablesFromFlat_ failed", e); }
 
     // 4) kick recalculation (if button exists)
+    // IMPORTANT: loading a row from Google Sheets must NOT create a new row.
+    // Some pages bind btnRecalc click -> recalc() + syncToGoogleSheets().
+    // When we hydrate fields from an existing row we want the UI recalculated,
+    // but we must skip any sync (otherwise we duplicate rows and may distort data).
     const btn = document.getElementById("btnRecalc");
-    if(btn) btn.click();
+    if(btn){
+      const __origSync = window.syncToGoogleSheets;
+      try{
+        if(typeof __origSync === 'function'){
+          window.syncToGoogleSheets = async function(){
+            console.log("ℹ️ Sheets sync skipped (reverse-sync load)");
+            return;
+          };
+        }
+        btn.click();
+      } finally {
+        if(typeof __origSync === 'function') window.syncToGoogleSheets = __origSync;
+      }
+    }
     // 3) maturity tables (tech/proc) and risk table are stored in Sheets as tech_01_score etc.
     try{
       function pad2(n){ return String(n).padStart(2,"0"); }
@@ -4753,6 +4845,57 @@ async function gsSearch(q){
     }catch(e){
       console.warn("applyPayload maturity/risk fill failed", e);
     }
+
+    // Map derived metrics stored in Sheets (snake_case) -> UI spans (camelCase).
+    // btnRecalc click may not compute these on the Indices page (because it doesn't have the full source answers),
+    // so we explicitly render them from payload when present.
+    try{
+      const fmtPct = (v)=>{
+        const n = Number(v);
+        if(!isFinite(n)) return "—%";
+        return `${Math.round(n)}%`;
+      };
+      const fmtRub = (v)=>{
+        const n = Number(v);
+        if(!isFinite(n)) return "—";
+        const s = String(Math.round(n));
+        return s.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      };
+      const setText = (id, text)=>{
+        const el = document.getElementById(id);
+        if(el) el.textContent = text;
+      };
+
+      const setBar = (id, pct)=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        const n = Number(String(pct).replace(',', '.').replace(/[^0-9.\-]/g,''));
+        if(!isFinite(n)) { el.style.width = "0%"; return; }
+        const clamped = Math.max(0, Math.min(100, n));
+        el.style.width = clamped + "%";
+      };
+
+      // Risk / readiness / heatmap
+      if(payload.pilot_readiness_pct!=null && payload.pilot_readiness_pct!=="") setText("pilotReady", fmtPct(payload.pilot_readiness_pct));
+      if(payload.main_problem_zone!=null && payload.main_problem_zone!=="") setText("mainProblem", String(payload.main_problem_zone));
+      if(payload.rec_modules!=null && payload.rec_modules!=="") setText("kModules", String(payload.rec_modules));
+      if(payload.demo_focus!=null && payload.demo_focus!=="") setText("demoFocusHint", String(payload.demo_focus));
+
+      // heatmap bars + labels
+      if(payload.risk_grey_pct!=null && payload.risk_grey_pct!=="") { setBar("riskGreyBar", payload.risk_grey_pct); setText("riskGreyPct", fmtPct(payload.risk_grey_pct)); }
+      if(payload.risk_lic_pct!=null && payload.risk_lic_pct!=="")  { setBar("riskLicBar",  payload.risk_lic_pct);  setText("riskLicPct",  fmtPct(payload.risk_lic_pct)); }
+      if(payload.risk_ops_pct!=null && payload.risk_ops_pct!=="")  { setBar("riskOpsBar",  payload.risk_ops_pct);  setText("riskOpsPct",  fmtPct(payload.risk_ops_pct)); }
+      if(payload.risk_gov_pct!=null && payload.risk_gov_pct!=="")  { setBar("riskGovBar",  payload.risk_gov_pct);  setText("riskGovPct",  fmtPct(payload.risk_gov_pct)); }
+
+      // COI breakdown
+      if(payload.coi_license_loss!=null && payload.coi_license_loss!=="")   setText("coiLic",    fmtRub(payload.coi_license_loss));
+      if(payload.coi_downtime_loss!=null && payload.coi_downtime_loss!=="") setText("coiDown",   fmtRub(payload.coi_downtime_loss));
+      if(payload.coi_manual_loss!=null && payload.coi_manual_loss!=="")     setText("coiManual", fmtRub(payload.coi_manual_loss));
+      if(payload.coi_total_loss!=null && payload.coi_total_loss!=="")       setText("coiTotal",  fmtRub(payload.coi_total_loss));
+    }catch(e){
+      console.warn("applyPayload derived render failed", e);
+    }
+
 
     // done
     window.__ITMEN_IS_LOADING = false;
@@ -5532,5 +5675,213 @@ function syncToGoogleSheets(){
   }
 })();
 </script>
+
+<script>
+/* Defensive re-bind for QuickDock search (keeps search working even if earlier scripts fail) */
+(function(){
+  try{
+    const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || window.WEBAPP_URL || "").trim();
+    const dockCompany = document.getElementById('dockCompany');
+    const dockSuggest = document.getElementById('dockSuggest');
+    const dockLoadBtn = document.getElementById('dockLoadBtn');
+    if(!dockCompany) return;
+
+    function jsonp(url, timeoutMs=15000){
+      return new Promise((resolve, reject)=>{
+        const cb = 'cb_' + Math.random().toString(36).slice(2);
+        const s = document.createElement('script');
+        const t = setTimeout(()=>{ cleanup(); reject(new Error('JSONP timeout')); }, timeoutMs);
+        function cleanup(){
+          clearTimeout(t);
+          try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
+          if(s.parentNode) s.parentNode.removeChild(s);
+        }
+        window[cb] = (data)=>{ cleanup(); resolve(data); };
+        const sep = url.includes('?') ? '&' : '?';
+        s.src = url + sep + 'callback=' + encodeURIComponent(cb);
+        s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
+        document.body.appendChild(s);
+      });
+    }
+
+    function navToCompany(c){
+      const u = new URL(location.href);
+      if(c) u.searchParams.set('company', c); else u.searchParams.delete('company');
+      location.href = u.toString();
+    }
+
+    function setCompanyInLinks(company){
+      const qs = company ? ('?company='+encodeURIComponent(company)) : '';
+      document.querySelectorAll('.quickDock a.tool').forEach(a=>{
+        const href = a.getAttribute('href') || '';
+        if(!href || href.startsWith('http')) return;
+        const clean = href.split('?')[0];
+        a.setAttribute('href', clean + qs);
+      });
+    }
+
+    // Ensure Enter navigation always works
+    dockCompany.addEventListener('keydown', (ev)=>{
+      if(ev.key === 'Enter'){
+        ev.preventDefault();
+        const c = dockCompany.value.trim();
+        navToCompany(c);
+      }
+    }, {capture:true});
+
+    if(dockLoadBtn){
+      dockLoadBtn.addEventListener('click', ()=>{
+        const c = dockCompany.value.trim();
+        navToCompany(c);
+      }, {capture:true});
+    }
+
+    // Suggestions
+    let timer=null;
+    dockCompany.addEventListener('input', ()=>{
+      clearTimeout(timer);
+      const q = dockCompany.value.trim();
+      setCompanyInLinks(q);
+      if(!dockSuggest) return;
+      if(q.length < 3){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
+      timer = setTimeout(async ()=>{
+        if(!WEBAPP_URL) return;
+        try{
+          const data = await jsonp(WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=10');
+          const items = (data && data.ok && Array.isArray(data.items)) ? data.items : [];
+          if(!items.length){ dockSuggest.style.display='none'; dockSuggest.innerHTML=''; return; }
+          dockSuggest.innerHTML = items.map(it=>{
+            const name = (it.company||'').replaceAll('"','&quot;');
+            return '<div class="dockItem" data-company="'+name+'"><div style="font-weight:800">'+name+'</div></div>';
+          }).join('');
+          dockSuggest.style.display='block';
+          dockSuggest.querySelectorAll('.dockItem').forEach(el=>{
+            el.addEventListener('click', ()=>{
+              const c = el.getAttribute('data-company') || '';
+              dockCompany.value = c;
+              dockSuggest.style.display='none';
+              dockSuggest.innerHTML='';
+              navToCompany(c);
+            });
+          });
+        }catch(_e){}
+      }, 250);
+    }, {capture:true});
+  }catch(_e){}
+})();
+
+
+/* Mirror main company input (#company) to QuickDock search (#dockCompany) so автоподбор работал как на других листах */
+(function(){
+  try{
+    const main = document.getElementById('company');
+    const dock = document.getElementById('dockCompany');
+    if(!main || !dock) return;
+
+    // if user types in main input, forward to dock input so same suggest engine is used
+    main.addEventListener('input', ()=>{
+      dock.value = main.value;
+      dock.dispatchEvent(new Event('input', {bubbles:true}));
+    });
+
+    main.addEventListener('keydown', (ev)=>{
+      if(ev.key==='Enter'){
+        dock.value = main.value.trim();
+        dock.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', bubbles:true}));
+      }
+    });
+
+    // also keep main in sync if dock changed by suggestion click
+    dock.addEventListener('input', ()=>{ main.value = dock.value; });
+  }catch(_e){}
+})();
+
+// ===== Passport company search (autocomplete + load) =====
+(function(){
+  try{
+    const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || window.WEBAPP_URL || "").trim();
+    const input = document.getElementById('company');
+    const box = document.getElementById('companySuggest');
+    if(!input || !box || !WEBAPP_URL) return;
+
+    function jsonp(url, timeoutMs=15000){
+      return new Promise((resolve, reject)=>{
+        const cb = 'cb_' + Math.random().toString(36).slice(2);
+        const s = document.createElement('script');
+        const t = setTimeout(()=>{ cleanup(); reject(new Error('JSONP timeout')); }, timeoutMs);
+        function cleanup(){
+          clearTimeout(t);
+          try{ delete window[cb]; }catch(e){ window[cb]=undefined; }
+          if(s.parentNode) s.parentNode.removeChild(s);
+        }
+        window[cb] = (data)=>{ cleanup(); resolve(data); };
+        const sep = url.includes('?') ? '&' : '?';
+        s.src = url + sep + 'callback=' + encodeURIComponent(cb);
+        s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
+        document.body.appendChild(s);
+      });
+    }
+
+    function navToCompany(c){
+      const u = new URL(location.href);
+      if(c) u.searchParams.set('company', c); else u.searchParams.delete('company');
+      location.href = u.toString();
+    }
+
+    let timer=null;
+    input.setAttribute('autocomplete','off');
+
+    input.addEventListener('input', ()=>{
+      clearTimeout(timer);
+      const q = input.value.trim();
+      if(q.length < 3){ box.style.display='none'; box.innerHTML=''; return; }
+      timer = setTimeout(async ()=>{
+        try{
+          showLoader('Поиск компании…', 'Ищем совпадения в базе Google Sheets.');
+          const data = await jsonp(WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=10', 20000);
+          hideLoader();
+          const items = (data && data.ok && Array.isArray(data.items)) ? data.items : [];
+          if(!items.length){ box.style.display='none'; box.innerHTML=''; return; }
+          box.innerHTML = items.map(it=>{
+            const name = String(it.company||'').replaceAll('"','&quot;');
+            return '<div class="dockItem" data-company="'+name+'"><div style="font-weight:800">'+name+'</div></div>';
+          }).join('');
+          box.style.display='block';
+          box.querySelectorAll('.dockItem').forEach(el=>{
+            el.addEventListener('click', ()=>{
+              const c = el.getAttribute('data-company') || '';
+              input.value = c;
+              box.style.display='none'; box.innerHTML='';
+              showLoader('Загружаю данные…', 'Получаем последнюю запись по компании из базы.');
+              navToCompany(c);
+            });
+          });
+        }catch(_e){
+          try{ hideLoader(); }catch(_){}
+        }
+      }, 250);
+    });
+
+    input.addEventListener('keydown', (ev)=>{
+      if(ev.key==='Enter'){
+        ev.preventDefault();
+        const c = input.value.trim();
+        if(c){
+          showLoader('Загружаю данные…', 'Получаем последнюю запись по компании из базы.');
+          navToCompany(c);
+        }
+      }
+    });
+
+    // hide on outside click
+    document.addEventListener('click', (e)=>{
+      if(e.target===input || box.contains(e.target)) return;
+      box.style.display='none'; box.innerHTML='';
+    });
+  }catch(_e){}
+})();
+
+</script>
+
 </body>
 </html>

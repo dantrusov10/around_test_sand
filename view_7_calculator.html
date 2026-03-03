@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com https:;"/>
+  <script src="config.js"></script>
+  <script src="build_info.js?v=v93"></script>
+  <title>Калькулятор — Карта клиента</title>
+  <style>
+    :root{
+      --brand-red:#ff0000;
+      --brand-red-2:#e21d35;
+      --bg:#ffffff;
+      --surface:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border: rgba(15,23,42,.12);
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
+    .container{max-width:1480px;margin:22px auto;padding:0 14px}
+
+    /* ===== QuickDock (same style as other pages) ===== */
+    .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
+    .quickDock .card{box-shadow:0 18px 50px rgba(15,23,42,.12)}
+    .card{background:var(--surface);border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+    .pad{padding:14px}
+    .dockHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .dockTitle{font-weight:950;font-size:14px;margin:0 0 10px}
+    .dockToggle{border:1px solid var(--border);background:#fff;border-radius:10px;padding:6px 8px;cursor:pointer;font-weight:900;line-height:1}
+    .dockSearchWrap{position:relative;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+    .dockIcon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.7}
+    .dockSearch{width:100%;border:1px solid var(--border);background:#f2f4f8;padding:11px 12px 11px 38px;border-radius:12px;outline:none;font-size:14px}
+    .dockLoadBtn{border:none;background:var(--brand-red);color:#fff;padding:10px 12px;border-radius:12px;font-weight:900;cursor:pointer;white-space:nowrap}
+    .dockSuggest{margin-top:8px;border:1px solid var(--border);border-radius:12px;overflow:hidden;display:none;background:#fff}
+    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}
+    .dockItem:first-child{border-top:none}
+    .dockItem b{display:block}
+    .toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+    .tool{padding:12px;border:1px solid var(--border);border-radius:14px;background:#fff;display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:inherit}
+    .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
+    .tName{font-weight:900;font-size:13px;line-height:1.15}
+    .tDesc{font-size:12px;color:var(--muted);margin-top:3px}
+
+    /* collapsed */
+    body.dockCollapsed .quickDock{width:72px}
+    body.dockCollapsed .dockTitle, body.dockCollapsed #dockCompany, body.dockCollapsed #dockLoadBtn, body.dockCollapsed #dockSuggest{display:none !important}
+    body.dockCollapsed .toolGrid{grid-template-columns:1fr !important}
+    body.dockCollapsed .tool .tDesc, body.dockCollapsed .tool .tName{display:none !important}
+    body.dockCollapsed .tool{justify-content:center}
+
+    @media (max-width:1480px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
+    @media (min-width:1101px){.container{padding-left:360px}}
+
+    header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
+    h1{font-size:20px;margin:0}
+    .sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.35;max-width:920px}
+
+    .frameWrap{border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+    iframe{width:100%;height:calc(100vh - 160px);border:0;display:block}
+    @media (max-width:1480px){iframe{height:calc(100vh - 220px)}}
+
+    .hint{color:var(--muted);font-size:12px;margin-top:8px}
+  </style>
+</head>
+<body class="view-calculator">
+
+<div id="buildBadge" style="position:fixed;z-index:99999;bottom:12px;right:12px;background:#111827;color:#fff;padding:8px 10px;border-radius:10px;font:12px/1.2 system-ui;box-shadow:0 10px 30px rgba(0,0,0,.15);opacity:.92">
+  BUILD <b>v42</b> • calculator
+</div>
+
+<div id="calcSaveStatus" style="position:fixed;z-index:99999;bottom:56px;right:12px;background:#ffffff;color:#111827;border:1px solid rgba(15,23,42,.12);padding:8px 10px;border-radius:10px;font:12px/1.2 system-ui;box-shadow:0 10px 30px rgba(0,0,0,.10);opacity:.96;max-width:360px">
+  Save: <b>idle</b>
+</div>
+
+<div class="quickDock" id="quickDock">
+  <div class="card pad">
+    <div class="dockHeader">
+      <div class="dockTitle">Быстрый вход</div>
+      <button type="button" class="dockToggle" id="dockToggle" aria-label="Свернуть/развернуть панель" title="Свернуть панель">◀</button>
+    </div>
+    <div class="dockSearchWrap dockTop">
+      <div class="dockIcon">🔎</div>
+      <input autocomplete="off" class="dockSearch" id="dockCompany" placeholder="Введите компанию"/>
+      <button class="dockLoadBtn" id="dockLoadBtn" title="Загрузить" type="button">Загрузить</button>
+    </div>
+    <div class="dockSuggest" id="dockSuggest"></div>
+    <div style="height:12px"></div>
+    <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
+    <div class="toolGrid">
+      <a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+      <a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+      <a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+      <a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+      <a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+      <a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+      <a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+      <a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+      <a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <header>
+    <div>
+      <h1>Калькулятор / спецификатор</h1>
+      <div class="sub">Открывается внутри карты клиента как iframe. При нажатии «Скачать PDF» (в калькуляторе) карта клиента перехватывает клик, сохраняет запись в БД (лист Calculator_Log) через Apps Script, и затем PDF формируется как обычно.</div>
+      <div class="hint">Важно: выбери компанию в «Быстрый вход» — она уйдёт в БД вместе со всеми полями калькулятора.</div>
+    </div>
+  </header>
+
+  <div class="frameWrap">
+    <!-- IMPORTANT: use the original calculator URL (no code inside calculator required) -->
+    <iframe id="calcFrame" src="https://itmancalc.github.io/calculator/Index.html"></iframe>
+  </div>
+</div>
+
+<script>
+  const LS_COMPANY = 'itmen_last_company_v1';
+  const LS_DOCK = 'itmen_quickdock_collapsed_v1';
+  let __CURRENT_COMPANY__ = '';
+
+  function esc(s){return String(s||'').replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));}
+  function showSuggest(items){
+    const box = document.getElementById('dockSuggest');
+    if(!items || !items.length){ box.style.display='none'; box.innerHTML=''; return; }
+    box.innerHTML = '';
+    items.slice(0, 12).forEach(it=>{
+      const name = String(it.company||'').trim();
+      if(!name) return;
+      const row = document.createElement('div');
+      row.className = 'dockItem';
+      row.innerHTML = `<b>${esc(name)}</b>`;
+      row.addEventListener('mousedown', (ev)=>{ ev.preventDefault(); setCompany(name, true); });
+      box.appendChild(row);
+    });
+    box.style.display='block';
+  }
+
+  async function gsSearch(q){
+    const url = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || window.WEBAPP_URL || '').trim();
+    if(!url) throw new Error('GS_WEBAPP_URL not set');
+    const u = url + '?action=search&q=' + encodeURIComponent(q);
+    const res = await fetch(u, {method:'GET'});
+    return await res.json();
+  }
+
+  function setCompany(name, fromSuggest){
+    const company = String(name||'').trim();
+    if(!company) return;
+    __CURRENT_COMPANY__ = company;
+    document.getElementById('dockCompany').value = company;
+    try{ localStorage.setItem(LS_COMPANY, company); }catch(e){}
+
+    // reload calculator with company query (the calculator itself may ignore it; we still keep it for traceability)
+    const frame = document.getElementById('calcFrame');
+    const base = 'https://itmancalc.github.io/calculator/Index.html';
+    frame.src = base + '?company=' + encodeURIComponent(company) + '&v=' + Date.now();
+
+    if(fromSuggest){ showSuggest([]); }
+  }
+
+  function loadLastCompany(){
+    try{ return (localStorage.getItem(LS_COMPANY)||'').trim(); }catch(e){ return ''; }
+  }
+
+  // Dock collapse
+  (function initDockCollapse(){
+    let collapsed = false;
+    try{ collapsed = localStorage.getItem(LS_DOCK) === '1'; }catch(e){}
+    if(collapsed) document.body.classList.add('dockCollapsed');
+    const btn = document.getElementById('dockToggle');
+    function sync(){
+      const isC = document.body.classList.contains('dockCollapsed');
+      btn.textContent = isC ? '▶' : '◀';
+      btn.title = isC ? 'Развернуть панель' : 'Свернуть панель';
+      try{ localStorage.setItem(LS_DOCK, isC ? '1' : '0'); }catch(e){}
+    }
+    btn.addEventListener('click', ()=>{ document.body.classList.toggle('dockCollapsed'); sync(); });
+    sync();
+  })();
+
+  // Suggest/search
+  (function initSearch(){
+    const inp = document.getElementById('dockCompany');
+    let t=null;
+    inp.addEventListener('input', ()=>{
+      const q = String(inp.value||'').trim();
+      if(t) clearTimeout(t);
+      if(q.length < 2){ showSuggest([]); return; }
+      t = setTimeout(async ()=>{
+        try{
+          const data = await gsSearch(q);
+          if(data && data.ok && Array.isArray(data.items)) showSuggest(data.items);
+          else showSuggest([]);
+        }catch(e){ showSuggest([]); }
+      }, 250);
+    });
+    inp.addEventListener('focus', ()=>{ const q=String(inp.value||'').trim(); if(q.length>=2) inp.dispatchEvent(new Event('input')); });
+    inp.addEventListener('blur', ()=> setTimeout(()=>showSuggest([]), 180));
+  })();
+
+  document.getElementById('dockLoadBtn').addEventListener('click', ()=> setCompany(document.getElementById('dockCompany').value, true));
+
+  /* ===== Save to Apps Script (Fire-and-forget POST) =====
+     Почему так:
+     - JSONP в ряде сценариев (redirect на googleusercontent) может разваливаться и давать "Файл не обнаружен".
+     - CORS мешает читать ответ, но нам ответ не нужен: важно лишь доставить payload в Apps Script.
+     - sendBeacon идеально подходит под клик/печать PDF.
+  */
+
+  function postToAppsScript_(payload){
+    const url = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || window.WEBAPP_URL || '').trim();
+    if(!url) return {ok:false, reason:'GS_WEBAPP_URL not set'};
+
+    const endpoint = url + '?action=save_calc';
+    const body = 'payload=' + encodeURIComponent(JSON.stringify(payload));
+
+    // 1) Prefer sendBeacon
+    try{
+      if(navigator && navigator.sendBeacon){
+        const blob = new Blob([body], {type:'application/x-www-form-urlencoded;charset=UTF-8'});
+        const sent = navigator.sendBeacon(endpoint, blob);
+        if(sent) return {ok:true, method:'beacon'};
+      }
+    }catch(e){ /* ignore */ }
+
+    // 2) Fallback: fetch no-cors (response will be opaque; that's fine)
+    try{
+      fetch(endpoint, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+        body,
+        keepalive: true
+      }).catch(()=>{});
+      return {ok:true, method:'fetch-no-cors'};
+    }catch(e){
+      return {ok:false, reason:String(e && e.message ? e.message : e)};
+    }
+  }
+
+  function collectPayloadFromIframe_(doc){
+    const out = {};
+
+    // 1) Standard form fields
+    const els = doc.querySelectorAll('input,select,textarea');
+    els.forEach(el => {
+      const key = el.id || el.name;
+      if(!key) return;
+      const type = (el.type || '').toLowerCase();
+      if(type === 'checkbox') out[key] = el.checked ? 1 : 0;
+      else if(type === 'radio') { if(el.checked) out[key] = el.value; }
+      else out[key] = el.value;
+    });
+
+    // 2) Modules (chips are NOT inputs; state is stored in dataset.active)
+    // Expected DOM: #modules .chip with chip.dataset.active = "1"|"0" and title in <h4>
+    try{
+      const chips = Array.from(doc.querySelectorAll('#modules .chip'));
+      if(chips.length){
+        const modules = chips.map(ch => ({
+          name: (ch.querySelector('h4') ? ch.querySelector('h4').textContent : ch.textContent || '').trim(),
+          active: String((ch.dataset && ch.dataset.active) ? ch.dataset.active : '').trim() === '1' ? 1 : 0
+        })).filter(x=>x.name);
+
+        out.modules_selected = modules.filter(m=>m.active).map(m=>m.name).join('; ');
+        out.modules_json = JSON.stringify(modules);
+
+        // Individual flags (for filtering in Sheets)
+        modules.forEach(m=>{
+          const slug = m.name
+            .toLowerCase()
+            .replace(/[^a-z0-9а-яё]+/gi,'_')
+            .replace(/^_+|_+$/g,'');
+          out['module_' + slug] = m.active;
+        });
+      }
+    }catch(_e){}
+
+    // 3) Financial / computed KPIs (text blocks, not inputs)
+    function txt(id){
+      const el = doc.getElementById(id);
+      return el ? String(el.textContent || '').trim() : '';
+    }
+    [
+      'kpiCost','supportCost','kpiPartnerProfit','kpiROI',
+      'sumNoVAT','sumWithVAT','sumNoVATPartner','sumWithVATPartner',
+      'expectedPayDate','payTermText'
+    ].forEach(id=>{
+      const v = txt(id);
+      if(v) out[id] = v;
+    });
+
+    // 4) Spec / detailed items table (rows)
+    try{
+      const tbody = doc.getElementById('itemsTbody');
+      if(tbody){
+        const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>{
+          const tds = Array.from(tr.querySelectorAll('td')).map(td=>String(td.textContent||'').trim());
+          return {
+            nomen: tds[0]||'',
+            sku: tds[1]||'',
+            name: tds[2]||'',
+            qty: tds[3]||'',
+            unit_price: tds[4]||'',
+            discount: tds[5]||'',
+            sum_no_vat: tds[6]||'',
+            sum_with_vat: tds[7]||'',
+            partner_unit_price: tds[8]||''
+          };
+        });
+        if(rows.length){
+          out.spec_rows_json = JSON.stringify(rows);
+          out.spec_rows_count = rows.length;
+        }
+      }
+    }catch(_e){}
+
+    return out;
+  }
+
+  // Try to extract company name from калькулятора (он может не использовать key 'company')
+  function detectCompany_(payload){
+    if(!payload) return '';
+    const priority = [
+      'company','Company','Компания',
+      'companyName','CompanyName','company_name',
+      'client','Client','clientName','ClientName','customer','Customer','customerName','CustomerName',
+      'client_name','customer_name',
+      'Наименование клиента','Название клиента','Клиент'
+    ];
+    for(const k of priority){
+      const v = payload[k];
+      if(v !== undefined && v !== null && String(v).trim()) return String(v).trim();
+    }
+    // Heuristic: any key containing 'client'/'company' with non-empty value
+    for(const k in payload){
+      if(!payload.hasOwnProperty(k)) continue;
+      const lk = String(k).toLowerCase();
+      if(lk.includes('client') || lk.includes('company') || lk.includes('customer') || lk.includes('клиент') || lk.includes('компан')){
+        const v = payload[k];
+        if(v !== undefined && v !== null && String(v).trim()) return String(v).trim();
+      }
+    }
+    return '';
+  }
+
+  async function saveCalcFromParent_(){
+    const statusEl = document.getElementById('calcSaveStatus');
+    const url = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || window.WEBAPP_URL || '').trim();
+    if(!url){ console.warn('GS_WEBAPP_URL not set'); if(statusEl) statusEl.innerHTML = 'Save: <b>GS_WEBAPP_URL not set</b>'; return; }
+
+    const frame = document.getElementById('calcFrame');
+    const w = frame.contentWindow;
+    const doc = w && w.document;
+    if(!doc){ console.warn('iframe doc not доступен'); if(statusEl) statusEl.innerHTML = 'Save: <b>iframe doc not доступен</b>'; return; }
+
+    let payload = {};
+    try{ payload = collectPayloadFromIframe_(doc); }catch(e){ console.warn('collect payload error', e); payload = {}; }
+
+    // Company can be entered прямо в калькуляторе. QuickDock selection is optional.
+    const companyFromCalc = detectCompany_(payload);
+    payload.company = String(companyFromCalc || __CURRENT_COMPANY__ || '').trim();
+    payload.source = 'calculator';
+    payload.timestamp = new Date().toISOString();
+    payload.run_id = payload.run_id || payload.runId || payload.runID || (crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+
+    if(!payload.company){
+      console.warn('company missing (enter it in calculator or select in QuickDock)');
+      if(statusEl) statusEl.innerHTML = 'Save: <b>company missing</b> (введи в калькуляторе или выбери слева)';
+      return;
+    }
+
+    try{
+      if(statusEl) statusEl.innerHTML = 'Save: <b>sending…</b> ' + esc(payload.company);
+      const r = postToAppsScript_(payload);
+      if(r && r.ok){
+        console.log('save_calc sent via', r.method);
+        if(statusEl) statusEl.innerHTML = 'Save: <b>SENT</b> (' + esc(r.method) + ') • ' + esc(payload.company);
+      }else{
+        console.warn('save_calc not sent', r);
+        if(statusEl) statusEl.innerHTML = 'Save: <b>FAILED</b> ' + esc(r && r.reason ? r.reason : '');
+      }
+    }catch(e){
+      console.warn('save_calc failed', e);
+      if(statusEl) statusEl.innerHTML = 'Save: <b>FAILED</b> (см. Console)';
+    }
+  }
+
+  function wirePdfIntercept_(){
+    const frame = document.getElementById('calcFrame');
+    let armed = false;
+
+    function findPdfButton_(doc){
+      if(!doc) return null;
+      // 1) preferred stable id
+      const byId = doc.getElementById('btnPDF');
+      if(byId) return byId;
+      // 2) try common variants
+      const byId2 = doc.getElementById('downloadPdf') || doc.getElementById('downloadPDF') || doc.getElementById('pdf') || doc.getElementById('btnPdf');
+      if(byId2) return byId2;
+      // 3) fallback: button/link text contains PDF
+      const candidates = Array.from(doc.querySelectorAll('button, a, input[type="button"], input[type="submit"]'));
+      for(const el of candidates){
+        const txt = (el.innerText || el.value || '').toString().trim().toLowerCase();
+        if(!txt) continue;
+        if((txt.includes('pdf') && (txt.includes('скач') || txt.includes('download') || txt.includes('сохран'))) || txt === 'скачать pdf' || txt === 'скачать pдf'){
+          return el;
+        }
+      }
+      return null;
+    }
+
+    function arm_(doc){
+      const btn = findPdfButton_(doc);
+      if(!btn){ console.warn('PDF button not found in calculator (id btnPDF or text "Скачать PDF")'); return false; }
+      if(btn.__itmen_hooked) return true;
+      btn.__itmen_hooked = true;
+      // Capture = run before калькуляторского обработчика
+      btn.addEventListener('click', () => {
+        console.log('[ITMEN] PDF click intercepted → save_calc');
+        // fire and forget (do not блокировать PDF)
+        saveCalcFromParent_();
+      }, true);
+      console.log('[ITMEN] PDF intercept armed on element:', btn);
+      return true;
+    }
+
+    frame.addEventListener('load', () => {
+      armed = false;
+      try{
+        const doc = frame.contentWindow && frame.contentWindow.document;
+        if(!doc) return;
+        if(armed) return;
+        // try to arm immediately
+        armed = arm_(doc);
+
+        // калькулятор может перерисовать DOM (кнопка появляется позже) — наблюдаем
+        const mo = new MutationObserver(() => {
+          if(!armed){
+            armed = arm_(doc);
+          }
+          if(armed) mo.disconnect();
+        });
+        mo.observe(doc.documentElement || doc.body, {subtree:true, childList:true});
+
+        // Optional: if calculator has clientName field, try fill from company
+        if(__CURRENT_COMPANY__){
+          const clientName = doc.getElementById('clientName') || doc.querySelector('[name="clientName"]');
+          if(clientName && !clientName.value) clientName.value = __CURRENT_COMPANY__;
+        }
+      }catch(e){
+        console.warn('wirePdfIntercept error', e);
+      }
+    });
+  }
+
+  // init
+  wirePdfIntercept_();
+  const last = loadLastCompany();
+  if(last) setCompany(last, true);
+</script>
+
+</body>
+</html>

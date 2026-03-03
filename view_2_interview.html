@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0"/>
 <meta content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;" http-equiv="Content-Security-Policy"/>
 <script src="config.js"></script>
-<script src="build_info.js?v=v70"></script>
+<script src="build_info.js?v=v93"></script>
 <script src="question_bank.js"></script>
 <meta charset="utf-8">
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
@@ -717,13 +717,16 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 <div style="height:12px"></div>
 <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
 <div class="toolGrid">
-<a class="tool" href="index.html?v=61"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-<a class="tool" href="view_1_indices.html?v=61"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-<a class="tool" href="view_2_interview.html?v=61"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-<a class="tool" href="view_3_requirements.html?v=61"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-<a class="tool" href="view_3b_product.html?v=61"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-<a class="tool" href="view_4_psi.html?v=61"><div class="tIcon">📈</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-<a class="tool" href="view_5_full.html?v=61"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+<a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+<a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+<a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+<a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+<a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+<a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+<a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+<a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+
+<a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
 </div>
 </div>
 </div>
@@ -757,7 +760,7 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 <button class="btn" id="btnRecalc">Пересчитать</button>
 <button class="btn ghost" id="btnPrint">Печать / PDF</button>
 <button class="btn ghost" id="btnExportXlsx">Выгрузить Excel</button>
-<button class="btn ghost" id="btnCLevel">C-level вывод</button>
+<button class="btn ghost" id="btnCLevel">Выводы</button>
 </div>
 <!-- KPI moved to header -->
 <div class="kpiBar">
@@ -903,7 +906,7 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 </div>
 </div>
 <div class="card" id="cLevelBlock" style="display:none">
-<h2>C-level вывод (авто)</h2>
+<h2>Выводы (авто)</h2>
 <div class="small">Сформируйте краткий вывод для CEO/CFO/CIO: «где проседаем относительно рынка», «финансовый эффект», «следующий шаг».</div>
 <div class="row" style="margin-top:10px">
 <div style="grid-column:1 / -1;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -937,7 +940,7 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 </div>
 <div class="row" style="margin-top:10px">
 <label style="grid-column:1 / -1">Текст вывода
-        <textarea id="cLevelText" placeholder="Нажмите «C-level вывод» вверху — сюда подставится текст."></textarea>
+        <textarea id="cLevelText" placeholder="Нажмите «Выводы» вверху — сюда подставится текст."></textarea>
 </label>
 </div>
 <div class="btns" style="margin-top:10px">
@@ -3323,7 +3326,7 @@ document.getElementById("btnCLevel").addEventListener("click", ()=>{
 
     const nextStep = "Рекомендуемый следующий шаг: пилот 4–6 недель на выбранном периметре (офис/филиал/VDI) с подтверждением экономического эффекта и формированием единого реестра активов.";
     const text =
-`C-level summary — ${company}
+`Выводы summary — ${company}
 
 PSI 2.0: ${isFinite(psi2n)?psi2n+"%":"—"} (${zone})
 
@@ -4283,6 +4286,18 @@ function buildSheetPayloadExact(){
     if(cache && typeof cache === "object"){
       const keysRef = (window.SHEET_KEYS && Array.isArray(window.SHEET_KEYS)) ? window.SHEET_KEYS : (typeof SHEET_KEYS !== "undefined" ? SHEET_KEYS : Object.keys(cache));
       keysRef.forEach(k=>{ if(out[k] === undefined && cache[k] !== undefined) out[k] = cache[k]; });
+
+      // Critical keys: не затираем сохранённые значения пустотой при сохранении из частичных разделов
+      const __criticalKeys = ["sales_manager", "presale_manager", "lpr", "sources", "workplaces", "servers", "branches", "vdi", "closed", "envNote", "virt", "hostingModel", "adDomains", "netSeg", "terminalFarms", "hwAge", "hwAccounting", "redundancy", "psi2Score", "psi2Label", "techIndex", "procIndex", "riskIndex", "coiTotal", "recoverIndex", "busIndex", "obsolIndex", "aiIndex", "painIndex", "feasScore", "readyIndex", "readyLabel", "probIndex", "probLabel", "benchCount", "benchProfileLabel"];
+      __criticalKeys.forEach(k=>{
+        if(out[k] === '' || out[k] === null || typeof out[k] === 'undefined'){
+          const v = cache[k];
+          if(v !== '' && v !== null && typeof v !== 'undefined'){
+            out[k] = v;
+          }
+        }
+      });
+
     }
   }catch(e){ console.warn("mergeLatestCache failed", e); }
 
@@ -4678,8 +4693,25 @@ async function gsSearch(q){
     try{ rebuildTablesFromFlat_(payload); }catch(e){ console.warn("rebuildTablesFromFlat_ failed", e); }
 
     // 4) kick recalculation (if button exists)
+    // IMPORTANT: loading a row from Google Sheets must NOT create a new row.
+    // Some pages bind btnRecalc click -> recalc() + syncToGoogleSheets().
+    // When we hydrate fields from an existing row we want the UI recalculated,
+    // but we must skip any sync (otherwise we duplicate rows and may distort data).
     const btn = document.getElementById("btnRecalc");
-    if(btn) btn.click();
+    if(btn){
+      const __origSync = window.syncToGoogleSheets;
+      try{
+        if(typeof __origSync === 'function'){
+          window.syncToGoogleSheets = async function(){
+            console.log("ℹ️ Sheets sync skipped (reverse-sync load)");
+            return;
+          };
+        }
+        btn.click();
+      } finally {
+        if(typeof __origSync === 'function') window.syncToGoogleSheets = __origSync;
+      }
+    }
     // 3) maturity tables (tech/proc) and risk table are stored in Sheets as tech_01_score etc.
     try{
       function pad2(n){ return String(n).padStart(2,"0"); }
