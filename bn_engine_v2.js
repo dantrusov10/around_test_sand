@@ -534,6 +534,11 @@
     const panel = UI.needPanel();
     if(!panel) return;
 
+    if(!ACTIVE_ROW){
+      panel.innerHTML = \'<div class="muted">Сначала выбери компанию и нажми «Загрузить».</div>\';
+      return;
+    }
+
     const bn = (BN_CATALOG.items || []).find(x=>x.id===ACTIVE_BN_ID);
     if(!bn){ panel.innerHTML='<div class="muted">Выбери бизнес‑потребность слева.</div>'; return; }
 
