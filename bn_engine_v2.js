@@ -713,15 +713,32 @@
       // Apps Script router uses action=latest (alias of get). Keep legacy getLatest by also supporting alias on backend.
       const url = WEBAPP_URL + '?action=latest_bn&company=' + encodeURIComponent(company);
       const data = await jsonp(url, 45000);
-      if(!data || !data.ok || !data.row || !Array.isArray(data.row)){
-        setStatus('Не найдено данных по компании. Сначала заполни интервью/индексы.', 'err');
-        return;
-      }
 
-      // row is array aligned to SHEET_KEYS
-      const keys = (window.SHEET_KEYS || []);
-      const rowObj = parseTSVRowToObject(data.row, keys);
-      ACTIVE_ROW = rowObj;
+// Apps Script may return either:
+//  - legacy: { ok:true, row:[...] } where row is an array aligned to SHEET_KEYS
+//  - compact: { ok:true, payload:{...} } or { ok:true, item:{...} } where payload/item is already an object
+if(!data || !data.ok){
+  setStatus('Не найдено данных по компании. Сначала заполни интервью/индексы.', 'err');
+  return;
+}
+
+let rowObj = null;
+if (Array.isArray(data.row)) {
+  const keys = (window.SHEET_KEYS || []);
+  rowObj = parseTSVRowToObject(data.row, keys);
+} else if (data.payload && typeof data.payload === 'object') {
+  rowObj = data.payload;
+} else if (data.item && typeof data.item === 'object') {
+  rowObj = data.item;
+}
+
+if(!rowObj){
+  // We got a response but it doesn't include a usable row.
+  setStatus('Данные по компании не подцепились (формат ответа latest_bn).', 'err');
+  return;
+}
+
+ACTIVE_ROW = rowObj;
 
       // 2) compute heatmap from saved tech/proc answers
       HEATMAP = computeHeatmapFromRow(rowObj);
