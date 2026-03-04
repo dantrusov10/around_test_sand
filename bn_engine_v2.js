@@ -964,7 +964,31 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
       input.value = c;
       loadCompany(c);
     }
-  }
+  
+
+    // Fallback poller: GitHub Pages sometimes messes with input events after hot updates.
+    // This guarantees that typing still triggers search even if events were not attached.
+    let _lastQ = '';
+    setInterval(()=>{
+      try{
+        const q2 = (input.value||'').trim();
+        if(q2 === _lastQ) return;
+        _lastQ = q2;
+        if(q2.length < 3){ suggest.style.display='none'; suggest.innerHTML=''; return; }
+        const mySeq2 = ++searchSeq;
+        runSearch(q2, mySeq2);
+      }catch(_e){}
+    }, 500);
+
+    // Enter -> load
+    input.addEventListener('keydown', (ev)=>{
+      if(ev.key === 'Enter'){
+        ev.preventDefault();
+        try{ loadCompany(input.value.trim()); }catch(_e){}
+      }
+    });
+
+}
 
   async function runSearch(q, mySeq){
     if(!WEBAPP_URL) return;
@@ -1139,6 +1163,20 @@ ACTIVE_ROW = rowObj;
     // initial empty render
     renderThemes();
     renderNeeds();
+    try{
+      const sumEl = panel.querySelector('#bnStrategicSummary');
+      if(sumEl){
+        const topCauses = (sess.selected_causes||[]).slice(0,4);
+        const topPains = (sess.selected_pains||[]).slice(0,4);
+        const ansCount = sess.answers ? Object.values(sess.answers).filter(x=>String(x||'').trim()).length : 0;
+        sumEl.innerHTML = `<b>Что важно:</b> сила ${Math.round(sess.strength)} · ответов: ${ansCount}`
+          + (sess.is_main?` · <span class="star">★ основная</span>`:'')
+          + (topCauses.length?`<br><b>Причины:</b> ${topCauses.map(esc).join(' · ')}`:'')
+          + (topPains.length?`<br><b>Боли:</b> ${topPains.map(esc).join(' · ')}`:'')
+          + (bn.result?`<br><b>Ожидаемый результат:</b> ${esc(bn.result)}`:'');
+      }
+    }catch(e){ console.error(e); }
+
     renderSummary();
   });
 
