@@ -1245,7 +1245,77 @@ ACTIVE_ROW = rowObj;
     return true;
   }
 
-  function ensureDockBound() {
+  
+function bindHeaderCompanySearch(){
+  const input = document.getElementById('bnCompanyInput');
+  const btn = document.getElementById('bnCompanyBtn');
+  const suggestEl = document.getElementById('bnCompanySuggest');
+  if(!input || !btn || !suggestEl) return;
+
+  let timer = null;
+
+  function renderSuggest(items){
+    if(!items || !items.length){
+      suggestEl.style.display = 'none';
+      suggestEl.innerHTML = '';
+      return;
+    }
+    suggestEl.style.display = 'block';
+    suggestEl.innerHTML = items.map(it => {
+      const ts = it.timestamp ? new Date(it.timestamp).toLocaleString() : '';
+      const row = (it.row !== undefined && it.row !== null) ? ('#'+it.row) : '';
+      return `<div class="item" data-company="${escapeHtml(it.company||'')}" data-row="${it.row||''}">
+        <div>${escapeHtml(it.company||'')}</div>
+        <div class="meta">${escapeHtml(row)} ${escapeHtml(ts)}</div>
+      </div>`;
+    }).join('');
+    suggestEl.querySelectorAll('.item').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const company = el.getAttribute('data-company');
+        input.value = company;
+        suggestEl.style.display='none';
+        suggestEl.innerHTML='';
+        // Load company (latest_bn) and render
+        loadCompany(company);
+      });
+    });
+  }
+
+  async function doSearch(){
+    const q = (input.value || '').trim();
+    if(q.length < 2){
+      suggestEl.style.display='none';
+      suggestEl.innerHTML='';
+      return;
+    }
+    try{
+      const url = CONFIG.WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
+      const data = await jsonp(url, 45000, 2);
+      if(data && data.ok && Array.isArray(data.items)){
+        renderSuggest(data.items);
+      }else{
+        renderSuggest([]);
+      }
+    }catch(e){
+      console.warn('BN header search failed', e);
+      renderSuggest([]);
+    }
+  }
+
+  input.addEventListener('input', ()=>{
+    if(timer) clearTimeout(timer);
+    timer = setTimeout(doSearch, 250);
+  });
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      doSearch();
+    }
+  });
+  btn.addEventListener('click', doSearch);
+}
+
+function ensureDockBound() {
     // Try immediately, then retry for a few seconds (because the dock is injected by frame_start.js)
     if (bindDockSearch()) return;
     let tries = 0;
@@ -1257,6 +1327,7 @@ ACTIVE_ROW = rowObj;
 
 document.addEventListener('DOMContentLoaded', async () => {
     ensureDockBound();
+    bindHeaderCompanySearch();
     await loadCatalog();
     bindQuickDock();
 
