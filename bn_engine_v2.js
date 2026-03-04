@@ -43,8 +43,28 @@
     needPanel: () => document.getElementById('needPanel'),
     summaryPanel: () => document.getElementById('bnSummary'),
     saveBtn: () => document.getElementById('bnSaveBtn'),
-    status: () => document.getElementById('bnStatus')
+    status: () => document.getElementById('bnStatus'),
+    fltTriggers: () => document.getElementById('bnFltTriggers'),
+    fltCritical: () => document.getElementById('bnFltCritical'),
+    fltMain: () => document.getElementById('bnFltMain')
   };
+
+function themeHasTrigger_(theme){
+  const r = (THEME_ABM && THEME_ABM[theme] && Array.isArray(THEME_ABM[theme].reasons)) ? THEME_ABM[theme].reasons : [];
+  return r.some(x=>String(x||'').includes('Триггер'));
+}
+function themeHasCritical_(theme){
+  const r = (THEME_ABM && THEME_ABM[theme] && Array.isArray(THEME_ABM[theme].reasons)) ? THEME_ABM[theme].reasons : [];
+  return r.some(x=>String(x||'').includes('Critical'));
+}
+function bnIsMain_(bnId){
+  try{
+    const p = getSessionStore();
+    const s = p?.business_needs_sessions?.[bnId];
+    return !!(s && s.is_main);
+  }catch(_){ return false; }
+}
+
 
   let BN_CATALOG = null;
   let ACTIVE_COMPANY = '';
@@ -438,11 +458,11 @@
         : `Риск: <b>${fmtPct01(r01)}</b>`;
       const barPct = abm ? Math.round((abm.abm01||0)*100) : Math.round(r01*100);
 
-      return `<button class="themeBtn${active}" data-theme="${esc(t)}">
-        <div class="themeName">${esc(t)}</div>
-        <div class="themeMeta">${meta}</div>
-        <div class="themeBar"><span style="width:${Math.max(0,Math.min(100,barPct))}%"></span></div>
-      </button>`;
+      return `<button class="tabBtn${active}" data-theme="${esc(t)}">
+  <div class="tabTitle">${esc(t)}</div>
+  <div class="tabMeta">${meta}</div>
+  <div class="miniBar"><i style="width:${barPct}%"></i></div>
+</button>`;
     }).join('');
 
     list.innerHTML = rows || '<div class="small">Нет данных — выбери компанию и заполни интервью.</div>';
@@ -473,9 +493,20 @@
     // Now we always show BN list; items with 0 strength are marked as "не активировано" but still selectable.
     const bnList = (grouped[theme] || []);
 
+
+// filters (manager helper)
+const fTrig = !!(UI.fltTriggers() && UI.fltTriggers().checked);
+const fCrit = !!(UI.fltCritical() && UI.fltCritical().checked);
+const fMain = !!(UI.fltMain() && UI.fltMain().checked);
+
+let filtered = bnList;
+if(fTrig) filtered = filtered.filter(x=> themeHasTrigger_(x.theme || theme));
+if(fCrit) filtered = filtered.filter(x=> themeHasCritical_(x.theme || theme));
+if(fMain) filtered = filtered.filter(x=> bnIsMain_(x.id));
+
     // show only Top N inside theme (keeps UX small)
     const TOP_N = 10;
-    const top = bnList.slice(0, TOP_N);
+    const top = filtered.slice(0, TOP_N);
 
     if(!top.length){
       box.innerHTML = `<div class="small">По тематике «${esc(theme)}» нет бизнес‑потребностей в каталоге.</div>`;
@@ -490,9 +521,12 @@
       const active = (bn.id===ACTIVE_BN_ID) ? ' active' : '';
       const s = Math.round(strengthForBN(bn));
       const sLabel = (s>0) ? String(s) : '0 (не активировано)';
-      return `<button class="needBtn${active}" data-bn="${esc(bn.id)}">
-        <div class="needName">${esc(bn.name)}</div>
-        <div class="needMeta">Сила: <b>${esc(sLabel)}</b> · Вес: ${esc(bn.weight)} · Зона: ${esc(bn.zone||'—')}</div>
+      const main = bnIsMain_(bn.id);
+      const star = main ? ' <span class="star">★</span>' : '';
+      return `<button class="tabBtn${active}" data-bn="${esc(bn.id)}">
+        <div class="tabTitle">${esc(bn.name)}${star}</div>
+        <div class="tabMeta">Сила: <b>${Math.round(str)}</b>${act?` (активировано)`:` (не активировано)`} · Вес: <b>${bn.weight||1}</b> · Зона: <b>${esc(bn.zone||'—')}</b></div>
+        <div class="miniBar"><i style="width:${Math.min(100,Math.max(0,Math.round(str)))}%"></i></div>
       </button>`;
     }).join('');
 
@@ -524,7 +558,9 @@
         selected_causes: [],
         selected_pains: [],
         answers: {},
-        manager_notes: ''
+        manager_notes: '',
+        is_main: false,
+        manager_comment: ''
       };
     }
     return payload.business_needs_sessions[bnId];
@@ -552,31 +588,88 @@
 
     function isChecked(arr, v){ return Array.isArray(arr) && arr.includes(v); }
 
-    panel.innerHTML = `
-      <div class="card">
-        <div class="needHead">
-          <div>
-            <div class="needTitle">${esc(bn.name)}</div>
-            <div class="small">Тематика: <b>${esc(bn.theme||'—')}</b> · Зона: <b>${esc(bn.zone||'—')}</b> · Сила: <b>${Math.round(sess.strength)}</b></div>
-          </div>
-          <div class="needHeadRight">
-            <button type="button" class="btn ghost" id="bnCollapseAll">Свернуть</button>
-            <button type="button" class="btn" id="bnSaveNow">Сохранить</button>
-          </div>
-        </div>
-        <div class="hr"></div>
+    
+panel.innerHTML = `
+  <div class="needHead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
+    <div>
+      <div class="needTitle">${esc(bn.name)}</div>
+      <div class="small">Тематика: <b>${esc(bn.theme||'—')}</b> · Зона: <b>${esc(bn.zone||'—')}</b> · Сила: <b>${Math.round(sess.strength)}</b></div>
+      <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">
+        <label class="pill"><input type="checkbox" id="bnIsMain" ${sess.is_main?'checked':''}/> <span class="star">★</span> Основная</label>
+      </div>
+    </div>
+    <div class="needHeadRight" style="display:flex;gap:10px">
+      <button type="button" class="btn ghost" id="bnCollapseAll">Свернуть</button>
+      <button type="button" class="btn" id="bnSaveNow">Сохранить</button>
+    </div>
+  </div>
 
-        <div class="block">
-          <div class="blockTitle">Подробное описание</div>
-          <div class="blockText">${esc(bn.task || '—')}</div>
-        </div>
+  <div class="workTop">
+    <div class="workBox">
+      <h3>Подробное описание</h3>
+      <div class="blockText">${esc(bn.task || '—')}</div>
+      <div class="hr" style="margin:12px 0"></div>
+      <h3>Комментарий менеджера</h3>
+      <textarea class="qAns" id="bnMgrComment" placeholder="Коротко: что подтвердили / следующий шаг">${esc(sess.manager_comment||'')}</textarea>
+    </div>
 
-        <div class="block">
-          <details open class="details" id="detCauses">
-            <summary>Причины (отметь, что подтверждено)</summary>
-            <div class="checkGrid">
-              ${causes.map((c,idx)=>{
-                const id = `c_${bn.id}_${idx}`;
+    <div class="workBox">
+      <h3>Вопросы</h3>
+      <div class="qaGrid">
+        ${questions.map((q,idx)=>`<div class="qRow"><div class="qTxt">${esc(q)}</div></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="workBox">
+      <h3>Ответы</h3>
+      <div class="qaGrid">
+        ${questions.map((q,idx)=>{
+          const key = `q_${idx}`;
+          const val = (sess.answers && sess.answers[key]) ? sess.answers[key] : '';
+          return `<div class="qRow"><textarea class="qAns" data-kind="answer" data-q="${esc(key)}" placeholder="Ответ (фиксируем как есть)">${esc(val)}</textarea></div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div class="workBelow">
+    <div class="workBox">
+      <h3>Причины (отметь, что подтверждено)</h3>
+      <div class="checkGrid">
+        ${causes.map((c,idx)=>{
+          const id = `c_${bn.id}_${idx}`;
+          return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="cause" value="${esc(c)}" ${isChecked(sess.selected_causes,c)?'checked':''}/> <span>${esc(c)}</span></label>`;
+        }).join('')}
+      </div>
+
+      <div class="hr" style="margin:12px 0"></div>
+      <h3>Боли (что реально болит)</h3>
+      <div class="checkGrid">
+        ${pains.map((p,idx)=>{
+          const id = `p_${bn.id}_${idx}`;
+          return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="pain" value="${esc(p)}" ${isChecked(sess.selected_pains,p)?'checked':''}/> <span>${esc(p)}</span></label>`;
+        }).join('')}
+      </div>
+
+      <div class="hr" style="margin:12px 0"></div>
+      <h3>ITIL / KPI</h3>
+      <div class="small">${esc((bn.itil||'') + (bn.kpi?(' · KPI: '+bn.kpi):'')) || '—'}</div>
+    </div>
+
+    <div class="workBox">
+      <h3>Нужный функционал</h3>
+      <div class="blockText">${esc(bn.functional || '—')}</div>
+      <div class="hr" style="margin:12px 0"></div>
+      <h3>Ожидаемый результат</h3>
+      <div class="blockText">${esc(bn.result || '—')}</div>
+    </div>
+  </div>
+
+  <div class="workOne workBox">
+    <h3>Стратегическое резюме</h3>
+    <div id="bnStrategicSummary" class="blockText"></div>
+  </div>
+`;
                 return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="cause" value="${esc(c)}" ${isChecked(sess.selected_causes,c)?'checked':''}/> <span>${esc(c)}</span></label>`;
               }).join('') || '<div class="small">—</div>'}
             </div>
@@ -666,7 +759,19 @@
           if(!ch.checked) sess.selected_pains = sess.selected_pains.filter(x=>x!==val);
         }
       }, {passive:true});
-    });
+    
+const mainCb = panel.querySelector('#bnIsMain');
+mainCb && mainCb.addEventListener('change', ()=>{
+  sess.is_main = !!mainCb.checked;
+  try{ renderNeeds(); }catch(e){ console.error(e); }
+});
+
+const mgrTa = panel.querySelector('#bnMgrComment');
+mgrTa && mgrTa.addEventListener('input', ()=>{
+  sess.manager_comment = mgrTa.value;
+});
+
+});
 
     panel.querySelectorAll('textarea.qAnswer[data-qkey]').forEach(ta=>{
       ta.addEventListener('input', ()=>{
@@ -688,6 +793,20 @@
 
     // keep row object updated
     ACTIVE_ROW.payload = JSON.stringify(payload);
+
+    try{
+      const sumEl = panel.querySelector('#bnStrategicSummary');
+      if(sumEl){
+        const topCauses = (sess.selected_causes||[]).slice(0,4);
+        const topPains = (sess.selected_pains||[]).slice(0,4);
+        const ansCount = sess.answers ? Object.values(sess.answers).filter(x=>String(x||'').trim()).length : 0;
+        sumEl.innerHTML = `<b>Что важно:</b> сила ${Math.round(sess.strength)} · ответов: ${ansCount}`
+          + (sess.is_main?` · <span class="star">★ основная</span>`:'')
+          + (topCauses.length?`<br><b>Причины:</b> ${topCauses.map(esc).join(' · ')}`:'')
+          + (topPains.length?`<br><b>Боли:</b> ${topPains.map(esc).join(' · ')}`:'')
+          + (bn.result?`<br><b>Ожидаемый результат:</b> ${esc(bn.result)}`:'');
+      }
+    }catch(e){ console.error(e); }
 
     renderSummary();
   }
@@ -943,7 +1062,21 @@ ACTIVE_ROW = rowObj;
       setStatus('Данные загружены. Выбери тематику и BN.', 'ok');
       renderThemes();
       renderNeeds();
-      renderSummary();
+      try{
+      const sumEl = panel.querySelector('#bnStrategicSummary');
+      if(sumEl){
+        const topCauses = (sess.selected_causes||[]).slice(0,4);
+        const topPains = (sess.selected_pains||[]).slice(0,4);
+        const ansCount = sess.answers ? Object.values(sess.answers).filter(x=>String(x||'').trim()).length : 0;
+        sumEl.innerHTML = `<b>Что важно:</b> сила ${Math.round(sess.strength)} · ответов: ${ansCount}`
+          + (sess.is_main?` · <span class="star">★ основная</span>`:'')
+          + (topCauses.length?`<br><b>Причины:</b> ${topCauses.map(esc).join(' · ')}`:'')
+          + (topPains.length?`<br><b>Боли:</b> ${topPains.map(esc).join(' · ')}`:'')
+          + (bn.result?`<br><b>Ожидаемый результат:</b> ${esc(bn.result)}`:'');
+      }
+    }catch(e){ console.error(e); }
+
+    renderSummary();
 
       // update query string for share
       const qs = '?company=' + encodeURIComponent(company);
@@ -986,6 +1119,12 @@ ACTIVE_ROW = rowObj;
     await loadCatalog();
     bindQuickDock();
 
+// BN filters
+[UI.fltTriggers(), UI.fltCritical(), UI.fltMain()].forEach(el=>{
+  if(!el) return;
+  el.addEventListener('change', ()=>{ try{ renderNeeds(); }catch(e){ console.error(e); } });
+});
+
     // Save button (top)
     const topSave = UI.saveBtn();
     topSave && topSave.addEventListener('click', saveCurrent);
@@ -993,6 +1132,20 @@ ACTIVE_ROW = rowObj;
     // initial empty render
     renderThemes();
     renderNeeds();
+    try{
+      const sumEl = panel.querySelector('#bnStrategicSummary');
+      if(sumEl){
+        const topCauses = (sess.selected_causes||[]).slice(0,4);
+        const topPains = (sess.selected_pains||[]).slice(0,4);
+        const ansCount = sess.answers ? Object.values(sess.answers).filter(x=>String(x||'').trim()).length : 0;
+        sumEl.innerHTML = `<b>Что важно:</b> сила ${Math.round(sess.strength)} · ответов: ${ansCount}`
+          + (sess.is_main?` · <span class="star">★ основная</span>`:'')
+          + (topCauses.length?`<br><b>Причины:</b> ${topCauses.map(esc).join(' · ')}`:'')
+          + (topPains.length?`<br><b>Боли:</b> ${topPains.map(esc).join(' · ')}`:'')
+          + (bn.result?`<br><b>Ожидаемый результат:</b> ${esc(bn.result)}`:'');
+      }
+    }catch(e){ console.error(e); }
+
     renderSummary();
   });
 

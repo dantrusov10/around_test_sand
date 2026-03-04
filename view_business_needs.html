@@ -133,6 +133,39 @@
     .bnStatus.ok{color:#047857}
     .bnStatus.err{color:#b91c1c}
     .bnStatus.warn{color:#b45309}
+  
+    /* ===== BN v2 layout ===== */
+    .layoutV2{display:grid;gap:14px}
+    .tabsRow{display:flex;gap:10px;overflow:auto;padding:6px 2px}
+    .tabsRow::-webkit-scrollbar{height:10px}
+    .tabsRow::-webkit-scrollbar-thumb{background:rgba(15,23,42,.12);border-radius:999px}
+    .tabBtn{flex:0 0 auto;min-width:220px;text-align:left;border:1px solid rgba(15,23,42,.12);background:#fff;border-radius:16px;padding:12px 12px;cursor:pointer;box-shadow:0 10px 30px rgba(15,23,42,.06)}
+    .tabBtn:hover{border-color:rgba(15,23,42,.22)}
+    .tabBtn.active{border-color:rgba(239,68,68,.55);box-shadow:0 14px 40px rgba(239,68,68,.10)}
+    .tabTitle{font-weight:950;font-size:13px;line-height:1.15}
+    .tabMeta{margin-top:6px;font-size:12px;color:var(--muted)}
+    .miniBar{height:6px;border-radius:999px;background:rgba(15,23,42,.08);overflow:hidden;margin-top:8px}
+    .miniBar > i{display:block;height:100%;background:linear-gradient(90deg,var(--brand-red),#ff6b6b);width:0%}
+    .filters{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .flt{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;user-select:none}
+    .needPanelFull{box-shadow:var(--shadow);border:1px solid rgba(15,23,42,.12);border-radius:18px;background:#fff;padding:14px}
+    .workTop{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:12px}
+    .workBox{border:1px solid rgba(15,23,42,.10);border-radius:16px;padding:12px;background:linear-gradient(180deg,#fff, #fbfbfd)}
+    .workBox h3{margin:0 0 8px;font-size:13px;font-weight:950}
+    .qaGrid{display:grid;grid-template-columns:1fr;gap:10px}
+    .qRow{display:grid;grid-template-columns:1fr;gap:6px}
+    .qTxt{font-size:12px;font-weight:800}
+    .qAns{width:100%;min-height:62px;border:1px solid rgba(15,23,42,.12);border-radius:12px;background:#fff;padding:10px;font-size:13px;outline:none}
+    .qAns:focus{border-color:rgba(239,68,68,.35);box-shadow:0 0 0 3px rgba(239,68,68,.10)}
+    .workBelow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .workOne{margin-top:12px}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid rgba(15,23,42,.12);font-size:12px;color:var(--muted);background:#fff}
+    .star{color:#ffb300;font-weight:900}
+    @media (max-width:1200px){
+      .workTop{grid-template-columns:1fr}
+      .workBelow{grid-template-columns:1fr}
+    }
+
   </style>
 </head>
 <body>
@@ -179,27 +212,40 @@
       </div>
     </header>
 
-    <div class="layout">
+    
+    <div class="layoutV2">
       <div class="card">
-        <div class="sectionTitle">Тематики (от рисков)</div>
-        <div class="small">Кликни тематику — покажем активированные бизнес‑потребности.</div>
+        <div class="rowHead">
+          <div>
+            <div class="sectionTitle">Тематики</div>
+            <div class="small">Кликни тематику — покажем бизнес‑потребности.</div>
+          </div>
+        </div>
         <div class="hr"></div>
-        <div id="themeList" style="display:grid;gap:10px"></div>
+        <div id="themeList" class="tabsRow themeTabs"></div>
       </div>
 
       <div class="card">
-        <div class="sectionTitle">Бизнес‑потребности</div>
-        <div class="small">Сортировка внутри тематики — по силе (риск × вес).</div>
+        <div class="rowHead" style="gap:14px;align-items:flex-end">
+          <div style="flex:1">
+            <div class="sectionTitle">Бизнес‑потребности</div>
+            <div class="small">Сортировка — по силе (риск × вес) / ABM.</div>
+          </div>
+          <div class="filters">
+            <label class="flt"><input type="checkbox" id="bnFltTriggers"> Только с триггерами</label>
+            <label class="flt"><input type="checkbox" id="bnFltCritical"> Только критические</label>
+            <label class="flt"><input type="checkbox" id="bnFltMain"> Только “основные” ⭐</label>
+          </div>
+        </div>
         <div class="hr"></div>
-        <div id="needsList" style="display:grid;gap:10px"></div>
+        <div id="needsList" class="tabsRow needsTabs"></div>
       </div>
 
-      <div style="display:grid;gap:14px">
-        <div id="needPanel"><div class="muted">Выбери бизнес‑потребность слева.</div></div>
-        <div id="bnSummary"></div>
-      </div>
-
+      <div id="needPanel" class="needPanelFull"><div class="muted">Выбери бизнес‑потребность выше.</div></div>
+      <div id="bnSummary"></div>
     </div>
+
+  </div>
   </div>
   <script src="sheet_keys.js"></script>
   <script src="bn_engine_v2.js"></script>
