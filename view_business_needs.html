@@ -163,7 +163,19 @@
       .workBelow{grid-template-columns:1fr}
     }
 
-  </style>
+  
+/* BN inline company search */
+.bn-company-inline{ margin:10px 0 12px; padding:10px; border:1px solid rgba(0,0,0,.06); border-radius:12px; background:#fafafa;}
+.bn-company-label{ font-size:12px; color:#666; margin-bottom:6px;}
+.bn-company-row{ display:flex; gap:8px; align-items:center;}
+.bn-company-input{ flex:1; padding:10px 12px; border:1px solid rgba(0,0,0,.12); border-radius:10px; font-size:14px;}
+.bn-company-btn{ padding:10px 12px; border:1px solid rgba(0,0,0,.12); border-radius:10px; background:white; cursor:pointer;}
+.bn-company-suggest{ position:relative; margin-top:8px; border:1px solid rgba(0,0,0,.12); border-radius:10px; background:white; overflow:hidden;}
+.bn-company-suggest .item{ padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:10px;}
+.bn-company-suggest .item:hover{ background:#f3f3f3;}
+.bn-company-suggest .meta{ color:#777; font-size:12px;}
+
+</style>
 </head>
 <body>
 
@@ -215,6 +227,16 @@
         <div class="rowHead">
           <div>
             <div class="sectionTitle">Тематики</div>
+
+    <div class="bn-company-inline">
+      <div class="bn-company-label">Название компании</div>
+      <div class="bn-company-row">
+        <input id="bnCompanyInput" class="bn-company-input" type="text" placeholder="Начни вводить (поиск в листе PSI)..." autocomplete="off" />
+        <button id="bnCompanyBtn" class="bn-company-btn" type="button">Найти</button>
+      </div>
+      <div id="bnCompanySuggest" class="bn-company-suggest" style="display:none"></div>
+    </div>
+
             <div class="small">Кликни тематику — покажем бизнес‑потребности.</div>
           </div>
         </div>
