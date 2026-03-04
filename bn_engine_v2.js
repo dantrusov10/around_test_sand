@@ -3,7 +3,15 @@
 // Storage: embedded into saved payload JSON under key "business_needs_sessions".
 
 (function(){
-  const WEBAPP_URL = (window.GS_WEBAPP_URL || window.WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || '').trim();
+  const WEBAPP_URL = (window.GS_WEBAPP_URL || '').trim();
+
+
+// --- HARDEN: always bind quick dock search/load even if UI init crashes ---
+try{
+  window.addEventListener('DOMContentLoaded', () => {
+    try{ bindQuickDock(); }catch(e){ console.error('[BN] bindQuickDock failed', e); }
+  });
+}catch(_e){}
   const VERSION = (window.BUILD_INFO && window.BUILD_INFO.version) ? window.BUILD_INFO.version : '';
 
   // Hardening: show JS errors as "data processing" not "Apps Script"
@@ -910,150 +918,31 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
   let searchTimer = null;
   let searchSeq = 0;
 
-  
-function bindQuickDock(){
-  // We support multiple layouts/ids (because dock markup changed across versions).
-  const input =
-    document.getElementById('dockCompany') ||
-    document.getElementById('companyInput') ||
-    document.getElementById('companySearch') ||
-    document.getElementById('quickCompany') ||
-    document.getElementById('quickSearchInput') ||
-    document.querySelector('input[placeholder*="компан" i]') ||
-    null;
+  function bindQuickDock(){
+    const input = document.getElementById('dockCompany');
+    const suggest = document.getElementById('dockSuggest');
+    const loadBtn = document.getElementById('dockLoadBtn');
 
-  // Suggest container (use existing if present, else create right after input)
-  let suggest =
-    document.getElementById('dockSuggest') ||
-    document.getElementById('suggestBox') ||
-    document.getElementById('companySuggest') ||
-    null;
+    if(!input || !suggest) return;
 
-  const loadBtn =
-    document.getElementById('dockLoadBtn') ||
-    document.getElementById('dockLoad') ||
-    document.getElementById('loadBtn') ||
-    document.querySelector('button#dockLoadBtn, button[data-action="load"], button.btnLoad') ||
-    null;
-
-  if(!input){
-    console.warn('[BN] QuickDock input not found: no company search will work.');
-    return;
-  }
-
-  if(!suggest){
-    try{
-      suggest = document.createElement('div');
-      suggest.id = 'suggestBox';
-      suggest.className = 'suggest';
-      suggest.style.display = 'none';
-      const parent = input.closest('.searchWrap') || input.parentElement || document.body;
-      parent.appendChild(suggest);
-    }catch(_e){
-      suggest = null;
-    }
-  }
-
-  if(!WEBAPP_URL){
-    console.error('[BN] GS_WEBAPP_URL is empty; search/load disabled');
-    try{ setStatus('Не задан GS_WEBAPP_URL (config.js). Поиск/загрузка отключены.', 'err'); }catch(_e){}
-    return;
-  }
-
-  function renderSuggest(items){
-    if(!suggest) return;
-    if(!items || !items.length){
-      suggest.style.display = 'none';
-      suggest.innerHTML = '';
-      return;
-    }
-    suggest.style.display = 'block';
-    suggest.innerHTML = items.map(it => {
-      const nm = esc(it.company || it.name || '');
-      const ts = esc(it.timestamp || '');
-      const row = (it.row !== undefined && it.row !== null) ? String(it.row) : '';
-      return `<div class="sItem dockItem" data-company="${nm}">
-                <div>
-                  <div class="sName">${nm}</div>
-                  <div class="sMeta">${ts}${row ? ' • row ' + row : ''}</div>
-                </div>
-                <div class="badge">выбрать</div>
-              </div>`;
-    }).join('');
-    Array.from(suggest.querySelectorAll('.sItem')).forEach(el=>{
-      el.addEventListener('click', ()=>{
-        const c = el.getAttribute('data-company') || '';
-        input.value = c;
-        suggest.style.display='none';
-        suggest.innerHTML='';
-        loadCompany(c);
-      });
-    });
-  }
-
-  function triggerSearch(raw){
-    clearTimeout(searchTimer);
-    const q = (raw||'').trim();
-    if(q.length < 2){ if(suggest){suggest.style.display='none'; suggest.innerHTML='';} return; }
-    const mySeq = ++searchSeq;
-    if(suggest){
+    input.addEventListener('input', ()=>{
+      clearTimeout(searchTimer);
+      const q = input.value.trim();
+      if(q.length < 3){ suggest.style.display='none'; suggest.innerHTML=''; return; }
+      const mySeq = ++searchSeq;
       suggest.style.display='block';
       suggest.innerHTML = `<div class="dockItem"><b>Ищу…</b><div class="small">${esc(q)}</div></div>`;
-    }
-    searchTimer = setTimeout(()=> runSearch(q, mySeq), 250);
-  }
-
-  ['input','keyup','change','paste'].forEach(evName=>{
-    input.addEventListener(evName, ()=> triggerSearch(input.value));
-  });
-
-  input.addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter'){
-      const c = input.value.trim();
-      if(c) loadCompany(c);
-    }
-  });
-
-  if(loadBtn){
-    loadBtn.addEventListener('click', ()=>{
-      const c = input.value.trim();
-      if(c) loadCompany(c);
+      searchTimer = setTimeout(()=> runSearch(q, mySeq), 250);
     });
-  }
 
-  // Wrap runSearch once: capture items and render into suggest
-  if(!window.__bn_wrapped_search){
-    window.__bn_wrapped_search = true;
-    const _origRunSearch = runSearch;
-    runSearch = async function(q, mySeq){
-      const out = await _origRunSearch(q, mySeq);
-      try{
-        if(out && out.items) renderSuggest(out.items);
-        else if(Array.isArray(out)) renderSuggest(out);
-        else if(window.__bn_lastSearch && window.__bn_lastSearch.items) renderSuggest(window.__bn_lastSearch.items);
-      }catch(_e){}
-      return out;
+    if(loadBtn){
+      loadBtn.addEventListener('click', ()=>{
+        const c = input.value.trim();
+        if(c) loadCompany(c);
+      });
     }
-  }
 
-  const params = new URLSearchParams(location.search);
-  const c = params.get('company');
-  if(c){
-    input.value = c;
-    loadCompany(c);
-  }
-
-  let _lastQ = '';
-  setInterval(()=>{
-    try{
-      const q2 = (input.value||'');
-      if(q2 === _lastQ) return;
-      _lastQ = q2;
-      triggerSearch(q2);
-    }catch(_e){}
-  }, 500);
-
-  // collapse toggle (same logic as other pages) (same logic as other pages)
+    // collapse toggle (same logic as other pages)
     const KEY = 'itmen_dock_collapsed_v1';
     const btn = document.getElementById('dockToggle');
     function apply(){
@@ -1076,29 +965,7 @@ function bindQuickDock(){
       input.value = c;
       loadCompany(c);
     }
-  
-
-    // Fallback poller: GitHub Pages sometimes messes with input events after hot updates.
-    // This guarantees that typing still triggers search even if events were not attached.
-    let _lastQ = '';
-    setInterval(()=>{
-      try{
-        const q2 = (input.value||'');
-        if(q2 === _lastQ) return;
-        _lastQ = q2;
-        triggerSearch(q2);
-      }catch(_e){}
-    }, 500);
-
-    // Enter -> load
-    input.addEventListener('keydown', (ev)=>{
-      if(ev.key === 'Enter'){
-        ev.preventDefault();
-        try{ loadCompany(input.value.trim()); }catch(_e){}
-      }
-    });
-
-}
+  }
 
   async function runSearch(q, mySeq){
     if(!WEBAPP_URL) return;
@@ -1257,6 +1124,8 @@ ACTIVE_ROW = rowObj;
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
+  try{
+
     await loadCatalog();
     bindQuickDock();
 
@@ -1290,4 +1159,6 @@ ACTIVE_ROW = rowObj;
     renderSummary();
   });
 
+
+  }catch(e){ console.error('[BN] init crash', e); setStatus('Ошибка JS (см. Console).', 'err'); }
 })();

@@ -1,110 +1,253 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;"/>
+  <script src="config.js"></script>
+  <script src="build_info.js?v=v93"></script>
+  <script src="question_bank.js"></script>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Боли и бизнес-потребности</title>
-  <link rel="icon" href="favicon.ico"/>
+  <title>Карта тестирования + ПСИ — Боли и потребности</title>
   <style>
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f6f7fb;color:#111;}
-    .app{display:flex;min-height:100vh;}
-    .sidebar{width:290px;background:#fff;border-right:1px solid #e7e7ef;padding:14px 14px 18px;box-sizing:border-box;}
-    .brand{font-weight:700;margin:6px 0 12px;}
-    .dock{background:#f7f8fc;border:1px solid #ececf6;border-radius:14px;padding:10px;}
-    .dockRow{display:flex;gap:8px;align-items:center;}
-    #dockCompany{flex:1;border:1px solid #e1e1ee;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;background:#fff;}
-    #dockLoadBtn{border:0;border-radius:12px;padding:10px 14px;background:#e11;color:#fff;font-weight:700;cursor:pointer;}
-    #dockSuggest{margin-top:8px;display:none;background:#fff;border:1px solid #e1e1ee;border-radius:12px;overflow:hidden;max-height:260px;overflow-y:auto}
-    .sugItem{padding:10px 12px;cursor:pointer;border-top:1px solid #f0f0f6}
-    .sugItem:first-child{border-top:0}
-    .sugItem:hover{background:#f6f7fb}
-    .nav{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    .nav .tile{border:1px solid #ececf6;background:#fff;border-radius:14px;padding:12px;font-size:13px;cursor:pointer;}
-    .main{flex:1;padding:18px 18px 26px;box-sizing:border-box;}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
-    .title{font-size:18px;font-weight:800;}
-    .sub{font-size:12px;color:#666;margin-top:2px;}
-    #bnStatus{font-size:12px;color:#b00020;min-height:16px;}
-    #bnCompanyLabel{font-weight:700;}
-    .btn{border:1px solid #e1e1ee;background:#fff;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;}
-    .btnPrimary{background:#111;color:#fff;border-color:#111;}
-    .card{background:#fff;border:1px solid #ececf6;border-radius:16px;padding:12px;margin-top:12px;}
-    .rowTitle{font-weight:800;margin-bottom:6px;}
-    /* horizontal lists */
-    #themeList,#needsList{display:flex;gap:10px;overflow:auto;padding-bottom:6px;}
-    .chip{white-space:nowrap;border:1px solid #ececf6;border-radius:999px;padding:8px 12px;font-size:13px;background:#fff;cursor:pointer;}
-    .chip.active{border-color:#111}
-    .needCard{min-width:260px;max-width:360px;border:1px solid #ececf6;border-radius:14px;padding:10px 12px;background:#fff;cursor:pointer;}
-    .needCard.active{border-color:#111}
-    .needName{font-weight:800;font-size:13px;margin-bottom:4px;}
-    .needMeta{font-size:12px;color:#666;}
-    .filters{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px}
-    .filters label{font-size:12px;color:#333;display:flex;gap:6px;align-items:center}
-    /* main panel layout */
-    #needPanel{margin-top:12px}
+    :root{
+      --brand-red:#ff0000;
+      --brand-red-2:#e21d35;
+      --bg:#ffffff;
+      --surface:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#D1D1D1;
+      --field:#E4E4E4;
+      --field-focus:#ffffff;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
+    .container{max-width:1480px;margin:22px auto;padding:0 14px}
+
+    /* ===== QuickDock (same as other pages) ===== */
+    .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
+    .quickDock .card{box-shadow:0 18px 50px rgba(15,23,42,.12)}
+    .dockHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .dockTitle{font-weight:950;font-size:14px;margin:0 0 10px}
+    .dockToggle{border:1px solid rgba(15,23,42,.12);background:#fff;border-radius:12px;padding:8px 10px;font-weight:900;cursor:pointer}
+    .dockSearchWrap{position:relative;display:flex;gap:8px;align-items:center}
+    .dockTop{margin-top:6px}
+    .dockIcon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.7}
+    .dockSearch{flex:1;border:1px solid rgba(15,23,42,.12);background:#f2f4f8;padding:11px 12px 11px 38px;border-radius:12px;outline:none;font-size:14px}
+    .dockLoadBtn{border:none;background:var(--brand-red);color:#fff;font-weight:900;border-radius:12px;padding:10px 12px;cursor:pointer}
+    .dockLoadBtn:hover{background:var(--brand-red-2)}
+    .dockSuggest{margin-top:8px;border:1px solid rgba(15,23,42,.12);border-radius:12px;overflow:hidden;display:none;background:#fff}
+    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}
+    .dockItem:first-child{border-top:none}
+    .dockItem b{display:block}
+
+    .toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+    .tool{padding:12px;border:1px solid rgba(15,23,42,.12);border-radius:14px;background:#fff;display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:inherit}
+    .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
+    .tName{font-weight:900;font-size:13px;line-height:1.15}
+    .tDesc{font-size:12px;color:var(--muted);margin-top:3px}
+
+    @media (max-width:1480px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
+    @media (min-width:1101px){.container{padding-left:360px}}
+
+    /* Collapsed dock — same UX */
+    body.dockCollapsed .quickDock{width:86px !important; overflow:hidden !important}
+    body.dockCollapsed .quickDock .dockSearchWrap,
+    body.dockCollapsed .quickDock .dockSuggest,
+    body.dockCollapsed .quickDock .dockTitle:not(.dockHeader .dockTitle),
+    body.dockCollapsed .quickDock .dockItem b,
+    body.dockCollapsed .quickDock .dockItem .small{display:none !important}
+    body.dockCollapsed .quickDock .dockHeader{flex-direction:column;justify-content:flex-start;align-items:center;gap:8px;padding-top:8px}
+    body.dockCollapsed .quickDock .dockTitle{width:100%;text-align:center;font-weight:700;font-size:14px;line-height:1.1;white-space:normal}
+    body.dockCollapsed .quickDock .dockToggle{width:44px;height:34px;border-radius:12px;padding:0;display:flex;align-items:center;justify-content:center}
+    body.dockCollapsed .quickDock .toolGrid{grid-template-columns:1fr !important; gap:10px !important}
+    body.dockCollapsed .quickDock a.tool{justify-content:center !important; padding:10px !important; gap:0 !important}
+    body.dockCollapsed .quickDock a.tool > div:not(.tIcon){display:none !important}
+
+    /* ===== Page UI ===== */
+    header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
+    h1{font-size:20px;margin:0}
+    .sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.35;max-width:980px}
+    .btns{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{appearance:none;border:none;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:900;background:var(--brand-red);color:#fff}
+    .btn:hover{background:var(--brand-red-2)}
+    .btn.ghost{background:var(--field);border:1px solid var(--border);color:var(--text);font-weight:800}
+    .btn.ghost:hover{background:#dcdcdc}
+
+    .layout{display:grid;grid-template-columns:280px 360px 1fr;gap:14px;align-items:start}
+    @media(max-width:1100px){.layout{grid-template-columns:1fr;}}
+
+    .card{background:var(--surface);border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+    .hr{height:1px;background:#e5e7eb;margin:12px -16px}
+    .small{font-size:12px;color:var(--muted);line-height:1.35}
+    .muted{color:var(--muted)}
+
+    .themeBtn,.needBtn{width:100%;text-align:left;border:1px solid rgba(15,23,42,.12);background:#fff;border-radius:14px;padding:12px;cursor:pointer}
+    .themeBtn:hover,.needBtn:hover{border-color:rgba(255,0,0,.35)}
+    .themeBtn.active,.needBtn.active{outline:3px solid rgba(255,0,0,.12);border-color:rgba(255,0,0,.40)}
+    .themeName{font-weight:950;font-size:13px}
+    .themeMeta,.needMeta{margin-top:4px;font-size:12px;color:var(--muted)}
+    .tier{display:inline-block;padding:1px 6px;border-radius:999px;font-size:11px;line-height:16px;margin-left:4px;border:1px solid var(--border);background:#f3f4f6;color:#111827}
+    .tier.primary{background:rgba(255,0,0,0.10);border-color:rgba(255,0,0,0.25);color:#b00000}
+    .tier.secondary{background:rgba(59,130,246,0.10);border-color:rgba(59,130,246,0.25);color:#1d4ed8}
+
+    .themeBar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:8px}
+    .themeBar>span{display:block;height:100%;width:0%;background:rgba(255,0,0,.65)}
+
+    .needName{font-weight:950;font-size:13px;line-height:1.2}
+
+    .needHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .needTitle{font-weight:950;font-size:16px;line-height:1.2}
+    .needHeadRight{display:flex;gap:10px;flex-wrap:wrap}
+
+    .block{margin-top:12px}
+    .blockTitle{font-weight:900;font-size:13px;margin-bottom:6px}
+    .blockText{font-size:13px;line-height:1.45;white-space:pre-wrap}
+
+    details.details{border:1px solid rgba(15,23,42,.12);border-radius:14px;padding:10px 12px;background:#fff}
+    details.details summary{cursor:pointer;font-weight:900;font-size:13px}
+    details.details[open]{outline:3px solid rgba(15,23,42,.04)}
+
+    .checkGrid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+    .checkItem{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.3}
+    .checkItem input{margin-top:2px;width:16px;height:16px}
+
+    .qList{display:grid;gap:10px;margin-top:10px}
+    .qText{font-weight:800;font-size:13px}
+    textarea.qAnswer{width:100%;min-height:84px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--field);resize:vertical}
+    textarea.qAnswer:focus{outline:none;background:var(--field-focus);border-color: rgba(255,0,0,.55);box-shadow:0 0 0 3px rgba(255,0,0,.12)}
+
+    .twoCols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+    @media(max-width:860px){.twoCols{grid-template-columns:1fr}}
+    .miniTitle{font-weight:900;font-size:12px;color:#334155;margin-bottom:6px}
+
+    .sectionTitle{font-weight:950;font-size:14px}
+    .ul,.ol{margin:8px 0 0 18px;padding:0}
+
+    .bnStatus{margin-top:6px;font-size:12px;color:var(--muted)}
+    .bnStatus.ok{color:#047857}
+    .bnStatus.err{color:#b91c1c}
+    .bnStatus.warn{color:#b45309}
+  
+    /* ===== BN v2 layout ===== */
+    .layoutV2{display:grid;gap:14px}
+    .tabsRow{display:flex;gap:10px;overflow:auto;padding:6px 2px}
+    .tabsRow::-webkit-scrollbar{height:10px}
+    .tabsRow::-webkit-scrollbar-thumb{background:rgba(15,23,42,.12);border-radius:999px}
+    .tabBtn{flex:0 0 auto;min-width:220px;text-align:left;border:1px solid rgba(15,23,42,.12);background:#fff;border-radius:16px;padding:12px 12px;cursor:pointer;box-shadow:0 10px 30px rgba(15,23,42,.06)}
+    .tabBtn:hover{border-color:rgba(15,23,42,.22)}
+    .tabBtn.active{border-color:rgba(239,68,68,.55);box-shadow:0 14px 40px rgba(239,68,68,.10)}
+    .tabTitle{font-weight:950;font-size:13px;line-height:1.15}
+    .tabMeta{margin-top:6px;font-size:12px;color:var(--muted)}
+    .miniBar{height:6px;border-radius:999px;background:rgba(15,23,42,.08);overflow:hidden;margin-top:8px}
+    .miniBar > i{display:block;height:100%;background:linear-gradient(90deg,var(--brand-red),#ff6b6b);width:0%}
+    .filters{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .flt{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;user-select:none}
+    .needPanelFull{box-shadow:var(--shadow);border:1px solid rgba(15,23,42,.12);border-radius:18px;background:#fff;padding:14px}
+    .workTop{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:12px}
+    .workBox{border:1px solid rgba(15,23,42,.10);border-radius:16px;padding:12px;background:linear-gradient(180deg,#fff, #fbfbfd)}
+    .workBox h3{margin:0 0 8px;font-size:13px;font-weight:950}
+    .qaGrid{display:grid;grid-template-columns:1fr;gap:10px}
+    .qRow{display:grid;grid-template-columns:1fr;gap:6px}
+    .qTxt{font-size:12px;font-weight:800}
+    .qAns{width:100%;min-height:62px;border:1px solid rgba(15,23,42,.12);border-radius:12px;background:#fff;padding:10px;font-size:13px;outline:none}
+    .qAns:focus{border-color:rgba(239,68,68,.35);box-shadow:0 0 0 3px rgba(239,68,68,.10)}
+    .workBelow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .workOne{margin-top:12px}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid rgba(15,23,42,.12);font-size:12px;color:var(--muted);background:#fff}
+    .star{color:#ffb300;font-weight:900}
+    @media (max-width:1200px){
+      .workTop{grid-template-columns:1fr}
+      .workBelow{grid-template-columns:1fr}
+    }
+
   </style>
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand">Быстрый вход</div>
-      <div class="dock">
-        <div class="dockRow">
-          <input id="dockCompany" type="text" placeholder="Введите компанию"/>
-          <button id="dockLoadBtn">Загрузить</button>
-        </div>
-        <div id="dockSuggest"></div>
-      </div>
 
-      <div class="nav">
-        <div class="tile" onclick="location.href='view_1_indices.html'">Индексы</div>
-        <div class="tile" onclick="location.href='view_2_interview.html'">Интервью</div>
-        <div class="tile" onclick="location.href='view_5_full.html'">Полная карта</div>
-        <div class="tile" onclick="location.href='view_6_summary.html'">Выводы</div>
+  <!-- QuickDock (same structure as other pages) -->
+  <div class="quickDock" id="quickDock">
+    <div class="card" style="padding:16px">
+      <div class="dockHeader">
+        <div class="dockTitle" style="margin:0">Быстрый вход</div>
+        <button type="button" class="dockToggle" id="dockToggle" aria-label="Свернуть/развернуть панель" title="Свернуть панель">◀</button>
       </div>
-    </aside>
-
-    <main class="main">
-      <div class="topbar">
-        <div>
-          <div class="title">Боли и бизнес-потребности</div>
-          <div class="sub">Риски → тематики → бизнес‑потребности → вопросы/причины/боли. Компания: <span id="bnCompanyLabel">—</span></div>
-          <div id="bnStatus"></div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <button class="btn" id="bnSaveBtn">Сохранить всё</button>
-          <button class="btn" id="dockToggle" style="display:none">◀</button>
-        </div>
+      <div class="dockSearchWrap dockTop">
+        <div class="dockIcon">🔎</div>
+        <input autocomplete="off" class="dockSearch" id="dockCompany" placeholder="Введите компанию"/>
+        <button class="dockLoadBtn" id="dockLoadBtn" title="Загрузить" type="button">Загрузить</button>
       </div>
-
-      <div class="card">
-        <div class="rowTitle">Тематики</div>
-        <div id="themeList"></div>
+      <div class="dockSuggest" id="dockSuggest"></div>
+      <div style="height:12px"></div>
+      <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
+      <div class="toolGrid">
+        <a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+        <a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+        <a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+        <a class="tool" href="view_business_needs.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
+        <a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+        <a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+        <a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+        <a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+        <a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+        <a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
       </div>
-
-      <div class="card">
-        <div class="rowTitle">Бизнес‑потребности</div>
-        <div style="font-size:12px;color:#666;margin-bottom:6px">Сортировка — по силе (риск × вес) / ABM.</div>
-        <div class="filters">
-          <label><input type="checkbox" id="bnFltTriggers"> Только с триггерами</label>
-          <label><input type="checkbox" id="bnFltCritical"> Только критические</label>
-          <label><input type="checkbox" id="bnFltMain"> Только “основные” ⭐</label>
-        </div>
-        <div id="needsList" style="margin-top:8px"></div>
-      </div>
-
-      <div id="needPanel" class="card">
-        <div id="bnSummary" style="color:#666;font-size:13px">Выбери бизнес‑потребность выше.</div>
-      </div>
-    </main>
+    </div>
   </div>
 
-  <script src="config.js?v=v109"></script>
-  <script src="build_info.js?v=v109"></script>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Боли и бизнес‑потребности</h1>
+        <div class="sub">Риски → тематики → бизнес‑потребности → вопросы/причины/боли. Активируется автоматически по данным интервью. Компания: <b id="bnCompanyLabel">—</b></div>
+        <div id="bnStatus" class="bnStatus">Выбери компанию в «Быстром входе».</div>
+      </div>
+      <div class="btns">
+        <button class="btn ghost" id="bnSaveBtn" type="button">Сохранить всё</button>
+      </div>
+    </header>
+
+    
+    <div class="layoutV2">
+      <div class="card">
+        <div class="rowHead">
+          <div>
+            <div class="sectionTitle">Тематики</div>
+            <div class="small">Кликни тематику — покажем бизнес‑потребности.</div>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div id="themeList" class="tabsRow themeTabs"></div>
+      </div>
+
+      <div class="card">
+        <div class="rowHead" style="gap:14px;align-items:flex-end">
+          <div style="flex:1">
+            <div class="sectionTitle">Бизнес‑потребности</div>
+            <div class="small">Сортировка — по силе (риск × вес) / ABM.</div>
+          </div>
+          <div class="filters">
+            <label class="flt"><input type="checkbox" id="bnFltTriggers"> Только с триггерами</label>
+            <label class="flt"><input type="checkbox" id="bnFltCritical"> Только критические</label>
+            <label class="flt"><input type="checkbox" id="bnFltMain"> Только “основные” ⭐</label>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div id="needsList" class="tabsRow needsTabs"></div>
+      </div>
+
+      <div id="needPanel" class="needPanelFull"><div class="muted">Выбери бизнес‑потребность выше.</div></div>
+      <div id="bnSummary"></div>
+    </div>
+
+  </div>
+  </div>
   <script src="sheet_keys.js"></script>
-  <script src="question_bank.js"></script>
-  <script src="bn_catalog.json?v=v109"></script>
-  <script src="abm_needs.json?v=v109"></script>
-  <script src="bn_engine_v2.js?v=v109"></script>
+  <script src="bn_engine_v2.js"></script>
 </body>
 </html>
