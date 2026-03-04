@@ -1128,6 +1128,7 @@ ACTIVE_ROW = rowObj;
       document.getElementById('companySearch') ||
       document.querySelector('input[placeholder*="компан"]') ||
       document.querySelector('#quickDock input[type="text"]') ||
+      document.querySelector('.quickDock input[type="text"]') ||
       document.querySelector('.quick-dock input[type="text"]');
 
     const btn =
