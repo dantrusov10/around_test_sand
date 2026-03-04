@@ -1,6 +1,6 @@
 // Auto-generated build info
 window.BUILD_INFO = {
-  version: "v106",
-  built_at: "2026-03-04T06:52:08Z"
+  version: "v107",
+  built_at: "2026-03-04T07:12:00Z"
 };
-console.log("✅ BUILD v106 loaded | built_at 2026-03-04T06:52:08Z");
+console.log("✅ BUILD v107 loaded | built_at 2026-03-04T07:12:00Z");
