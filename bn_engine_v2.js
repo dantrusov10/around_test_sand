@@ -1139,20 +1139,6 @@ ACTIVE_ROW = rowObj;
     // initial empty render
     renderThemes();
     renderNeeds();
-    try{
-      const sumEl = panel.querySelector('#bnStrategicSummary');
-      if(sumEl){
-        const topCauses = (sess.selected_causes||[]).slice(0,4);
-        const topPains = (sess.selected_pains||[]).slice(0,4);
-        const ansCount = sess.answers ? Object.values(sess.answers).filter(x=>String(x||'').trim()).length : 0;
-        sumEl.innerHTML = `<b>Что важно:</b> сила ${Math.round(sess.strength)} · ответов: ${ansCount}`
-          + (sess.is_main?` · <span class="star">★ основная</span>`:'')
-          + (topCauses.length?`<br><b>Причины:</b> ${topCauses.map(esc).join(' · ')}`:'')
-          + (topPains.length?`<br><b>Боли:</b> ${topPains.map(esc).join(' · ')}`:'')
-          + (bn.result?`<br><b>Ожидаемый результат:</b> ${esc(bn.result)}`:'');
-      }
-    }catch(e){ console.error(e); }
-
     renderSummary();
   });
 
