@@ -4,15 +4,11 @@
 
 (function(){
   const WEBAPP_URL = (window.GS_WEBAPP_URL || '').trim();
-
-
-// --- HARDEN: always bind quick dock search/load even if UI init crashes ---
-try{
-  window.addEventListener('DOMContentLoaded', () => {
-    try{ bindQuickDock(); }catch(e){ console.error('[BN] bindQuickDock failed', e); }
-  });
-}catch(_e){}
-  const VERSION = (window.BUILD_INFO && window.BUILD_INFO.version) ? window.BUILD_INFO.version : '';
+  const URL_V = (() => {
+    try { return new URLSearchParams(location.search).get('v') || ''; } catch(e){ return ''; }
+  })();
+  const BUILD_VER = (window.BUILD_INFO && window.BUILD_INFO.version) ? String(window.BUILD_INFO.version) : '';
+  const VERSION = (BUILD_VER || URL_V || '1');
 
   // Hardening: show JS errors as "data processing" not "Apps Script"
   window.addEventListener('error', (ev)=>{
@@ -1123,9 +1119,143 @@ ACTIVE_ROW = rowObj;
     }
   }
 
-  document.addEventListener('DOMContentLoaded', async ()=>{
-  try{
+  
+  function findDockElements() {
+    // Try common ids first (old + new)
+    const input =
+      document.getElementById('dockCompany') ||
+      document.getElementById('dock_company') ||
+      document.getElementById('companySearch') ||
+      document.querySelector('input[placeholder*="компан"]') ||
+      document.querySelector('#quickDock input[type="text"]') ||
+      document.querySelector('.quick-dock input[type="text"]');
 
+    const btn =
+      document.getElementById('dockLoadBtn') ||
+      document.getElementById('dock_load') ||
+      document.getElementById('btnLoadCompany') ||
+      Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]'))
+        .find(el => (el.innerText||el.value||'').toLowerCase().includes('загруз'));
+
+    // Suggest container (create if missing)
+    let suggest =
+      document.getElementById('dockSuggest') ||
+      document.getElementById('dock_suggest') ||
+      document.querySelector('#dockSuggest, #dock_suggest') ||
+      document.querySelector('.dock-suggest');
+
+    if (!suggest && input) {
+      suggest = document.createElement('div');
+      suggest.id = 'dockSuggest';
+      suggest.className = 'dock-suggest';
+      suggest.style.position = 'absolute';
+      suggest.style.zIndex = 9999;
+      suggest.style.background = '#fff';
+      suggest.style.border = '1px solid rgba(0,0,0,0.12)';
+      suggest.style.borderRadius = '10px';
+      suggest.style.boxShadow = '0 10px 30px rgba(0,0,0,0.10)';
+      suggest.style.padding = '6px';
+      suggest.style.maxHeight = '320px';
+      suggest.style.overflow = 'auto';
+      suggest.style.display = 'none';
+      document.body.appendChild(suggest);
+    }
+
+    return { input, btn, suggest };
+  }
+
+  function positionSuggest(inputEl, suggestEl) {
+    if (!inputEl || !suggestEl) return;
+    const r = inputEl.getBoundingClientRect();
+    suggestEl.style.left = (window.scrollX + r.left) + 'px';
+    suggestEl.style.top = (window.scrollY + r.bottom + 6) + 'px';
+    suggestEl.style.width = Math.max(260, r.width) + 'px';
+  }
+
+  async function runDockSearch(qRaw) {
+    const q = String(qRaw||'').trim();
+    const { input, suggest } = findDockElements();
+    if (!input || !suggest) return;
+    if (q.length < 2) { suggest.style.display='none'; suggest.innerHTML=''; return; }
+
+    positionSuggest(input, suggest);
+    suggest.style.display='block';
+    suggest.innerHTML = '<div style="padding:8px 10px;color:#666">Ищу в БД…</div>';
+
+    const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
+    const data = await jsonp(url, 45000, 2);
+    const items = (data && (data.items || data.item || data.rows || data.row)) ? (data.items || data.rows || []) : [];
+    // Normalize: allow server to return {items:[...]} or {item:{...}}
+    const norm = Array.isArray(items) ? items : (data.item ? [data.item] : []);
+    if (!norm.length) {
+      suggest.innerHTML = '<div style="padding:8px 10px;color:#666">Ничего не найдено</div>';
+      return;
+    }
+    suggest.innerHTML = '';
+    norm.forEach((it) => {
+      const company = it.company || it._company || it.name || '';
+      const row = it.row || it._row || '';
+      const ts = it.timestamp || it.ts || '';
+      const div = document.createElement('div');
+      div.style.padding = '8px 10px';
+      div.style.borderRadius = '8px';
+      div.style.cursor = 'pointer';
+      div.onmouseenter = () => div.style.background='rgba(0,0,0,0.04)';
+      div.onmouseleave = () => div.style.background='transparent';
+      div.innerHTML = '<div style="font-weight:600">'+ escapeHtml(company) +'</div>' +
+        '<div style="font-size:12px;color:#666">row: '+ escapeHtml(String(row)) +' • '+ escapeHtml(String(ts)) +'</div>';
+      div.onclick = async () => {
+        suggest.style.display='none';
+        input.value = company;
+        await loadCompany(company);
+      };
+      suggest.appendChild(div);
+    });
+  }
+
+  function bindDockSearch() {
+    const { input, btn, suggest } = findDockElements();
+    if (!input) return false;
+
+    let last = '';
+    let t = null;
+    const trigger = () => {
+      const v = input.value;
+      if (v === last) return;
+      last = v;
+      if (t) clearTimeout(t);
+      t = setTimeout(() => runDockSearch(v).catch(err => {
+        console.error('Dock search error:', err);
+        if (suggest) { suggest.style.display='block'; suggest.innerHTML='<div style="padding:8px 10px;color:#b00">Ошибка поиска</div>'; }
+      }), 250);
+    };
+
+    ['input','keyup','change','paste'].forEach(evt => input.addEventListener(evt, trigger));
+    input.addEventListener('focus', trigger);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); loadCompany(input.value).catch(console.error); }
+    });
+
+    if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); loadCompany(input.value).catch(console.error); });
+
+    window.addEventListener('scroll', () => positionSuggest(input, suggest), { passive:true });
+    window.addEventListener('resize', () => positionSuggest(input, suggest));
+
+    return true;
+  }
+
+  function ensureDockBound() {
+    // Try immediately, then retry for a few seconds (because the dock is injected by frame_start.js)
+    if (bindDockSearch()) return;
+    let tries = 0;
+    const iv = setInterval(() => {
+      tries++;
+      if (bindDockSearch() || tries > 40) clearInterval(iv);
+    }, 150);
+  }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    ensureDockBound();
     await loadCatalog();
     bindQuickDock();
 
@@ -1159,6 +1289,4 @@ ACTIVE_ROW = rowObj;
     renderSummary();
   });
 
-
-  }catch(e){ console.error('[BN] init crash', e); setStatus('Ошибка JS (см. Console).', 'err'); }
 })();
