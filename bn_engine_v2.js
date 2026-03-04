@@ -3,7 +3,7 @@
 // Storage: embedded into saved payload JSON under key "business_needs_sessions".
 
 (function(){
-  const WEBAPP_URL = (window.GS_WEBAPP_URL || '').trim();
+  const WEBAPP_URL = (window.GS_WEBAPP_URL || window.WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || '').trim();
   const VERSION = (window.BUILD_INFO && window.BUILD_INFO.version) ? window.BUILD_INFO.version : '';
 
   // Hardening: show JS errors as "data processing" not "Apps Script"
@@ -916,8 +916,15 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
     const loadBtn = document.getElementById('dockLoadBtn');
 
     if(!input || !suggest) return;
+    if(!WEBAPP_URL){
+      console.error('GS_WEBAPP_URL is empty; search/load disabled');
+      try{ setStatus('Не задан GS_WEBAPP_URL (config.js). Поиск/загрузка отключены.', 'err'); }catch(_e){}
+      return;
+    }
 
     input.addEventListener('input', ()=>{
+      // debug: search typing
+      // console.log('[dock] input', input.value);
       clearTimeout(searchTimer);
       const q = input.value.trim();
       if(q.length < 3){ suggest.style.display='none'; suggest.innerHTML=''; return; }
