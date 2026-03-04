@@ -1325,9 +1325,123 @@ function ensureDockBound() {
     }, 150);
   }
 
+  // --- Fallback binder (v117): гарантируем, что поиск компаний всегда привязан.
+  // Причина: на GitHub Pages легко поймать ситуацию, когда старый JS кэшируется
+  // или селекторы/инициализация меняются, и события не вешаются.
+  function bindCompanySearchFallback() {
+    const dockInput = document.getElementById('dockCompany');
+    const dockSuggest = document.getElementById('dockSuggest');
+    const dockBtn = document.getElementById('dockLoadBtn');
+
+    const bnInput = document.getElementById('bnCompanyInput');
+    const bnSuggest = document.getElementById('bnCompanySuggest');
+    const bnBtn = document.getElementById('bnCompanyBtn');
+
+    if (!dockInput && !bnInput) return;
+
+    const renderList = (host, items, onPick) => {
+      if (!host) return;
+      host.innerHTML = '';
+      if (!items || !items.length) {
+        host.style.display = 'none';
+        return;
+      }
+      items.slice(0, 25).forEach((it) => {
+        const row = document.createElement('div');
+        row.className = 'dockSuggestRow';
+        row.style.cssText = 'padding:8px 10px; cursor:pointer; border-top:1px solid rgba(0,0,0,0.06);';
+        row.innerHTML = `<div style="font-weight:600;">${escapeHtml(it.company || '')}</div>
+          <div style="font-size:12px; opacity:0.7;">строка: ${it.row ?? ''} • ${escapeHtml(it.timestamp || '')}</div>`;
+        row.addEventListener('click', () => onPick(it));
+        host.appendChild(row);
+      });
+      host.style.display = 'block';
+    };
+
+    const doSearch = async (q) => {
+      const qq = String(q || '').trim();
+      if (qq.length < 2) return [];
+      const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(qq) + '&limit=25';
+      const res = await jsonp(url);
+      if (res && res.ok && Array.isArray(res.items)) return res.items;
+      return [];
+    };
+
+    let tDock = null;
+    let tBn = null;
+
+    const pick = async (it) => {
+      try {
+        if (dockInput) dockInput.value = it.company || '';
+        if (bnInput) bnInput.value = it.company || '';
+        if (dockSuggest) dockSuggest.style.display = 'none';
+        if (bnSuggest) bnSuggest.style.display = 'none';
+
+        await loadCompany(it.company || '');
+      } catch (e) {
+        console.warn('[BN] loadCompany failed', e);
+        try { showStatus('Ошибка загрузки из Apps Script', 'err'); } catch(_) {}
+      }
+    };
+
+    if (dockInput && !dockInput.dataset.bnBound) {
+      dockInput.dataset.bnBound = '1';
+      dockInput.addEventListener('input', () => {
+        clearTimeout(tDock);
+        tDock = setTimeout(async () => {
+          try {
+            const items = await doSearch(dockInput.value);
+            renderList(dockSuggest, items, pick);
+          } catch (e) {
+            renderList(dockSuggest, [], pick);
+          }
+        }, 250);
+      });
+      if (dockBtn) {
+        dockBtn.addEventListener('click', async () => {
+          try {
+            const items = await doSearch(dockInput.value);
+            if (items.length === 1) return pick(items[0]);
+            renderList(dockSuggest, items, pick);
+          } catch (e) {
+            try { showStatus('Ошибка поиска компании', 'err'); } catch(_) {}
+          }
+        });
+      }
+    }
+
+    if (bnInput && !bnInput.dataset.bnBound) {
+      bnInput.dataset.bnBound = '1';
+      bnInput.addEventListener('input', () => {
+        clearTimeout(tBn);
+        tBn = setTimeout(async () => {
+          try {
+            const items = await doSearch(bnInput.value);
+            renderList(bnSuggest, items, pick);
+          } catch (e) {
+            renderList(bnSuggest, [], pick);
+          }
+        }, 250);
+      });
+      if (bnBtn) {
+        bnBtn.addEventListener('click', async () => {
+          try {
+            const items = await doSearch(bnInput.value);
+            if (items.length === 1) return pick(items[0]);
+            renderList(bnSuggest, items, pick);
+          } catch (e) {
+            try { showStatus('Ошибка поиска компании', 'err'); } catch(_) {}
+          }
+        });
+      }
+    }
+  }
+
 document.addEventListener('DOMContentLoaded', async () => {
     ensureDockBound();
     bindHeaderCompanySearch();
+    // самый надежный вариант: явно биндится на реальные элементы на странице
+    bindCompanySearchFallback();
     await loadCatalog();
     bindQuickDock();
 
@@ -1360,5 +1474,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     renderSummary();
   });
+
+  // Mini debug surface (удобно проверить в консоли)
+  window.__BN_DEBUG__ = {
+    version: 'v117',
+    bindCompanySearchFallback,
+    ensureDockBound,
+  };
 
 })();
