@@ -922,16 +922,19 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
       return;
     }
 
-    input.addEventListener('input', ()=>{
-      // debug: search typing
-      // console.log('[dock] input', input.value);
+    function triggerSearch(raw){
       clearTimeout(searchTimer);
-      const q = input.value.trim();
+      const q = (raw||'').trim();
       if(q.length < 3){ suggest.style.display='none'; suggest.innerHTML=''; return; }
       const mySeq = ++searchSeq;
       suggest.style.display='block';
       suggest.innerHTML = `<div class="dockItem"><b>Ищу…</b><div class="small">${esc(q)}</div></div>`;
       searchTimer = setTimeout(()=> runSearch(q, mySeq), 250);
+    }
+
+    // Bind multiple events for reliability across browsers/pages
+    ['input','keyup','change','paste'].forEach(evName=>{
+      input.addEventListener(evName, ()=> triggerSearch(input.value));
     });
 
     if(loadBtn){
@@ -971,12 +974,10 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
     let _lastQ = '';
     setInterval(()=>{
       try{
-        const q2 = (input.value||'').trim();
+        const q2 = (input.value||'');
         if(q2 === _lastQ) return;
         _lastQ = q2;
-        if(q2.length < 3){ suggest.style.display='none'; suggest.innerHTML=''; return; }
-        const mySeq2 = ++searchSeq;
-        runSearch(q2, mySeq2);
+        triggerSearch(q2);
       }catch(_e){}
     }, 500);
 
