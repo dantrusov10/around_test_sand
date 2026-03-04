@@ -1289,7 +1289,7 @@ function bindHeaderCompanySearch(){
       return;
     }
     try{
-      const url = CONFIG.WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
+      const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
       const data = await jsonp(url, 45000, 2);
       if(data && data.ok && Array.isArray(data.items)){
         renderSuggest(data.items);
