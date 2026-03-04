@@ -3,7 +3,7 @@
 // Storage: embedded into saved payload JSON under key "business_needs_sessions".
 
 (function(){
-  const WEBAPP_URL = (window.GS_WEBAPP_URL || '').trim();
+  const WEBAPP_URL = ( (typeof GS_WEBAPP_URL !== 'undefined' && GS_WEBAPP_URL) || window.GS_WEBAPP_URL || '' ).trim();
   const URL_V = (() => {
     try { return new URLSearchParams(location.search).get('v') || ''; } catch(e){ return ''; }
   })();
