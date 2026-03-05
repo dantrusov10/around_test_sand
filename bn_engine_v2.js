@@ -548,7 +548,7 @@
   }
 
   // ===== init =====
-  async function init(){
+  async async function init(){
     await loadCatalog();
 
     // ensure containers have layout classes (if CSS exists)
