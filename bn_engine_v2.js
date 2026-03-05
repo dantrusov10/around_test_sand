@@ -229,35 +229,44 @@
   }
 
   function needStrength(item, themeScores){
+    // Priority of a business-need: derived from theme priority + weight (1..3).
+    // This makes it comparable to theme priority (0..100), and понятнее чем абстрактная "сила".
     const w = clamp(toNum(item.weight), 0, 5);
     const tScore = clamp(toNum(themeScores[item.theme] ?? 40), 0, 100);
-    // 0..100 (weight scales impact)
-    return Math.round(clamp((tScore * (w/3)), 0, 100));
+    // weight 1..3 -> multiplier 0.70..1.00 (so weight influences, but theme still dominates)
+    const mult = clamp(0.70 + (clamp(w,1,3)-1) * 0.15, 0.70, 1.00);
+    return Math.round(clamp(tScore * mult, 0, 100));
   }
 
   // ===== Rendering: Themes =====
   function renderThemes(themeScores){
     if(!els.themeList || !CATALOG) return;
-    const themes = (CATALOG.themes||[]).slice();
+
+    // Support both formats: ['name', ...] or [{id,name}, ...]
+    const themes = (CATALOG.themes||[]).map(t => {
+      if(typeof t === 'string') return {id:t, name:t};
+      if(t && typeof t === 'object') return {id: t.id || t.name, name: t.name || t.id};
+      return {id:String(t), name:String(t)};
+    }).filter(t=>t.name);
+
     // Sort by score desc if company loaded.
     if(getInterview()){
-      themes.sort((a,b)=> (themeScores[b]||0) - (themeScores[a]||0));
+      themes.sort((a,b)=> (themeScores[b.name]||0) - (themeScores[a.name]||0));
     }
 
     els.themeList.innerHTML='';
     themes.forEach((t)=>{
-      const score = clamp(toNum(themeScores[t]), 0, 100);
+      const score = clamp(toNum(themeScores[t.name]), 0, 100);
       const btn = document.createElement('button');
       btn.type='button';
-      btn.className='tabBtn' + (t===SELECTED_THEME ? ' active' : '');
+      btn.className = 'tabBtn' + (t.name===SELECTED_THEME ? ' active' : '');
       btn.innerHTML = `
-        <div class="tabTitle">${escapeHtml(t)} <span class="badge" style="margin-left:8px">Приоритет: ${score}</span></div>
+        <div class="tabTitle">${escapeHtml(t.name)} <span class="badge" style="margin-left:8px">Приоритет: ${score}</span></div>
         <div class="tabMeta">Основано на интервью (индексы/риски). Выше — важнее.</div>
         <div class="miniBar"><i style="width:${score}%"></i></div>
       `;
       btn.onclick = ()=>{
-        SELECTED_THEME = t;
-        // update active state
+        SELECTED_THEME = t.name;
         renderAll();
       };
       els.themeList.appendChild(btn);
@@ -304,7 +313,7 @@
           <div class="needMeta">${escapeHtml((it.zone?it.zone:'') + (it.theme?(' · '+it.theme):''))}</div>
         </div>
         <div class="needRight" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-          <span class="badge">Сила: ${strength}</span>
+          <span class="badge">Приоритет: ${strength}</span>
           <span class="badge">Вес: ${Number(it.weight||0)}</span>
         </div>
       `;
@@ -402,7 +411,7 @@
     head.innerHTML = `
       <div>
         <div class="needTitle">${escapeHtml(it.name||it.id||'')}</div>
-        <div class="small">${escapeHtml(it.theme||'')} · ${escapeHtml(it.zone||'')} · Вес ${Number(it.weight||0)} · <b>Сила ${strength}</b></div>
+        <div class="small">${escapeHtml(it.theme||'')} · ${escapeHtml(it.zone||'')} · Вес ${Number(it.weight||0)} · <b>Приоритет ${strength}</b></div>
       </div>
       <div class="needHeadRight">
         <span class="pill"><span class="star">★</span> Выбери причины/боли и заполни ответы — это сохранится в BN_Log</span>
@@ -418,6 +427,9 @@
     `;
     els.needPanel.appendChild(desc);
 
+    // Questions with free input (должны идти сразу после описания)
+    els.needPanel.appendChild(renderQuestions(it.questions, pick.answers, ()=>{}));
+
     // Causes & Pains with checkboxes
     const two = document.createElement('div');
     two.className = 'twoCols';
@@ -425,9 +437,6 @@
     two.appendChild(renderChecklist('Причины (мультивыбор)', it.causes, pick.causes, onPickChange));
     two.appendChild(renderChecklist('Боли (мультивыбор)', it.pains, pick.pains, onPickChange));
     els.needPanel.appendChild(two);
-
-    // Questions with free input
-    els.needPanel.appendChild(renderQuestions(it.questions, pick.answers, ()=>{}));
 
     // Details blocks
     const mkDetails = (title, text)=>{
