@@ -78,16 +78,6 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
   background-repeat:no-repeat;
 }
 
-/* ===== FAST marker (yellow): filled by Fast интервью ===== */
-input[data-fast="1"], select[data-fast="1"], textarea[data-fast="1"]{
-  border-color: rgba(245,158,11,.75) !important;
-  box-shadow: 0 0 0 3px rgba(245,158,11,.16) !important;
-  background-color: var(--field) !important;
-  background-image:
-    radial-gradient(circle at calc(100% - 14px) 14px, rgba(245,158,11,1) 0 4px, rgba(245,158,11,0) 5px);
-  background-repeat:no-repeat;
-}
-
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:860px){.row{grid-template-columns:1fr}}
 .small{font-size:12px;color:var(--muted);line-height:1.35}
@@ -727,18 +717,126 @@ label:has(#company) .reqDot, label:has(#company) .requiredDot, label:has(#compan
 <div style="height:12px"></div>
 <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
 <div class="toolGrid">
-<a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div><div class="tDesc">PSI Control Center</div></div></div></a>
-<a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div><div class="tDesc">итоги</div></div></div></a>
-<a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div><div class="tDesc">1–3</div></div></div></a>
-<a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div><div class="tDesc">раздел 4</div></div></div></a>
-<a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div><div class="tDesc">раздел 6</div></div></div></a>
-<a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div><div class="tDesc">раздел 5</div></div></div></a>
-<a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div><div class="tDesc">всё</div></div></div></a>
-<a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div><div class="tDesc">итоги по компании</div></div></div></a>
-<a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div><div class="tDesc">спецификация</div></div></div></a>
-<a class="tool" href="view_business_needs.html?v=90"><div class="tIcon">💢</div><div><div class="tName">Боли и потребности</div><div><div class="tDesc">приоритеты</div></div></div></a>
-<a class="tool" href="view_fast_interview.html?v=90"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div><div class="tDesc">3–5 вопросов</div></div></div></a>
+<a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+<a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+<a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+<a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+<a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+<a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+<a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+<a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+
+<a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
 </div>
+</div>
+</div>
+<div class="container">
+<header>
+<div>
+<h1>Карта тестирования + ПСИ (пилот) — Инферит ИТМен</h1>
+<div class="legend">
+<span class="pill">Тех/Проц: 0 = нет · 1 = частично · 2 = есть</span>
+<span class="pill">Риски: 1 = да · 0 = нет</span>
+<span class="pill">Возможность: влияет на «индекс реализуемости»</span>
+<span class="pill">ПСИ: «Приняли?» = Да/Нет</span>
+</div>
+</div>
+<div class="btns">
+<label style="display:grid;gap:6px;font-size:12px;min-width:180px">Версия PDF
+        <select id="pdfMode" style="padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--field);font-weight:700">
+<option value="internal">Внутренняя</option>
+<option value="client">Клиентская</option>
+</select>
+</label>
+<label style="display:grid;gap:6px;font-size:12px;min-width:180px">Режим интервью
+        <select id="interviewMode" style="padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--field);font-weight:700">
+<option value="quick">Быстрый</option>
+<option value="deep">Глубокий</option>
+</select>
+</label>
+<input id="benchMode" type="hidden" value="client"/>
+<div id="reqStatus" style="align-self:end;color:#b91c1c;font-size:12px;display:none;max-width:260px;line-height:1.2"></div>
+<button class="btn ghost" id="btnLoadCompany">Подгрузить</button>
+<button class="btn" id="btnRecalc">Пересчитать</button>
+<button class="btn ghost" id="btnPrint">Печать / PDF</button>
+<button class="btn ghost" id="btnExportXlsx">Выгрузить Excel</button>
+<button class="btn ghost" id="btnCLevel">Выводы</button>
+</div>
+<!-- KPI moved to header -->
+<div class="kpiBar">
+<div class="kpiGroupTitle">Клиентские индексы</div>
+<div class="stat" id="kPSI">
+<div class="label">PSI 2.0 (итог)</div>
+<div class="value mono" id="psi2Score">—%</div>
+<div class="small" id="psi2Label">—</div>
+</div>
+<div class="stat" id="kCoI">
+<div class="label">Cost of Inaction (₽/год)</div>
+<div class="value mono" id="coiRub">—</div>
+<div class="small">Потери от ручных операций, неиспользуемого ПО/VM и простоев.</div>
+</div>
+<div class="stat" id="kRecover">
+<div class="label">Потенциал возврата бюджета</div>
+<div class="value mono" id="recoverIndex">—%</div>
+<div class="small" id="recoverLabel">Лицензии и виртуальные ресурсы.</div>
+</div>
+<div class="stat" id="kTech">
+<div class="label">Индекс тех. зрелости</div>
+<div class="value mono" id="techIndex">—%</div>
+<div class="small">Готовность по данным/источникам.</div>
+</div>
+<div class="stat" id="kProc">
+<div class="label">Индекс процессной зрелости</div>
+<div class="value mono" id="procIndex">—%</div>
+<div class="small">Предсказуемость внедрения.</div>
+</div>
+<div class="kpiGroupTitle">Внутренние индексы</div>
+<div class="stat" id="kCrit">
+<div class="label">Категория проекта</div>
+<div class="value mono" id="critScore">—%</div>
+<div class="small" id="critLabel">—</div>
+</div>
+<div class="stat" id="kFeas">
+<div class="label">Индекс реализуемости требований к пилоту</div>
+<div class="value mono" id="feasScore">—%</div>
+<div class="small">Средний балл по «возможности» (раздел 4).</div>
+</div>
+<div class="stat" id="kProdFeas">
+<div class="label">Индекс реализуемости требований к продукту</div>
+<div class="value mono" id="prodFeasScore">—%</div>
+<div class="small">Средний балл по «возможности» (раздел 6).</div>
+</div>
+<div class="stat" id="kPain">
+<div class="label">Индекс экономического давления</div>
+<div class="value mono" id="painIndex">—%</div>
+<div class="small" id="painLabel">—</div>
+</div>
+<div class="stat" id="kProb">
+<div class="label">Вероятность сделки</div>
+<div class="value mono" id="probIndex">—%</div>
+<div class="small" id="probLabel">—</div>
+</div>
+<div class="kpiBar riskReady" style="margin-top:8px">
+<div class="kpiGroupTitle">Риск и готовность</div>
+<div class="stat clickable" data-detail="pilot" id="kPilotReady">
+<div class="label">Pilot Readiness Index</div>
+<div class="value mono" id="pilotReady">—%</div>
+<div class="small" id="pilotReadyLabel">—</div>
+</div>
+<div class="stat clickable" data-detail="problem" id="kMainProblem">
+<div class="label">Основная проблема</div>
+<div class="value" id="mainProblem">—</div>
+<div class="small" id="mainProblemHint">—</div>
+</div>
+<div class="stat clickable" data-detail="modules" id="kModules">
+<div class="label">Рекомендуемая конфигурация</div>
+<div class="value" id="recModules">—</div>
+<div class="small">Автоматически по порогам риска.</div>
+</div>
+<div class="stat clickable" data-detail="demo" id="kDemo">
+<div class="label">Приоритет демо</div>
+<div class="value" id="demoFocus">—</div>
+<div class="small" id="demoFocusHint">—</div>
 </div>
 </div>
 </div>
@@ -4027,44 +4125,6 @@ function _numFromText(t){
   return m ? m[0] : "";
 }
 
-// Collect field sources (manual / synthetic / fast) and persist inside payload JSON as _sources.
-function collectFieldSources_(){
-  const src = {};
-  // inputs by id
-  document.querySelectorAll('input,select,textarea').forEach(el=>{
-    const id = el.id;
-    if(!id) return;
-    const v = (el.value ?? '').toString().trim();
-    if(!v) return;
-    const o = (el.dataset && el.dataset.origin) ? String(el.dataset.origin) : 'user';
-    if(o==='synthetic') src[id] = 'synthetic';
-    else if(o==='fast') src[id] = 'fast';
-    else src[id] = 'manual';
-  });
-
-  const pad2 = (n)=>String(n).padStart(2,'0');
-  const setRows = (prefix, tbodyId, max, suffix)=>{
-    const rows = Array.from(document.querySelectorAll(`#${tbodyId} tr`));
-    for(let i=1;i<=max;i++){
-      const r = rows[i-1];
-      if(!r) continue;
-      const sel = r.querySelector('select');
-      if(!sel) continue;
-      const v = (sel.value ?? '').toString().trim();
-      if(!v) continue;
-      const o = (sel.dataset && sel.dataset.origin) ? String(sel.dataset.origin) : ((sel.dataset && sel.dataset.synthetic==='1') ? 'synthetic' : 'user');
-      const k = `${prefix}_${pad2(i)}_${suffix}`;
-      if(o==='synthetic') src[k] = 'synthetic';
-      else if(o==='fast') src[k] = 'fast';
-      else src[k] = 'manual';
-    }
-  };
-  setRows('tech','techTbody',10,'score');
-  setRows('proc','procTbody',10,'score');
-  setRows('risk','riskTbody',8,'val');
-  return src;
-}
-
 function buildSheetPayloadExact(){
   // Ensure KPI up to date
   try{ if(typeof recalc==="function") recalc(); }catch(_){}
@@ -4204,13 +4264,6 @@ function buildSheetPayloadExact(){
   // Ensure run_id and timestamp
   if(!out.run_id) out.run_id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
   if(!out.timestamp) out.timestamp = new Date().toISOString();
-
-  // Persist sources map (manual/synthetic/fast) inside payload snapshot.
-  try{
-    const m = collectFieldSources_();
-    out._sources = m;
-    window.__FIELD_SOURCES = m;
-  }catch(_e){}
 
   // Also include full JSON snapshot if someone adds "payload" column later
   out.payload = JSON.stringify(out);
@@ -4410,6 +4463,37 @@ async function gsSearch(q){
     return null;
   }
 
+  // Apply "fast" origin markers to fields that were filled via Fast-интервью.
+  // payload.fast_fields may be: JSON array string, comma-separated string, or array.
+  function applyFastOrigins_(payload){
+    if(!payload) return;
+    let ff = payload.fast_fields ?? payload.fastFields;
+    if(!ff) return;
+    let ids = [];
+    if(Array.isArray(ff)) ids = ff;
+    else if(typeof ff === 'string'){
+      const s = ff.trim();
+      if(!s) return;
+      if(s.startsWith('[') && s.endsWith(']')){
+        try{ ids = JSON.parse(s); }catch(_e){ ids = []; }
+      } else {
+        ids = s.split(',').map(x=>x.trim()).filter(Boolean);
+      }
+    }
+    if(!Array.isArray(ids) || !ids.length) return;
+
+    ids.forEach(id=>{
+      const el = findElementByKey(id);
+      if(!el) return;
+      const v = (el.value ?? '').toString().trim();
+      if(!v) return;
+      // Do not override explicit user edits
+      if((el.dataset.origin||'')==='user') return;
+      el.dataset.origin = 'fast';
+      if(el.dataset.synthetic === '1') el.dataset.synthetic = '0';
+    });
+  }
+
   // Rebuild table sections from flat sheet columns when loading a company.
   // Sheets rows are flat (req_01_text, psi_01_scn, prod_01_biz, ...), while the UI expects arrays.
   function rebuildTablesFromFlat_(data){
@@ -4584,14 +4668,6 @@ async function gsSearch(q){
       }
     }catch(e){}
 
-    // Field sources map (persisted inside payload JSON as _sources)
-    let __srcMap = {};
-    try{
-      if(payload && typeof payload === 'object' && payload._sources && typeof payload._sources === 'object') __srcMap = payload._sources;
-      if(!__srcMap || typeof __srcMap !== 'object') __srcMap = {};
-      window.__FIELD_SOURCES = __srcMap;
-    }catch(_e){ window.__FIELD_SOURCES = {}; }
-
     // Cache latest loaded snapshot for cross-block saves.
     try{
       if(!window.__ITMEN_LATEST_CACHE || typeof window.__ITMEN_LATEST_CACHE !== 'object') window.__ITMEN_LATEST_CACHE = {};
@@ -4622,25 +4698,6 @@ async function gsSearch(q){
       } else {
         el.value = String(val);
       }
-
-      // apply origin markers (synthetic / fast / manual)
-      try{
-        const src = (__srcMap && __srcMap[id]) ? String(__srcMap[id]) : "";
-        if(src === 'fast'){
-          el.dataset.origin = 'fast';
-          el.dataset.fast = '1';
-          if(el.dataset.synthetic) delete el.dataset.synthetic;
-        } else if(src === 'synthetic'){
-          el.dataset.origin = 'synthetic';
-          el.dataset.synthetic = '1';
-          if(el.dataset.fast) delete el.dataset.fast;
-        } else {
-          if(el.dataset.fast) delete el.dataset.fast;
-          if(el.dataset.synthetic) delete el.dataset.synthetic;
-          // do not force origin to user while loading
-        }
-      }catch(_e){}
-
       el.dispatchEvent(new Event("input", { bubbles:true }));
       el.dispatchEvent(new Event("change", { bubbles:true }));
     });
@@ -4702,12 +4759,6 @@ async function gsSearch(q){
             const sel = row.querySelector("select");
             if(sel){
               sel.value = String(payload[keyS]);
-              try{
-                const src = (__srcMap && __srcMap[keyS]) ? String(__srcMap[keyS]) : "";
-                if(src==='fast'){ sel.dataset.origin='fast'; sel.dataset.fast='1'; if(sel.dataset.synthetic) delete sel.dataset.synthetic; }
-                else if(src==='synthetic'){ sel.dataset.origin='synthetic'; sel.dataset.synthetic='1'; if(sel.dataset.fast) delete sel.dataset.fast; }
-                else { if(sel.dataset.fast) delete sel.dataset.fast; if(sel.dataset.synthetic) delete sel.dataset.synthetic; }
-              }catch(_e){}
               sel.dispatchEvent(new Event("change", { bubbles:true }));
             }
           }
@@ -4733,12 +4784,6 @@ async function gsSearch(q){
             const sel = row.querySelector("select");
             if(sel){
               sel.value = String(payload[keyV]);
-              try{
-                const src = (__srcMap && __srcMap[keyV]) ? String(__srcMap[keyV]) : "";
-                if(src==='fast'){ sel.dataset.origin='fast'; sel.dataset.fast='1'; if(sel.dataset.synthetic) delete sel.dataset.synthetic; }
-                else if(src==='synthetic'){ sel.dataset.origin='synthetic'; sel.dataset.synthetic='1'; if(sel.dataset.fast) delete sel.dataset.fast; }
-                else { if(sel.dataset.fast) delete sel.dataset.fast; if(sel.dataset.synthetic) delete sel.dataset.synthetic; }
-              }catch(_e){}
               sel.dispatchEvent(new Event("change", { bubbles:true }));
             }
           }
@@ -4758,6 +4803,9 @@ async function gsSearch(q){
     }catch(e){
       console.warn("applyPayload maturity/risk fill failed", e);
     }
+
+    // After load, apply Fast-интервью markers (yellow dots)
+    try{ applyFastOrigins_(payload); }catch(e){ console.warn('applyFastOrigins failed', e); }
 
     // done
     window.__ITMEN_IS_LOADING = false;
@@ -5016,7 +5064,13 @@ const run = debounce(async ()=>{
     .dotRed{background:#ef4444}
     .dotBlue{background:#2563eb}
     .dotGreen{background:#22c55e}
-    .dotYellow{background:#f59e0b}
+.dotYellow{background:#f59e0b}
+
+/* Fast-interview prefill */
+input[data-origin="fast"], select[data-origin="fast"], textarea[data-origin="fast"]{
+  outline:2px solid rgba(245,158,11,.35);
+  background: rgba(245,158,11,.06);
+}
   `;
   try{
     const st = document.createElement("style");
@@ -5043,7 +5097,11 @@ const run = debounce(async ()=>{
   function setDot(dot, state){
     if(!dot) return;
     dot.classList.remove("dotRed","dotBlue","dotGreen","dotYellow");
-    dot.classList.add(state==="blue" ? "dotBlue" : (state==="yellow" ? "dotYellow" : (state==="green" ? "dotGreen" : "dotRed")));
+    dot.classList.add(
+      state==="blue" ? "dotBlue" :
+      (state==="yellow" ? "dotYellow" :
+      (state==="green" ? "dotGreen" : "dotRed"))
+    );
   }
 
   function updateOne(el){
@@ -5069,8 +5127,8 @@ const run = debounce(async ()=>{
     document.querySelectorAll("input,select,textarea").forEach(el=>{
       if(!el.id || REQUIRED.has(el.id)) return;
       ensureDot(el);
-      el.addEventListener("input", ()=>{ el.dataset.origin="user"; if(el.dataset.fast) delete el.dataset.fast; updateOne(el); }, {passive:true});
-      el.addEventListener("change", ()=>{ el.dataset.origin="user"; if(el.dataset.fast) delete el.dataset.fast; updateOne(el); }, {passive:true});
+      el.addEventListener("input", ()=>{ el.dataset.origin="user"; updateOne(el); }, {passive:true});
+      el.addEventListener("change", ()=>{ el.dataset.origin="user"; updateOne(el); }, {passive:true});
     });
   }
 
@@ -5086,12 +5144,10 @@ const run = debounce(async ()=>{
       dot.title = "Поле не заполнено";
       return;
     }
-    const synthetic = (sel.dataset.synthetic === "1") || (sel.dataset.origin === "synthetic");
-    const fast = (sel.dataset.fast === "1") || (sel.dataset.origin === "fast");
-    dot.classList.remove("dotRed","dotBlue","dotGreen");
-    dot.classList.remove("dotYellow");
-    dot.classList.add(synthetic ? "dotBlue" : (fast ? "dotYellow" : "dotGreen"));
-    dot.title = synthetic ? "Синтетически заполнено (можно отредактировать)" : (fast ? "Заполнено FAST интервью" : "Заполнено менеджером");
+    const src = sel.dataset.origin || (sel.dataset.synthetic === "1" ? "synthetic" : "user");
+    dot.classList.remove("dotRed","dotBlue","dotGreen","dotYellow");
+    dot.classList.add(src==="synthetic" ? "dotBlue" : (src==="fast" ? "dotYellow" : "dotGreen"));
+    dot.title = src==="synthetic" ? "Синтетически заполнено (можно отредактировать)" : (src==="fast" ? "Заполнено из Fast-интервью" : "Заполнено менеджером");
   }
 
   function updateAll(){
