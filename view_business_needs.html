@@ -175,6 +175,45 @@
 .bn-company-suggest .item:hover{ background:#f3f3f3;}
 .bn-company-suggest .meta{ color:#777; font-size:12px;}
 
+
+/* --- Layout overrides: wrap themes and needs on wide screens --- */
+.themeTabs, .needsTabs{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap:12px;
+  overflow: visible;
+  padding: 6px 2px;
+}
+@media (max-width: 860px){
+  .themeTabs, .needsTabs{
+    display:flex;
+    gap:10px;
+    overflow:auto;
+    flex-wrap:nowrap;
+  }
+}
+/* Make cards fill nicely */
+.tabBtn, .needRow{
+  width:100%;
+  min-width: 0;
+}
+.needRow{
+  cursor:pointer;
+}
+.badge.prio{
+  font-weight:800;
+  background:#fff1f2;
+  border-color:#fecdd3;
+  color:#be123c;
+}
+.badge.prio.crit{
+  background:#fee2e2;
+  border-color:#fecaca;
+  color:#b91c1c;
+}
+.needBar{margin-top:8px}
+.needBar .miniBar{margin-top:0}
+
 </style>
 </head>
 <body>

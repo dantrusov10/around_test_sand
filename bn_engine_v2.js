@@ -639,14 +639,19 @@
       const strength = clamp(toNum(it.__strength), 0, 100);
       const star = strength >= 70 ? '<span class="star">★</span>' : '';
       row.innerHTML = `
+
         <div class="needLeft">
           <div class="needName">${escapeHtml(it.name||it.id||'')} ${star}</div>
           <div class="needMeta">${escapeHtml((it.zone?it.zone:'') + (it.theme?(' · '+it.theme):''))}</div>
+          <div class="needBar">
+            <div class="miniBar"><i style="width:${Math.max(0,Math.min(100,Number(strength)||0))}%"></i></div>
+          </div>
         </div>
-        <div class="needRight" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-          <span class="badge">Приоритет: ${strength}</span>
+        <div class="needRight" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:flex-start">
+          <span class="badge prio ${strength>=70?'crit':''}">Приоритет: ${strength}</span>
           <span class="badge">Вес: ${Number(it.weight||0)}</span>
         </div>
+
       `;
       row.onclick = ()=>{
         SELECTED_NEED_ID = it.id;
