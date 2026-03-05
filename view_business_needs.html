@@ -175,6 +175,20 @@
 .bn-company-suggest .item:hover{ background:#f3f3f3;}
 .bn-company-suggest .meta{ color:#777; font-size:12px;}
 
+    /* ===== Fix overflow: themes wrap, needs grid ===== */
+    body{overflow-x:hidden}
+    .themeTabs{display:flex !important; flex-wrap:wrap; overflow:visible !important}
+    .themeTabs .chip{margin:0 !important}
+    .needsTabs{display:grid !important; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; overflow:visible !important}
+    .needsTabs .needRow{border:1px solid rgba(15,23,42,.10); border-radius:16px; background:#fff; box-shadow:0 10px 30px rgba(15,23,42,.04)}
+    .needsTabs .needRow{border-top:none}
+    .needsTabs .needRow:hover{border-color:rgba(239,68,68,.25)}
+
+    /* Make dock not reduce usable width too much on smaller screens */
+    @media (min-width:1101px){
+      .container{max-width: min(1480px, calc(100vw - 44px));}
+    }
+
 
     /* ===== BN small components ===== */
     .chip{border:1px solid rgba(15,23,42,.12);background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer;margin:6px 8px 0 0}
@@ -196,43 +210,7 @@
     .small{font-size:12px;color:var(--muted)}
     @media (max-width:900px){.panelGrid{grid-template-columns:1fr}}
     
-  
-    /* ===== BN v146 layout additions ===== */
-    .themeGrid{display:flex;flex-wrap:wrap;gap:12px}
-    .themeCard{flex:1 1 360px;min-width:320px;max-width:520px;text-align:left;border:1px solid var(--border);background:#fff;border-radius:14px;padding:12px 14px;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.05)}
-    .themeCard.active{outline:2px solid rgba(255,0,0,.35)}
-    .themeTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-    .themeName{font-weight:700;font-size:13px;line-height:1.2}
-    .themeBadge{font-size:12px;border:1px solid #e5e7eb;background:#fff;border-radius:999px;padding:4px 8px;white-space:nowrap}
-    .themeHint{margin-top:6px;color:var(--muted);font-size:12px}
-    .bar{margin-top:8px;height:6px;background:#eee;border-radius:999px;overflow:hidden}
-    .bar span{display:block;height:100%;background:var(--brand-red)}
-    .needsGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
-    .needCard{border:1px solid var(--border);background:#fff;border-radius:14px;padding:10px 12px;text-align:left;cursor:pointer}
-    .needCard.active{outline:2px solid rgba(255,0,0,.35)}
-    .needTitle{font-weight:700;font-size:13px}
-    .needSub{margin-top:4px;color:var(--muted);font-size:12px}
-    .needBadges{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
-    .badge{font-size:12px;border:1px solid #e5e7eb;border-radius:999px;padding:4px 8px}
-    .badge.muted{color:var(--muted)}
-    .suggestItem{display:block;width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px 10px;margin:6px 0;cursor:pointer}
-    .panelHead{margin-bottom:10px}
-    .panelTitle{font-weight:800;font-size:16px}
-    .panelMeta{margin-top:4px;color:var(--muted);font-size:12px}
-    .panelHint{margin-top:8px;font-size:12px;color:var(--muted)}
-    .panelSection{border:1px solid var(--border);border-radius:14px;padding:12px 14px;background:#fff;margin-top:10px}
-    .panelSection .h{font-weight:800;margin-bottom:8px}
-    .panelSection .p{white-space:pre-wrap;line-height:1.4}
-    .panelSection .p.pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;font-size:12px}
-    .panelSection.cols2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width: 920px){ .panelSection.cols2{grid-template-columns:1fr} .themeCard{min-width:260px}}
-    .qBlock{margin:10px 0}
-    .qText{font-weight:700;font-size:13px;margin-bottom:6px}
-    .qAnswer{width:100%;min-height:72px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;font:14px Inter,system-ui;background:#f3f4f6}
-    .chk{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
-    .chk input{margin-top:3px}
-
-</style>
+  </style>
 </head>
 <body>
 
@@ -330,7 +308,7 @@
   const params = new URLSearchParams(location.search);
   const vRaw = params.get('v');
   const vNum = parseInt(String(vRaw||'0'), 10);
-  const BUILD_V = 117; // bump on each release
+  const BUILD_V = 118; // bump on each release
   const V = String((Number.isFinite(vNum) && vNum>0) ? Math.max(vNum, BUILD_V) : BUILD_V);
   const files = [
     'config.js?v=' + encodeURIComponent(V),
