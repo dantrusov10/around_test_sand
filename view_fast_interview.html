@@ -12,19 +12,22 @@
     .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
     .h1{font-size:22px;font-weight:900;margin:0}
     .sub{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 25px rgba(15,23,42,.06);padding:16px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 25px rgba(15,23,42,.06);padding:16px;overflow:hidden}
+    /* Use minmax(0,1fr) to prevent grid overflow with long labels */
+    .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
     @media (max-width:900px){.row{grid-template-columns:1fr}}
-    label{display:block;font-size:12px;color:var(--muted);font-weight:800}
-    input,select{width:100%;margin-top:6px;border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-size:14px}
+    .row > div{min-width:0}
+    label{display:block;font-size:12px;color:var(--muted);font-weight:800;min-width:0}
+    input,select{width:100%;min-width:0;margin-top:6px;border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-size:14px}
 
     /* better field layout (avoid nested <label>) */
-    .field{display:flex;flex-direction:column}
+    .field{display:flex;flex-direction:column;min-width:0}
     .fLabel{font-size:12px;color:var(--muted);font-weight:800}
     .help{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.35}
-    .checkList{margin-top:8px;display:grid;gap:10px}
-    .checkItem{display:flex;align-items:flex-start;gap:10px;font-weight:800;color:var(--text);line-height:1.25}
-    .checkItem input{margin-top:2px}
+    .checkList{margin-top:10px;display:grid;grid-template-columns:1fr;gap:10px}
+    .checkItem{display:flex;align-items:flex-start;justify-content:flex-start;gap:10px;font-weight:800;color:var(--text);line-height:1.25;min-width:0}
+    .checkItem input{margin-top:2px;flex:0 0 auto;width:16px;height:16px}
+    .checkItem .txt{display:block;min-width:0}
     .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
     .btn{border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}
     .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
@@ -210,10 +213,10 @@
       <div class="field">
         <div class="fLabel">Триггеры (влияют на риск‑профиль)</div>
         <div class="checkList">
-          <label class="checkItem"><input type="checkbox" id="fi_r_incidents"/>Есть частые инциденты/простои</label>
-          <label class="checkItem"><input type="checkbox" id="fi_r_audits"/>Были внешние проверки за последние 3 года</label>
-          <label class="checkItem"><input type="checkbox" id="fi_r_changes"/>Планируются крупные изменения инфраструктуры в 12 месяцев</label>
-          <label class="checkItem"><input type="checkbox" id="fi_r_turnover"/>Высокая текучесть ИТ‑персонала / смена подрядчиков</label>
+          <label class="checkItem"><input type="checkbox" id="fi_r_incidents"/><span class="txt">Есть частые инциденты/простои</span></label>
+          <label class="checkItem"><input type="checkbox" id="fi_r_audits"/><span class="txt">Были внешние проверки за последние 3 года</span></label>
+          <label class="checkItem"><input type="checkbox" id="fi_r_changes"/><span class="txt">Планируются крупные изменения инфраструктуры в 12 месяцев</span></label>
+          <label class="checkItem"><input type="checkbox" id="fi_r_turnover"/><span class="txt">Высокая текучесть ИТ‑персонала / смена подрядчиков</span></label>
         </div>
       </div>
       <div class="field">
