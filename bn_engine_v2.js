@@ -131,6 +131,7 @@
 
   // ===== State =====
   let CATALOG = null;
+  let RULES = null;
   let SELECTED_THEME = '';
   let SELECTED_NEED_ID = '';
   const BN_STATE = {
@@ -153,17 +154,22 @@
     return CATALOG;
   }
 
-  // ===== Priority model (heuristics) =====
-  const THEME_KEYS = [
-    'Видимость и охват',
-    'CMDB и классификация',
-    'Сетевое окружение и топология',
-    'Эксплуатация и стабильность',
-    'Изменения и DevOps',
-    'SAM и оптимизация ПО',
-    'Комплаенс, аудит и импортозамещение',
-    'Стратегия, финансы и управляемость'
-  ];
+  async function loadRules(){
+    if(RULES) return RULES;
+    try{
+      const res = await fetch('bn_rules.json', {cache:'no-store'});
+      RULES = await res.json();
+      return RULES;
+    }catch(e){
+      console.warn('bn_rules.json not found or invalid. Falling back to heuristic priorities.', e);
+      RULES = null;
+      return null;
+    }
+  }
+
+  // ===== Priority model =====
+  // Primary model is rule-driven (bn_rules.json).
+  // If rules are missing, we fallback to a lightweight heuristic.
 
   function getInterview(){
     return window.__BN_DATA || null;
@@ -178,10 +184,235 @@
     return n <= 1 ? n*100 : n;
   }
 
+  function normalizeThemeName(s){
+    const t = String(s||'').trim();
+    if(!t) return '';
+    if(t === 'Управление жизненным циклом ИТ-активов') return 'Управление жизненным циклом ИТ-активов и их ответственностью';
+    if(t === 'Финансы и бюджет (SAM + ITAM + FinOps)') return 'Финансы и бюджет (пересечение SAM + ITAM + FinOps)';
+    return t;
+  }
+
+  function computeBudgetAnnual(data){
+    const w = clamp(toNum(data?.workplaces), 0, 1e9);
+    const s = clamp(toNum(data?.servers), 0, 1e9);
+    if(!Number.isFinite(w) && !Number.isFinite(s)) return NaN;
+    const costPerWorkplace = 12000; // ₽/мес
+    const costPerServer    = 45000; // ₽/мес
+    const monthly = (Number.isFinite(w)? w*costPerWorkplace : 0) + (Number.isFinite(s)? s*costPerServer : 0);
+    return monthly * 12;
+  }
+
+  function getIndexValueByName(indexName, data){
+    const n = String(indexName||'').trim();
+    if(!data) return NaN;
+    const pick = (k)=>{
+      const v = (data?.[k] ?? data?.[String(k).toLowerCase()]);
+      const num = toNum(v);
+      return Number.isFinite(num) ? num : NaN;
+    };
+
+    if(n === 'PSI') return clamp(signalPct(data, 'psi2Score') ?? signalPct(data,'psi'), 0, 100);
+    if(n === 'Индекс технической зрелости') return clamp(signalPct(data,'techIndex') ?? signalPct(data,'tech'), 0, 100);
+    if(n === 'Индекс процессной зрелости') return clamp(signalPct(data,'procIndex') ?? signalPct(data,'proc'), 0, 100);
+    if(n === 'Потенциал возврата бюджета') return clamp(signalPct(data,'recoverIndex') ?? signalPct(data,'recover'), 0, 100);
+    if(n === 'Индекс экономического давления') return clamp(signalPct(data,'painIndex') ?? signalPct(data,'pain') ?? signalPct(data,'aiIndex') ?? signalPct(data,'ai'), 0, 100);
+
+    if(n === 'Серые зоны инфраструктуры') return clamp(signalPct(data,'risk_grey_pct') ?? signalPct(data,'riskGreyPct'), 0, 100);
+    if(n === 'Лицензионный риск') return clamp(signalPct(data,'risk_lic_pct') ?? signalPct(data,'riskLicPct'), 0, 100);
+    if(n === 'Операционная неэффективность / ручной труд') return clamp(signalPct(data,'risk_ops_pct') ?? signalPct(data,'riskOpsPct'), 0, 100);
+    if(n === 'Управляемость / отсутствие истории') return clamp(signalPct(data,'risk_gov_pct') ?? signalPct(data,'riskGovPct'), 0, 100);
+
+    if(n === 'COI'){
+      const loss = pick('coiTotal') ?? pick('coi_total_loss');
+      const budget = computeBudgetAnnual(data);
+      if(!Number.isFinite(loss) || !Number.isFinite(budget) || budget<=0) return NaN;
+      const share = loss / budget;
+      const score = 100 * (1 - clamp(share/0.04, 0, 1));
+      return Math.round(clamp(score, 0, 100));
+    }
+    return NaN;
+  }
+
+  function findMaturityAnswer(prefix, questionLabel, data){
+    if(!data) return '';
+    const max = (prefix==='risk') ? 8 : 10;
+    for(let i=1;i<=max;i++){
+      const n = String(i).padStart(2,'0');
+      const keyL = `${prefix}_${n}_label`;
+      const keyV = prefix==='risk' ? `${prefix}_${n}_val` : `${prefix}_${n}_score`;
+      const lbl = String(data?.[keyL] ?? '').trim();
+      if(lbl && lbl === String(questionLabel||'').trim()){
+        const v = String(data?.[keyV] ?? '').trim();
+        if(prefix==='risk') return v==='1' ? 'Да' : (v==='0' ? 'Нет' : '');
+        if(v==='2') return 'Да';
+        if(v==='1') return 'Частично';
+        if(v==='0') return 'Нет';
+        return '';
+      }
+    }
+    return '';
+  }
+
+  function getQuestionValue(questionLabel, data){
+    const q = String(questionLabel||'').trim();
+    if(!q || !data) return { kind:'none', value:null };
+
+    if(/^T\d+\./.test(q)) return { kind:'choice', value: findMaturityAnswer('tech', q, data) };
+    if(/^P\d+\./.test(q)) return { kind:'choice', value: findMaturityAnswer('proc', q, data) };
+    {
+      const a = findMaturityAnswer('risk', q, data);
+      if(a) return { kind:'choice', value:a };
+    }
+
+    const MAP = {
+      'Кол-во рабочих мест':'workplaces',
+      'Кол-во серверов':'servers',
+      'Кол-во филиалов':'branches',
+      'VDI':'vdi',
+      'Закрытый контур':'closed',
+      'Модель размещения':'hostingModel',
+      'Домены AD / каталогов (кол-во)':'adDomains',
+      'Сегментация сети':'netSeg',
+      'Терминальные фермы / RDS / VDI farms':'terminalFarms',
+      'Возраст основного железа':'hwAge',
+      'Учет железа (как сейчас)':'hwAccounting',
+      'Резервирование критичных серверов':'redundancy',
+      'Средняя зарплата IT (₽/мес) GROSS':'salary',
+      'Кол-во IT сотрудников':'itCount',
+      '% ручных операций':'manualPct',
+      'Бюджет на лицензии (₽/год)':'licBudget',
+      '% неиспользуемого ПО':'unusedPct',
+      '% неиспользуемых VM':'vmUnusedPct',
+      'Бюджет на железо (₽/год)':'hwBudget',
+      'План обновления железа':'hwPlan',
+      'Часов простоя в год':'downtimeHours',
+      'Стоимость часа простоя (₽/час)':'downtimeCost',
+      'Инцидентов в месяц':'incidentsPerMonth',
+      'Сервис-деск':'serviceDesk',
+      'Bus-factor ≤2 (есть?)':'keyPeopleRisk',
+      'Документированность (0–2)':'docScore',
+      '% устаревших ОС/ПО':'obsoletePct'
+    };
+    const key = MAP[q];
+    if(key){
+      const raw = (data?.[key] ?? data?.[String(key).toLowerCase()]);
+      if(key==='keyPeopleRisk' || key==='docScore'){
+        const num = toNum(raw);
+        return { kind:'number', value: Number.isFinite(num) ? num : null };
+      }
+      if(key==='serviceDesk' || key==='hwPlan'){
+        const s = String(raw ?? '').trim();
+        return { kind:'choice', value: s ? 'Да' : '' };
+      }
+      if(['vdi','closed','netSeg','terminalFarms','hwAccounting','redundancy','hostingModel'].includes(key)){
+        const s = String(raw ?? '').trim();
+        if(!s) return {kind:'choice', value:''};
+        const low = s.toLowerCase();
+        if(low==='нет' || low==='no' || low==='0') return {kind:'choice', value:'Нет'};
+        return {kind:'choice', value:'Да'};
+      }
+      const num = toNum(raw);
+      if(Number.isFinite(num)) return { kind:'number', value:num };
+      const s = String(raw ?? '').trim();
+      return s ? {kind:'text', value:s} : {kind:'none', value:null};
+    }
+
+    if(q in data) return {kind:'text', value:data[q]};
+    return { kind:'none', value:null };
+  }
+
+  function parseCond(cond){
+    const s = String(cond||'').trim();
+    if(!s) return {type:'any'};
+    const ss = s.replace(/–/g,'-').replace(/−/g,'-');
+    if(/^(да|нет|частично)$/i.test(ss)) return {type:'choice', v:ss.toLowerCase()};
+    let m = ss.match(/^([<>]=?)\s*(-?\d+(?:[\.,]\d+)?)$/);
+    if(m) return {type:'cmp', op:m[1], num:Number(m[2].replace(',','.'))};
+    m = ss.match(/^(-?\d+(?:[\.,]\d+)?)\s*-\s*(-?\d+(?:[\.,]\d+)?)$/);
+    if(m) return {type:'range', a:Number(m[1].replace(',','.')), b:Number(m[2].replace(',','.'))};
+    m = ss.match(/^(-?\d+(?:[\.,]\d+)?)$/);
+    if(m) return {type:'eq', num:Number(m[1].replace(',','.'))};
+    return {type:'text', v:ss.toLowerCase()};
+  }
+
+  function matchCond(valueObj, condStr){
+    const c = parseCond(condStr);
+    if(c.type==='any') return true;
+    if(c.type==='choice'){
+      const v = String(valueObj?.value ?? '').trim().toLowerCase();
+      return v === c.v;
+    }
+    const vNum = toNum(valueObj?.value);
+    if(c.type==='cmp'){
+      if(!Number.isFinite(vNum)) return false;
+      if(c.op==='<' ) return vNum <  c.num;
+      if(c.op==='<=') return vNum <= c.num;
+      if(c.op==='>' ) return vNum >  c.num;
+      if(c.op==='>=') return vNum >= c.num;
+      return false;
+    }
+    if(c.type==='range'){
+      if(!Number.isFinite(vNum)) return false;
+      const a = Math.min(c.a,c.b), b = Math.max(c.a,c.b);
+      return vNum >= a && vNum <= b;
+    }
+    if(c.type==='eq'){
+      if(!Number.isFinite(vNum)) return false;
+      return vNum === c.num;
+    }
+    if(c.type==='text'){
+      const v = String(valueObj?.value ?? '').trim().toLowerCase();
+      return v === c.v;
+    }
+    return false;
+  }
+
   function computeThemeScores(data){
     const out = {};
-    THEME_KEYS.forEach(t=> out[t]=0);
+    const themes = (CATALOG?.themes||[]).map(t => {
+      if(typeof t === 'string') return t;
+      if(t && typeof t === 'object') return t.name || t.id || '';
+      return String(t||'');
+    }).map(normalizeThemeName).filter(Boolean);
+    themes.forEach(t=> out[t]=0);
     if(!data) return out;
+
+    if(RULES && RULES.theme_index && RULES.theme_questions){
+      const idxRules = RULES.theme_index || [];
+      const qRules = (RULES.theme_questions || []).filter(r=> String(r.theme||'') !== '—');
+
+      for(const theme0 of themes){
+        const theme = normalizeThemeName(theme0);
+        let indexPts = 0;
+        let qPts = 0;
+
+        const idxRows = idxRules.filter(r=> normalizeThemeName(r.theme) === theme);
+        const byIdx = {};
+        idxRows.forEach(r=>{ const k=String(r.index||'').trim(); (byIdx[k] ||= []).push(r); });
+        Object.entries(byIdx).forEach(([idxName, rows])=>{
+          const v = getIndexValueByName(idxName, data);
+          if(!Number.isFinite(v)) return;
+          for(const r of rows){
+            if(matchCond({kind:'number', value:v}, r.cond)) { indexPts += toNum(r.points)||0; break; }
+          }
+        });
+
+        const qRows = qRules.filter(r=> normalizeThemeName(r.theme) === theme);
+        const byQ = {};
+        qRows.forEach(r=>{ const k=String(r.question||'').trim(); (byQ[k] ||= []).push(r); });
+        Object.entries(byQ).forEach(([qLabel, rows])=>{
+          const v = getQuestionValue(qLabel, data);
+          if(!v || v.kind==='none') return;
+          for(const r of rows){
+            if(matchCond(v, r.cond)) { qPts += toNum(r.points)||0; break; }
+          }
+        });
+
+        const blended = (indexPts*0.4 + qPts*0.6);
+        out[theme] = Math.round(clamp(blended, 0, 100));
+      }
+      return out;
+    }
 
     // Core indices (0..100)
     const pain  = clamp(signalPct(data,'painIndex'), 0, 100);
@@ -253,22 +484,37 @@
     out['Отчетность и стратегическое управление'] =
       clamp(avg(gapBus, gapProc, (100-docScore), bus, psiBad) * 0.9 , 0, 100);
 
-    // Ensure every theme has some non-zero baseline if data exists
-    THEME_KEYS.forEach(k=>{
+    themes.forEach(k=>{
       if(!Number.isFinite(out[k])) out[k]=0;
-      out[k]=clamp(out[k],0,100);
+      out[k]=Math.round(clamp(out[k],0,100));
     });
     return out;
   }
 
   function needStrength(item, themeScores){
-    // Priority of a business-need: derived from theme priority + weight (1..3).
-    // This makes it comparable to theme priority (0..100), and понятнее чем абстрактная "сила".
-    const w = clamp(toNum(item.weight), 0, 5);
-    const tScore = clamp(toNum(themeScores[item.theme] ?? 40), 0, 100);
-    // weight 1..3 -> multiplier 0.70..1.00 (so weight influences, but theme still dominates)
-    const mult = clamp(0.70 + (clamp(w,1,3)-1) * 0.15, 0.70, 1.00);
-    return Math.round(clamp(tScore * mult, 0, 100));
+    const w = clamp(toNum(item.weight), 1, 3);
+    const data = getInterview();
+    let pts = 0;
+
+    if(RULES && RULES.need_triggers && data){
+      const rows = (RULES.need_triggers||[]).filter(r=> String(r.need||'').trim() === String(item.name||'').trim());
+      const byTrig = {};
+      rows.forEach(r=>{ const k=String(r.trigger||'').trim(); (byTrig[k] ||= []).push(r); });
+      Object.entries(byTrig).forEach(([trig, trs])=>{
+        const idxVal = getIndexValueByName(trig, data);
+        const vObj = Number.isFinite(idxVal) ? {kind:'number', value:idxVal} : getQuestionValue(trig, data);
+        if(!vObj || vObj.kind==='none') return;
+        for(const r of trs){
+          if(matchCond(vObj, r.cond)) { pts += toNum(r.points)||0; break; }
+        }
+      });
+    }else{
+      const tScore = clamp(toNum(themeScores[item.theme] ?? 40), 0, 100);
+      pts = tScore;
+    }
+
+    const mult = clamp(0.85 + (w-1)*0.075, 0.85, 1.00);
+    return Math.round(clamp(pts * mult, 0, 100));
   }
 
   // ===== Rendering: Themes =====
@@ -684,6 +930,7 @@
   async function boot(){
     initDockCollapse();
     await loadCatalog();
+    await loadRules();
 
     // initial render without company (neutral)
     renderAll();
