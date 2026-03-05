@@ -133,6 +133,7 @@
       </div>
     </div>
 
+    
     <div class="row" style="margin-top:12px">
       <div>
         <label>% ручных операций (оценка)
@@ -141,10 +142,90 @@
       </div>
       <div>
         <label>Есть ли единый источник достоверной инвентаризации? (T1)
-          <select id="fi_t1"><option value="">—</option><option value="Да">Да</option><option value="Частично">Частично</option><option value="Нет">Нет</option></select>
+          <select id="fi_t1">
+            <option value="">—</option>
+            <option value="Да">Да</option>
+            <option value="Частично">Частично</option>
+            <option value="Нет">Нет</option>
+          </select>
         </label>
       </div>
     </div>
+
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label>Как собираете и обновляете данные об инфраструктуре? (T2/T5)
+          <select id="fi_collect">
+            <option value="">—</option>
+            <option value="Авто">Автоматизировано (агенты/сканеры, без ручного ввода)</option>
+            <option value="Частично">Частично (авто есть, но много ручного / охват не полный)</option>
+            <option value="Ручной">В основном вручную (Excel/ручной ввод)</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>Используются ли данные инвентаризации в других системах? (T8)
+          <select id="fi_use">
+            <option value="">—</option>
+            <option value="Да">Да (ITSM/ИБ/лицензии/BI)</option>
+            <option value="Частично">Частично</option>
+            <option value="Нет">Нет</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label>Охвачены ли сбором данных все сегменты (VDI/филиалы/закрытые контуры)? (T9)
+          <select id="fi_cover">
+            <option value="">—</option>
+            <option value="Да">Да</option>
+            <option value="Частично">Частично</option>
+            <option value="Нет">Нет</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>Есть ли регламент актуализации данных об устройствах и ПО? (P5)
+          <select id="fi_reg">
+            <option value="">—</option>
+            <option value="Да">Да</option>
+            <option value="Частично">Частично</option>
+            <option value="Нет">Нет</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label>Триггеры (влияют на риск-профиль)
+          <div style="margin-top:8px;display:grid;gap:8px">
+            <label style="display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text)">
+              <input type="checkbox" id="fi_r_incidents"/> Есть частые инциденты/простои (R5)
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text)">
+              <input type="checkbox" id="fi_r_audits"/> Были внешние проверки за 3 года (R6)
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text)">
+              <input type="checkbox" id="fi_r_changes"/> Планируются крупные изменения в 12 мес (R7)
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text)">
+              <input type="checkbox" id="fi_r_turnover"/> Высокая текучесть ИТ/подрядчиков (R8)
+            </label>
+          </div>
+        </label>
+      </div>
+      <div>
+        <label style="color:var(--muted)">Подсказка
+          <div style="margin-top:8px;color:var(--muted);font-size:13px;line-height:1.35">
+            Эти ответы нужны, чтобы быстро предзаполнить 50–70% сигнального слоя (T/P/R) и корректно посчитать приоритет тематик/задач.
+          </div>
+        </label>
+      </div>
+    </div>
+
 
     <div class="actions">
       <button class="btn" id="btnClear" type="button">Очистить</button>
@@ -254,7 +335,8 @@
           u.searchParams.set('company', c);
           location.href = u.toString();
         });
-      });
+    ['fi_r_incidents','fi_r_audits','fi_r_changes','fi_r_turnover'].forEach(id=>{ const el=$(id); if(el) el.checked=false; });
+  });
     }
 
     let t=null;
@@ -300,7 +382,7 @@
   });
 
   $('btnClear').addEventListener('click', ()=>{
-    ['fi_lpr','fi_workplaces','fi_servers','fi_branches','fi_closed','fi_manualPct','fi_t1'].forEach(id=>{ const el=$(id); if(!el) return; if(el.tagName==='SELECT') el.value=''; else el.value='0'; });
+    ['fi_lpr','fi_workplaces','fi_servers','fi_branches','fi_closed','fi_manualPct','fi_t1','fi_collect','fi_use','fi_cover','fi_reg'].forEach(id=>{ const el=$(id); if(!el) return; if(el.tagName==='SELECT') el.value=''; else el.value='0'; });
   });
 
   $('btnSave').addEventListener('click', async ()=>{
@@ -316,13 +398,43 @@
       branches: Number($('fi_branches').value||0),
       closed: $('fi_closed').value,
       manualPct: Number($('fi_manualPct').value||0),
-      // store as the label (same as in sheet)
+
+      // TECH (T)
       tech_01_label: 'T1. Есть ли единый источник достоверной информации об устройствах и установленном ПО?',
       tech_01_score: $('fi_t1').value==='Да' ? 2 : ($('fi_t1').value==='Частично' ? 1 : ($('fi_t1').value==='Нет' ? 0 : '')),
+
+      tech_02_label: 'T2. Автоматизирован ли сбор данных об инфраструктуре (без ручного ввода)?',
+      tech_02_score: $('fi_collect').value==='Авто' ? 2 : ($('fi_collect').value==='Частично' ? 1 : ($('fi_collect').value==='Ручной' ? 0 : '')),
+
+      tech_05_label: 'T5. Обновляются ли данные об устройствах и ПО без ручного вмешательства?',
+      tech_05_score: $('fi_collect').value==='Авто' ? 2 : ($('fi_collect').value==='Частично' ? 1 : ($('fi_collect').value==='Ручной' ? 0 : '')),
+
+      tech_08_label: 'T8. Используются ли данные об инвентаризации в других системах (ITSM, безопасность, лицензирование)?',
+      tech_08_score: $('fi_use').value==='Да' ? 2 : ($('fi_use').value==='Частично' ? 1 : ($('fi_use').value==='Нет' ? 0 : '')),
+
+      tech_09_label: 'T9. Охвачены ли сбором данных все сегменты инфраструктуры (VDI, филиалы, изолированные контуры)?',
+      tech_09_score: $('fi_cover').value==='Да' ? 2 : ($('fi_cover').value==='Частично' ? 1 : ($('fi_cover').value==='Нет' ? 0 : '')),
+
+      // PROC (P)
+      proc_05_label: 'P5. Есть ли регламент актуализации данных об устройствах и ПО?',
+      proc_05_score: $('fi_reg').value==='Да' ? 2 : ($('fi_reg').value==='Частично' ? 1 : ($('fi_reg').value==='Нет' ? 0 : '')),
+
+      // RISK (R) yes/no → 1/0
+      risk_05_label: 'Есть частые инциденты/простои (по ощущениям бизнеса)',
+      risk_05_val: $('fi_r_incidents').checked ? 1 : 0,
+
+      risk_06_label: 'Были внешние проверки за последние 3 года',
+      risk_06_val: $('fi_r_audits').checked ? 1 : 0,
+
+      risk_07_label: 'Планируются крупные изменения инфраструктуры в 12 месяцев (миграции/слияния)',
+      risk_07_val: $('fi_r_changes').checked ? 1 : 0,
+
+      risk_08_label: 'Высокая текучесть ИТ-персонала/смена подрядчиков',
+      risk_08_val: $('fi_r_turnover').checked ? 1 : 0,
     };
 
     // Mark which ids in the main interview were filled by this fast step
-    const fastIds = ['lpr','workplaces','servers','branches','closed','manualPct','tech_01_score'];
+    const fastIds = ['lpr','workplaces','servers','branches','closed','manualPct','tech_01_score','tech_02_score','tech_05_score','tech_08_score','tech_09_score','proc_05_score','risk_05_val','risk_06_val','risk_07_val','risk_08_val'];
     payload.fast_fields = JSON.stringify(fastIds);
 
     try{
