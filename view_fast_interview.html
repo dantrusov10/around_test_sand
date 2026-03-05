@@ -6,6 +6,7 @@
   <title>Fast интервью — 3–5 вопросов</title>
   <script src="config.js?v=154"></script>
   <style>
+
     :root{--bg:#f6f7fb;--card:#fff;--border:#e5e7eb;--text:#0f172a;--muted:#64748b;--brand:#ef4444;--field:#f8fafc}
     body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
     .page{max-width:1100px;margin:26px auto;padding:0 16px}
@@ -58,9 +59,72 @@
     #globalLoader .box{background:#fff;border-radius:18px;padding:16px 18px;border:1px solid var(--border);min-width:320px;display:flex;gap:12px;align-items:center}
     .spinner{width:20px;height:20px;border:3px solid #e5e7eb;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-  </style>
+  
+
+/* --- QuickDock unified styles (from BN) --- */
+#ffffff;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
+    .container{max-width:1480px;margin:22px auto;padding:0 14px}
+
+    /* ===== QuickDock (same as other pages) ===== */
+    .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
+    .quickDock .card{box-shadow:0 18px 50px rgba(15,23,42,.12)}
+    .dockHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .dockTitle{font-weight:950;font-size:14px;margin:0 0 10px}
+    .dockToggle{border:1px solid rgba(15,23,42,.12);background:#fff;border-radius:12px;padding:8px 10px;font-weight:900;cursor:pointer}
+    .dockSearchWrap{position:relative;display:flex;gap:8px;align-items:center}
+    .dockTop{margin-top:6px}
+    .dockIcon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.7}
+    .dockSearch{flex:1;border:1px solid rgba(15,23,42,.12);background:#f2f4f8;padding:11px 12px 11px 38px;border-radius:12px;outline:none;font-size:14px}
+    .dockLoadBtn{border:none;background:var(--brand-red);color:#fff;font-weight:900;border-radius:12px;padding:10px 12px;cursor:pointer}
+    .dockLoadBtn:hover{background:var(--brand-red-2)}
+    .dockSuggest{margin-top:8px;border:1px solid rgba(15,23,42,.12);border-radius:12px;overflow:hidden;display:none;background:#fff}
+    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}
+    .dockItem:first-child{border-top:none}
+    .dockItem b{display:block}
+
+    .toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+    .tool{padding:12px;border:1px solid rgba(15,23,42,.12);border-radius:14px;background:#fff;display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:inherit}
+    .tIcon{width:28px;height:28px;border-radius:10px;display:flex;al
+
+
+</style>
 </head>
 <body>
+<div class="quickDock" id="quickDock">
+    <div class="card" style="padding:16px">
+      <div class="dockHeader">
+        <div class="dockTitle" style="margin:0">Быстрый вход</div>
+        <button type="button" class="dockToggle" id="dockToggle" aria-label="Свернуть/развернуть панель" title="Свернуть панель">◀</button>
+      </div>
+      <div class="dockSearchWrap dockTop">
+        <div class="dockIcon">🔎</div>
+        <input autocomplete="off" class="dockSearch" id="dockCompany" placeholder="Введите компанию"/>
+        <button class="dockLoadBtn" id="dockLoadBtn" title="Загрузить" type="button">Загрузить</button>
+      </div>
+      <div class="dockSuggest" id="dockSuggest"></div>
+      <div style="height:12px"></div>
+      <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
+      <div class="toolGrid">
+  <a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+  <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+  <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+  <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+  <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+  <a class="tool" href="view_4_psi.html"><div class="tIcon">📄</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+  <a class="tool" href="view_5_full.html"><div class="tIcon">🗺️</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+  <a class="tool" href="view_6_summary.html"><div class="tIcon">🧾</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+  <a class="tool" href="view_7_calculator.html"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
+  <a class="tool" href="view_business_needs.html"><div class="tIcon">🧠</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
+  <a class="tool" href="view_fast_interview.html"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div class="tDesc">3–5 вопросов</div></div></a>
+</div>
+    </div>
+  </div>
+
 
 <!-- QuickDock -->
 <div id="quickDock">
@@ -458,5 +522,7 @@
 })();
 </script>
 
+  </div>
+</div>
 </body>
 </html>
