@@ -17,6 +17,14 @@
     @media (max-width:900px){.row{grid-template-columns:1fr}}
     label{display:block;font-size:12px;color:var(--muted);font-weight:800}
     input,select{width:100%;margin-top:6px;border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-size:14px}
+
+    /* better field layout (avoid nested <label>) */
+    .field{display:flex;flex-direction:column}
+    .fLabel{font-size:12px;color:var(--muted);font-weight:800}
+    .help{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.35}
+    .checkList{margin-top:8px;display:grid;gap:10px}
+    .checkItem{display:flex;align-items:flex-start;gap:10px;font-weight:800;color:var(--text);line-height:1.25}
+    .checkItem input{margin-top:2px}
     .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
     .btn{border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}
     .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
@@ -141,7 +149,7 @@
         </label>
       </div>
       <div>
-        <label>Есть ли единый источник достоверной инвентаризации? (T1)
+        <label>Есть ли единый источник достоверной инвентаризации?
           <select id="fi_t1">
             <option value="">—</option>
             <option value="Да">Да</option>
@@ -154,7 +162,7 @@
 
     <div class="row" style="margin-top:12px">
       <div>
-        <label>Как собираете и обновляете данные об инфраструктуре? (T2/T5)
+        <label>Как собираете и обновляете данные об инфраструктуре?
           <select id="fi_collect">
             <option value="">—</option>
             <option value="Авто">Автоматизировано (агенты/сканеры, без ручного ввода)</option>
@@ -164,7 +172,7 @@
         </label>
       </div>
       <div>
-        <label>Используются ли данные инвентаризации в других системах? (T8)
+        <label>Используются ли данные инвентаризации в других системах?
           <select id="fi_use">
             <option value="">—</option>
             <option value="Да">Да (ITSM/ИБ/лицензии/BI)</option>
@@ -177,7 +185,7 @@
 
     <div class="row" style="margin-top:12px">
       <div>
-        <label>Охвачены ли сбором данных все сегменты (VDI/филиалы/закрытые контуры)? (T9)
+        <label>Охвачены ли сбором данных все сегменты (VDI/филиалы/закрытые контуры)?
           <select id="fi_cover">
             <option value="">—</option>
             <option value="Да">Да</option>
@@ -187,7 +195,7 @@
         </label>
       </div>
       <div>
-        <label>Есть ли регламент актуализации данных об устройствах и ПО? (P5)
+        <label>Есть ли регламент актуализации данных об устройствах и ПО?
           <select id="fi_reg">
             <option value="">—</option>
             <option value="Да">Да</option>
@@ -199,30 +207,18 @@
     </div>
 
     <div class="row" style="margin-top:12px">
-      <div>
-        <label>Триггеры (влияют на риск-профиль)
-          <div style="margin-top:8px;display:grid;gap:8px">
-            <label style="display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text)">
-              <input type="checkbox" id="fi_r_incidents"/> Есть частые инциденты/простои (R5)
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text)">
-              <input type="checkbox" id="fi_r_audits"/> Были внешние проверки за 3 года (R6)
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text)">
-              <input type="checkbox" id="fi_r_changes"/> Планируются крупные изменения в 12 мес (R7)
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text)">
-              <input type="checkbox" id="fi_r_turnover"/> Высокая текучесть ИТ/подрядчиков (R8)
-            </label>
-          </div>
-        </label>
+      <div class="field">
+        <div class="fLabel">Триггеры (влияют на риск‑профиль)</div>
+        <div class="checkList">
+          <label class="checkItem"><input type="checkbox" id="fi_r_incidents"/>Есть частые инциденты/простои</label>
+          <label class="checkItem"><input type="checkbox" id="fi_r_audits"/>Были внешние проверки за последние 3 года</label>
+          <label class="checkItem"><input type="checkbox" id="fi_r_changes"/>Планируются крупные изменения инфраструктуры в 12 месяцев</label>
+          <label class="checkItem"><input type="checkbox" id="fi_r_turnover"/>Высокая текучесть ИТ‑персонала / смена подрядчиков</label>
+        </div>
       </div>
-      <div>
-        <label style="color:var(--muted)">Подсказка
-          <div style="margin-top:8px;color:var(--muted);font-size:13px;line-height:1.35">
-            Эти ответы нужны, чтобы быстро предзаполнить 50–70% сигнального слоя (T/P/R) и корректно посчитать приоритет тематик/задач.
-          </div>
-        </label>
+      <div class="field">
+        <div class="fLabel">Подсказка</div>
+        <div class="help">Эти ответы нужны, чтобы быстро предзаполнить 50–70% сигнального слоя (T/P/R) и корректно посчитать приоритет тематик/задач.</div>
       </div>
     </div>
 
@@ -335,8 +331,7 @@
           u.searchParams.set('company', c);
           location.href = u.toString();
         });
-    ['fi_r_incidents','fi_r_audits','fi_r_changes','fi_r_turnover'].forEach(id=>{ const el=$(id); if(el) el.checked=false; });
-  });
+      });
     }
 
     let t=null;
