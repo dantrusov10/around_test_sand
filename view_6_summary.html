@@ -204,96 +204,18 @@
         <div class="pad" style="border-top:1px solid var(--line)">
           <div class="sectionTitle">Инструменты</div>
           <div class="toolGrid">
-<a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-<a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-<a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-<a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-<a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-<a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-<a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
-<a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
-<a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
+<a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div><div class="tDesc">PSI Control Center</div></div></div></a>
+<a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div><div class="tDesc">итоги</div></div></div></a>
+<a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div><div class="tDesc">1–3</div></div></div></a>
+<a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div><div class="tDesc">раздел 4</div></div></div></a>
+<a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div><div class="tDesc">раздел 6</div></div></div></a>
+<a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div><div class="tDesc">раздел 5</div></div></div></a>
+<a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div><div class="tDesc">всё</div></div></div></a>
+<a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div><div class="tDesc">итоги по компании</div></div></div></a>
+<a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div><div class="tDesc">спецификация</div></div></div></a>
+<a class="tool" href="view_business_needs.html?v=90"><div class="tIcon">💢</div><div><div class="tName">Боли и потребности</div><div><div class="tDesc">приоритеты</div></div></div></a>
+<a class="tool" href="view_fast_interview.html?v=90"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div><div class="tDesc">3–5 вопросов</div></div></div></a>
 </div>
-<div class="sub" style="margin-top:12px">Подсказка: выбирай компанию — ссылки слева автоматически подставят параметр <span style="font-family:ui-monospace">?company=...</span>.</div>
-        </div>
-      </div>
-
-      <!-- Main -->
-      <div class="card">
-        <div class="pad">
-          <div class="sectionTitle">Аналитика по компании</div>
-          <div class="summaryTop">
-            <div class="kpi"><div class="kpiVal" id="kpiPsi">—</div><div class="kpiLbl">PSI (последний)</div></div>
-            <div class="kpi"><div class="kpiVal" id="kpiProb">—</div><div class="kpiLbl">Вероятность (последняя)</div></div>
-            <div class="kpi"><div class="kpiVal" id="kpiCOI">—</div><div class="kpiLbl">Стоимость бездействия (₽/год)</div></div>
-            <div class="kpi"><div class="kpiVal" id="kpiBudget">—</div><div class="kpiLbl">Оценка проекта (₽)</div></div>
-          </div>
-
-          <div class="panel" style="margin-top:12px">
-            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap">
-              <div>
-                <div class="sectionTitle" style="margin:0">Коротко по сути</div>
-                <div class="muted" style="font-size:12px">Автоматический статус сделки + фокус следующего шага.</div>
-              </div>
-              <div class="pillTag" id="dealStatus">—</div>
-            </div>
-            <div id="dealNext" class="list" style="margin-top:10px"></div>
-          </div>
-
-          <div class="panel">
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; margin-bottom:8px; flex-wrap:wrap">
-              <div>
-                <div class="sectionTitle" style="margin:0">Динамика индексов</div>
-                <div class="muted" style="font-size:12px">По сохранениям в Google Sheets (история строк). Можно переключать индексы и режим.</div>
-              </div>
-              <div class="pillTag" id="histMeta">—</div>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap">
-              <div class="seg" id="chartModeSeg" style="margin:0">
-                <button type="button" data-chartmode="core" class="active">Основное</button>
-                <button type="button" data-chartmode="advanced">Все индексы</button>
-              </div>
-              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
-                <button type="button" class="btn ghost" id="btnShowAll" style="padding:7px 10px; font-size:12px">Показать всё</button>
-                <button type="button" class="btn ghost" id="btnHideAll" style="padding:7px 10px; font-size:12px">Скрыть всё</button>
-              </div>
-            </div>
-
-            <div class="muted" style="font-size:12px; margin-top:6px">Клик по легенде или по чипсам скрывает/показывает индексы. Основное — только PSI/Prob/Risk.</div>
-            <div id="chartFilters" class="filters"></div>
-
-            <div class="chartWrap">
-              <canvas id="idxChart"></canvas>
-            </div>
-          </div>
-
-          <div class="panel" style="margin-top:12px">
-            <div class="sectionTitle" style="margin:0 0 8px">Заполненность блоков</div>
-            <div class="muted" style="font-size:12px; margin-bottom:10px">Упрощённая оценка по наличию ключевых полей. Требования к пилоту/продукту тут не считаем (слишком сильно зависит от шаблона).</div>
-            <div id="blocks" class="blocks"></div>
-          </div>
-
-          <div class="panel" style="margin-top:12px">
-            <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap">
-              <div>
-                <div class="sectionTitle" style="margin:0">Ключевые выводы и рекомендации</div>
-                <div class="muted" style="font-size:12px; margin-top:2px">Продажи — аргументы по заполненным ответам (чеклист + ABM). Пресейл — фокус на пилот/PSI/реализуемость.</div>
-              </div>
-              <div class="seg" id="modeSeg" style="margin:0">
-                <button type="button" data-mode="sales" class="active">Продажи</button>
-                <button type="button" data-mode="presales">Пресейл</button>
-              </div>
-            </div>
-
-            <div id="argsTLDR" style="margin-top:10px"></div>
-            <div id="argsSections" style="margin-top:12px"></div>
-          </div>
-
-          <div class="panel" style="margin-top:12px">
-            <div class="sectionTitle" style="margin:0 0 8px">Финансы и контекст</div>
-
-            <div class="muted" style="font-size:13px" id="financeNote">Выбери компанию, чтобы увидеть ключевые цифры (workplaces/servers, COI, потенциал возврата).</div>
           </div>
         </div>
       </div>
