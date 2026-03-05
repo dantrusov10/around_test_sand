@@ -4,7 +4,6 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Fast интервью — 3–5 вопросов</title>
-  
   <script src="config.js?v=154"></script>
   <style>
     :root{--bg:#f6f7fb;--card:#fff;--border:#e5e7eb;--text:#0f172a;--muted:#64748b;--brand:#ef4444;--field:#f8fafc}
@@ -23,83 +22,63 @@
     .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
     .note{font-size:12px;color:var(--muted);margin-top:10px}
 
-    /* ===== QuickDock (same as other pages) ===== */
-    .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
-    .quickDock .card{box-shadow:0 18px 50px rgba(15,23,42,.12)}
-    .dockHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .dockTitle{font-weight:950;font-size:14px;margin:0 0 10px}
-    .dockToggle{border:1px solid rgba(15,23,42,.12);background:#fff;border-radius:12px;padding:8px 10px;font-weight:900;cursor:pointer}
-    .dockSearchWrap{position:relative;display:flex;gap:8px;align-items:center}
-    .dockTop{margin-top:6px}
-    .dockIcon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.7}
-    .dockSearch{flex:1;border:1px solid rgba(15,23,42,.12);background:#f2f4f8;padding:11px 12px 11px 38px;border-radius:12px;outline:none;font-size:14px}
-    .dockLoadBtn{border:none;background:var(--brand-red);color:#fff;font-weight:900;border-radius:12px;padding:10px 12px;cursor:pointer}
-    .dockLoadBtn:hover{background:var(--brand-red-2)}
-    .dockSuggest{margin-top:8px;border:1px solid rgba(15,23,42,.12);border-radius:12px;overflow:hidden;display:none;background:#fff}
-    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}
-    .dockItem:first-child{border-top:none}
-    .dockItem b{display:block}
+    /* QuickDock (same block as other pages, but we don't touch page layout) */
+    #quickDock{position:fixed;left:18px;top:110px;width:260px;z-index:1000}
+    body.dockCollapsed #quickDock{width:76px}
+    .dock{background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 12px 28px rgba(15,23,42,.08);padding:12px}
+    .dockHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+    .dockTitle{font-weight:900;font-size:14px}
+    .dockToggle{border:1px solid var(--border);background:var(--field);border-radius:10px;width:34px;height:34px;cursor:pointer;font-weight:900}
+    .dockRow{display:flex;gap:8px;align-items:center}
+    .dockRow input{margin-top:0}
+    .dockLoadBtn{border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}
+    .toolGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .tool{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:14px;text-decoration:none;color:inherit;background:#fff}
+    .tool small{display:block;color:var(--muted);font-weight:700}
+    .dockSuggest{position:absolute;left:0;right:0;top:64px;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 25px rgba(15,23,42,.12);overflow:hidden;display:none}
+    .dockItem{padding:10px 12px;border-top:1px solid var(--border);cursor:pointer}
+    .dockItem:hover{background:#f8fafc}
+    body.dockCollapsed .dockTitle,body.dockCollapsed .dockRow,body.dockCollapsed .toolGrid{display:none}
+    .contentOffset{margin-left:300px}
+    body.dockCollapsed .contentOffset{margin-left:110px}
 
-    .toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
-    .tool{padding:12px;border:1px solid rgba(15,23,42,.12);border-radius:14px;background:#fff;display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:inherit}
-    .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
-    .tName{font-weight:900;font-size:13px;line-height:1.15}
-    .tDesc{font-size:12px;color:var(--muted);margin-top:3px}
+    /* Loader */
+    #globalLoader{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:2000}
+    #globalLoader .box{background:#fff;border-radius:18px;padding:16px 18px;border:1px solid var(--border);min-width:320px;display:flex;gap:12px;align-items:center}
+    .spinner{width:20px;height:20px;border:3px solid #e5e7eb;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
 
-    @media (max-width:1480px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
-    @media (min-width:1101px){.container{padding-left:360px}}
-
-    /* Collapsed dock — same UX */
-    body.dockCollapsed .quickDock{width:86px !important; overflow:hidden !important}
-    body.dockCollapsed .quickDock .dockSearchWrap,
-    body.dockCollapsed .quickDock .dockSugge<div class="quickDock" id="quickDock">
-    <div class="card" style="padding:16px">
-      <div class="dockHeader">
-        <div class="dockTitle" style="margin:0">Быстрый вход</div>
-        <button type="button" class="dockToggle" id="dockToggle" aria-label="Свернуть/развернуть панель" title="Свернуть панель">◀</button>
-      </div>
-      <div class="dockSearchWrap dockTop">
-        <div class="dockIcon">🔎</div>
-        <input autocomplete="off" class="dockSearch" id="dockCompany" placeholder="Введите компанию"/>
-        <button class="dockLoadBtn" id="dockLoadBtn" title="Загрузить" type="button">Загрузить</button>
+<!-- QuickDock -->
+<div id="quickDock">
+  <div class="dock">
+    <div class="dockHead">
+      <div class="dockTitle">Быстрый вход</div>
+      <button class="dockToggle" id="dockToggle" title="Свернуть/развернуть" type="button">◀</button>
+    </div>
+    <div style="position:relative">
+      <div class="dockRow">
+        <input id="dockCompany" placeholder="Введите компанию"/>
+        <button class="dockLoadBtn" id="dockLoadBtn" type="button">Загрузить</button>
       </div>
       <div class="dockSuggest" id="dockSuggest"></div>
-      <div style="height:12px"></div>
-      <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
-      <div class="toolGrid">
-        <a class="tool" href="index.html?v=118"><div class="tIcon">🏠
-<a class="tool" href="view_business_needs.html"><div class="tIcon">🧩</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
-<a class="tool" href="view_fast_interview.html"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div class="tDesc">3–5 вопросов</div></div></a>
-</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-        <a class="tool" href="view_1_indices.html?v=118"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-        <a class="tool" href="view_2_interview.html?v=118"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-        <a class="tool" href="view_business_needs.html?v=118"><div class="tIcon">🧩</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
-        <a class="tool" href="view_3_requirements.html?v=118"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-        <a class="tool" href="view_3b_product.html?v=118"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-        <a class="tool" href="view_4_psi.html?v=118"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-        <a class="tool" href="view_5_full.html?v=118"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
-        <a class="tool" href="view_6_summary.html?v=118"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
-        <a class="tool" href="view_7_calculator.html?v=118"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
-      </div>
     </div>
-  
-in-top:10px;font-weight:900;color:var(--muted);font-size:12px">Инструменты</div>
+    <div style="margin-top:10px;font-weight:900;color:var(--muted);font-size:12px">Инструменты</div>
     <div class="toolGrid">
-      <a class="tool" href="index.html"><div><b>Дашборд</b><small>PSI Control Center</small>
-<a class="tool" href="view_business_needs.html"><div class="tIcon">🧩</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
-<a class="tool" href="view_fast_interview.html"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div class="tDesc">3–5 вопросов</div></div></a>
-</div></a>
-      <a class="tool" href="view_1_indices.html"><div><b>Индексы</b><small>итоги</small></div></a>
-      <a class="tool" href="view_2_interview.html"><div><b>Интервью</b><small>1–3</small></div></a>
-      <a class="tool" href="view_4_pilot.html"><div><b>Пилот</b><small>раздел 4</small></div></a>
-      <a class="tool" href="view_6_product.html"><div><b>Продукт</b><small>раздел 6</small></div></a>
-      <a class="tool" href="view_5_psi.html"><div><b>ПСИ</b><small>раздел 5</small></div></a>
-      <a class="tool" href="view_8_full.html"><div><b>Полная карта</b><small>всё</small></div></a>
-      <a class="tool" href="view_9_summary.html"><div><b>Выводы</b><small>итоги</small></div></a>
-      <a class="tool" href="view_7_calculator.html"><div><b>Калькулятор</b><small>спецификация</small></div></a>
-      <a class="tool" href="view_business_needs.html"><div><b>Боли и потребности</b><small>приоритеты</small></div></a>
-      <a class="tool" href="view_fast_interview.html"><div><b>Fast интервью</b><small>3–5 вопросов</small></div></a>
-    </div>
+  <a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+  <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+  <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+  <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+  <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+  <a class="tool" href="view_4_psi.html"><div class="tIcon">📄</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+  <a class="tool" href="view_5_full.html"><div class="tIcon">🗺️</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+  <a class="tool" href="view_6_summary.html"><div class="tIcon">🧾</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+  <a class="tool" href="view_7_calculator.html"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
+  <a class="tool" href="view_business_needs.html"><div class="tIcon">🧠</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
+  <a class="tool" href="view_fast_interview.html"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div class="tDesc">3–5 вопросов</div></div></a>
+</div>
   </div>
 </div>
 
@@ -115,116 +94,59 @@ in-top:10px;font-weight:900;color:var(--muted);font-size:12px">Инструме�
   </div>
 
   <div class="card">
-    
     <div class="row">
-      <label>Название компании
-        <input id="fi_company" type="text" placeholder="Напр.: Ромашка"/>
-      </label>
-      <label>Контакт / ЛПР (опционально)
-        <input id="fi_lpr" type="text" placeholder="ФИО, должность"/>
-      </label>
-
-      <label>Кол-во рабочих мест
-        <input id="fi_workplaces" type="number" min="0" step="1" value="0"/>
-      </label>
-      <label>Кол-во серверов
-        <input id="fi_servers" type="number" min="0" step="1" value="0"/>
-      </label>
-
-      <label>Кол-во филиалов
-        <input id="fi_branches" type="number" min="0" step="1" value="0"/>
-      </label>
-      <label>Модель размещения
-        <select id="fi_hosting">
-          <option value="">—</option>
-          <option value="onprem">On‑prem</option>
-          <option value="hybrid">Гибрид (on‑prem + облако)</option>
-          <option value="cloud">Преимущественно облако</option>
-          <option value="unknown">Не знаю</option>
-        </select>
-      </label>
-
-      <label>Как сейчас собираете данные об инфраструктуре? (T2/T5)
-        <select id="fi_collection">
-          <option value="">—</option>
-          <option value="auto">Автоматически (агенты/сканеры/интеграции)</option>
-          <option value="mixed">Частично автомат + частично вручную</option>
-          <option value="manual">В основном вручную (Excel/ручной ввод)</option>
-          <option value="none">Формально не ведём</option>
-        </select>
-      </label>
-      <label>Есть единый источник правды по инвентаризации? (T1)
-        <select id="fi_t1">
-          <option value="">—</option>
-          <option value="Да">Да</option>
-          <option value="Частично">Частично</option>
-          <option value="Нет">Нет</option>
-        </select>
-      </label>
-
-      <label>Данные используются в ITSM/ИБ/лицензировании? (T8)
-        <select id="fi_t8">
-          <option value="">—</option>
-          <option value="Да">Да</option>
-          <option value="Частично">Частично</option>
-          <option value="Нет">Нет</option>
-        </select>
-      </label>
-      <label>Охват сегментов (филиалы/VDI/закрытые контуры/облако) (T9)
-        <select id="fi_t9">
-          <option value="">—</option>
-          <option value="Да">Да, охвачено всё</option>
-          <option value="Частично">Частично / только часть сегментов</option>
-          <option value="Нет">Нет, охват слабый</option>
-        </select>
-      </label>
-
-      <label>Частота инцидентов/простоев “по ощущениям бизнеса” (R5)
-        <select id="fi_r5">
-          <option value="">—</option>
-          <option value="Нет">Редко / не критично</option>
-          <option value="Частично">Бывает (2–5 инцидентов/мес)</option>
-          <option value="Да">Часто (6+ инцидентов/мес или заметные простои)</option>
-        </select>
-      </label>
-      <label>Внешние проверки за 3 года / скоро аудит? (R6)
-        <select id="fi_r6">
-          <option value="">—</option>
-          <option value="Нет">Нет</option>
-          <option value="Да">Да</option>
-        </select>
-      </label>
-
-      <label>Планируются крупные изменения в 12 мес (миграции/слияния)? (R7)
-        <select id="fi_r7">
-          <option value="">—</option>
-          <option value="Нет">Нет</option>
-          <option value="Да">Да</option>
-        </select>
-      </label>
-      <label>Высокая текучесть ИТ/смена подрядчиков? (R8)
-        <select id="fi_r8">
-          <option value="">—</option>
-          <option value="Нет">Нет</option>
-          <option value="Да">Да</option>
-        </select>
-      </label>
-
-      <label>% ручных операций (если знаете)
-        <input id="fi_manualPct" type="number" min="0" max="100" step="1" value="0"/>
-      </label>
-      <label>Закрытый контур / изоляция сегментов (справочно)
-        <select id="fi_closed">
-          <option value="">—</option>
-          <option value="Да">Да</option>
-          <option value="Нет">Нет</option>
-          <option value="Не знаю">Не знаю</option>
-        </select>
-      </label>
+      <div>
+        <label>Название компании
+          <input id="fi_company" placeholder="Напр.: Ромашка"/>
+        </label>
+      </div>
+      <div>
+        <label>Контакт / ЛПР (опционально)
+          <input id="fi_lpr" placeholder="ФИО, должность"/>
+        </label>
+      </div>
     </div>
 
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label>Кол-во рабочих мест
+          <input id="fi_workplaces" type="number" min="0" step="1" value="0"/>
+        </label>
+      </div>
+      <div>
+        <label>Кол-во серверов
+          <input id="fi_servers" type="number" min="0" step="1" value="0"/>
+        </label>
+      </div>
+    </div>
 
-<div class="actions">
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label>Кол-во филиалов
+          <input id="fi_branches" type="number" min="0" step="1" value="0"/>
+        </label>
+      </div>
+      <div>
+        <label>Закрытый контур
+          <select id="fi_closed"><option value="">—</option><option>Да</option><option>Нет</option></select>
+        </label>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label>% ручных операций (оценка)
+          <input id="fi_manualPct" type="number" min="0" max="100" step="1" value="0"/>
+        </label>
+      </div>
+      <div>
+        <label>Есть ли единый источник достоверной инвентаризации? (T1)
+          <select id="fi_t1"><option value="">—</option><option value="Да">Да</option><option value="Частично">Частично</option><option value="Нет">Нет</option></select>
+        </label>
+      </div>
+    </div>
+
+    <div class="actions">
       <button class="btn" id="btnClear" type="button">Очистить</button>
       <button class="btn primary" id="btnSave" type="button">Сохранить в БД</button>
     </div>
@@ -381,42 +303,7 @@ in-top:10px;font-weight:900;color:var(--muted);font-size:12px">Инструме�
     ['fi_lpr','fi_workplaces','fi_servers','fi_branches','fi_closed','fi_manualPct','fi_t1'].forEach(id=>{ const el=$(id); if(!el) return; if(el.tagName==='SELECT') el.value=''; else el.value='0'; });
   });
 
-  
-  function ynpScore(v){
-    if(v==='Да') return 2;
-    if(v==='Частично') return 1;
-    if(v==='Нет') return 0;
-    return '';
-  }
-  function yn01(v){
-    if(v==='Да') return 1;
-    if(v==='Нет') return 0;
-    // 'Частично' -> treat as 1? For risk flags we keep 1 only when 'Да'
-    return 0;
-  }
-  function collectionToT2(v){
-    if(v==='auto') return 2;
-    if(v==='mixed') return 1;
-    if(v==='manual') return 0;
-    if(v==='none') return 0;
-    return '';
-  }
-  function collectionToT5(v){
-    if(v==='auto') return 2;
-    if(v==='mixed') return 1;
-    if(v==='manual') return 0;
-    if(v==='none') return 0;
-    return '';
-  }
-  function collectionToProc5(v){
-    if(v==='auto') return 2;
-    if(v==='mixed') return 1;
-    if(v==='manual') return 0;
-    if(v==='none') return 0;
-    return '';
-  }
-
-$('btnSave').addEventListener('click', async ()=>{
+  $('btnSave').addEventListener('click', async ()=>{
     if(!WEBAPP_URL){ alert('Не задан URL Apps Script (GS_WEBAPP_URL)'); return; }
     const company = getCompany();
     if(!company){ alert('Введи название компании'); return; }
@@ -427,46 +314,15 @@ $('btnSave').addEventListener('click', async ()=>{
       workplaces: Number($('fi_workplaces').value||0),
       servers: Number($('fi_servers').value||0),
       branches: Number($('fi_branches').value||0),
-      hosting_model: $('fi_hosting').value,
       closed: $('fi_closed').value,
       manualPct: Number($('fi_manualPct').value||0),
-
-      // ===== Tech (T) =====
+      // store as the label (same as in sheet)
       tech_01_label: 'T1. Есть ли единый источник достоверной информации об устройствах и установленном ПО?',
-      tech_01_score: ynpScore($('fi_t1').value),
-
-      tech_02_label: 'T2. Автоматизирован ли сбор данных об инфраструктуре (без ручного ввода)?',
-      tech_02_score: collectionToT2($('fi_collection').value),
-
-      tech_05_label: 'T5. Обновляются ли данные об устройствах и ПО без ручного вмешательства?',
-      tech_05_score: collectionToT5($('fi_collection').value),
-
-      tech_08_label: 'T8. Используются ли данные об инвентаризации в других системах (ITSM, безопасность, лицензирование)?',
-      tech_08_score: ynpScore($('fi_t8').value),
-
-      tech_09_label: 'T9. Охвачены ли сбором данных все сегменты инфраструктуры (VDI, филиалы, изолированные контуры)?',
-      tech_09_score: ynpScore($('fi_t9').value),
-
-      // ===== Proc (P) — быстрые прокси =====
-      proc_05_label: 'P5. Есть ли регламент актуализации данных об устройствах и ПО?',
-      proc_05_score: collectionToProc5($('fi_collection').value),
-
-      // ===== Risk flags (R) =====
-      risk_05_label: 'Есть частые инциденты/простои (по ощущениям бизнеса)',
-      risk_05_val: yn01($('fi_r5').value),
-
-      risk_06_label: 'Были внешние проверки за последние 3 года',
-      risk_06_val: yn01($('fi_r6').value),
-
-      risk_07_label: 'Планируются крупные изменения инфраструктуры в 12 месяцев (миграции/слияния)',
-      risk_07_val: yn01($('fi_r7').value),
-
-      risk_08_label: 'Высокая текучесть ИТ-персонала/смена подрядчиков',
-      risk_08_val: yn01($('fi_r8').value),
+      tech_01_score: $('fi_t1').value==='Да' ? 2 : ($('fi_t1').value==='Частично' ? 1 : ($('fi_t1').value==='Нет' ? 0 : '')),
     };
 
     // Mark which ids in the main interview were filled by this fast step
-    const fastIds = ['lpr','workplaces','servers','branches','hosting_model','closed','manualPct','tech_01_score','tech_02_score','tech_05_score','tech_08_score','tech_09_score','proc_05_score','risk_05_val','risk_06_val','risk_07_val','risk_08_val'];
+    const fastIds = ['lpr','workplaces','servers','branches','closed','manualPct','tech_01_score'];
     payload.fast_fields = JSON.stringify(fastIds);
 
     try{

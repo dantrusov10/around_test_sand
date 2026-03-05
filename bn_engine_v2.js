@@ -1,1485 +1,1052 @@
-// BN Engine v2 — Risks -> Themes -> Business Needs -> (Causes/Pains/Questions)
-// Data source: bn_catalog.json (generated from "Копия Подход.xlsx")
-// Storage: embedded into saved payload JSON under key "business_needs_sessions".
-
+/* bn_engine_v2.js (BN page engine)
+   - company search (action=search)
+   - load latest row for selected company (action=get)
+   - compute priorities (themes + needs) from interview payload
+   - selectable causes/pains (multi)
+   - free-text answers for questions
+   - save to BN_Log (action=bn_log_append)
+*/
 (function(){
-  function getWebappUrl(){ return ( (typeof GS_WEBAPP_URL !== 'undefined' && GS_WEBAPP_URL) || window.GS_WEBAPP_URL || window.WEBAPP_URL || '' ).trim(); }
-  const URL_V = (() => {
-    try { return new URLSearchParams(location.search).get('v') || ''; } catch(e){ return ''; }
-  })();
-  const BUILD_VER = (window.BUILD_INFO && window.BUILD_INFO.version) ? String(window.BUILD_INFO.version) : '';
-  const VERSION = (BUILD_VER || URL_V || '1');
+  const $ = (id)=>document.getElementById(id);
 
-  // Hardening: show JS errors as "data processing" not "Apps Script"
-  window.addEventListener('error', (ev)=>{
-    try{
-      console.error('BN page error:', ev.error || ev.message || ev);
-      if(typeof setStatus==='function'){
-        setStatus('Ошибка обработки данных (см. Console).', 'err');
-      }
-    }catch(_e){}
-  });
-  window.addEventListener('unhandledrejection', (ev)=>{
-    try{
-      console.error('BN unhandledrejection:', ev.reason || ev);
-      if(typeof setStatus==='function'){
-        setStatus('Ошибка обработки данных (см. Console).', 'err');
-      }
-    }catch(_e){}
-  });
-
-
-  const THEME_ZONE_MAP = {
-    'Видимость и охват': 'Серые зоны (охват / архитектура)',
-    'CMDB и классификация': 'Серые зоны (охват / архитектура)',
-    'Сетевое окружение и топология': 'Серые зоны (охват / архитектура)',
-    'Эксплуатация и стабильность': 'Операционная неэффективность / ручной труд',
-    'Изменения и DevOps': 'Операционная неэффективность / ручной труд',
-    'SAM и оптимизация ПО': 'Лицензионный риск',
-    'Комплаенс, аудит и импортозамещение': 'Лицензионный риск',
-    'Стратегия, финансы и управляемость': 'Управляемость / отсутствие истории'
+  const els = {
+    dockCompany: $('dockCompany'),
+    dockLoadBtn: $('dockLoadBtn'),
+    dockSuggest: $('dockSuggest'),
+    dockToggle: $('dockToggle'),
+    bnCompanyLabel: $('bnCompanyLabel'),
+    bnStatus: $('bnStatus'),
+    bnSaveBtn: $('bnSaveBtn'),
+    bnCompanyInput: $('bnCompanyInput'),
+    bnCompanyBtn: $('bnCompanyBtn'),
+    bnCompanySuggest: $('bnCompanySuggest'),
+    themeList: $('themeList'),
+    needsList: $('needsList'),
+    needPanel: $('needPanel'),
+    bnSummary: $('bnSummary'),
+    fltTriggers: $('bnFltTriggers'),
+    fltCritical: $('bnFltCritical'),
+    fltMain: $('bnFltMain')
   };
 
-  const UI = {
-    companyLabel: () => document.getElementById('bnCompanyLabel'),
-    themeList: () => document.getElementById('themeList'),
-    needsList: () => document.getElementById('needsList'),
-    needPanel: () => document.getElementById('needPanel'),
-    summaryPanel: () => document.getElementById('bnSummary'),
-    saveBtn: () => document.getElementById('bnSaveBtn'),
-    status: () => document.getElementById('bnStatus'),
-    fltTriggers: () => document.getElementById('bnFltTriggers'),
-    fltCritical: () => document.getElementById('bnFltCritical'),
-    fltMain: () => document.getElementById('bnFltMain')
-  };
-
-function themeHasTrigger_(theme){
-  const r = (THEME_ABM && THEME_ABM[theme] && Array.isArray(THEME_ABM[theme].reasons)) ? THEME_ABM[theme].reasons : [];
-  return r.some(x=>String(x||'').includes('Триггер'));
-}
-function themeHasCritical_(theme){
-  const r = (THEME_ABM && THEME_ABM[theme] && Array.isArray(THEME_ABM[theme].reasons)) ? THEME_ABM[theme].reasons : [];
-  return r.some(x=>String(x||'').includes('Critical'));
-}
-function bnIsMain_(bnId){
-  try{
-    const p = getSessionStore();
-    const s = p?.business_needs_sessions?.[bnId];
-    return !!(s && s.is_main);
-  }catch(_){ return false; }
-}
-
-
-  let BN_CATALOG = null;
-  let ACTIVE_COMPANY = '';
-  let ACTIVE_ROW = null; // latest row object from Sheets (parsed)
-  let HEATMAP = null;    // zone risks 0..1
-  let THEME_RISKS = {};  // theme -> 0..1
-  let THEME_ABM = {};    // theme -> ABM object {abm01, tier, reasons...}
-  let ACTIVE_THEME = '';
-  let ACTIVE_BN_ID = '';
-
-  function esc(s){
-    return String(s ?? '')
+  // ===== Utilities =====
+  function escapeHtml(s){
+    return String(s)
       .replaceAll('&','&amp;')
       .replaceAll('<','&lt;')
       .replaceAll('>','&gt;')
       .replaceAll('"','&quot;')
-      .replaceAll("'",'&#039;');
+      .replaceAll("'","&#039;");
   }
 
-  async function jsonp(url, timeoutMs = 45000, retries = 2) {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const res = await new Promise((resolve, reject) => {
-        const cbName = 'cb_' + Math.random().toString(36).slice(2);
-        let script = null;
-        const t = setTimeout(() => {
-          cleanup();
-          reject(new Error('JSONP timeout'));
-        }, timeoutMs);
-
-        function cleanup() {
-          clearTimeout(t);
-          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
-          if (script && script.parentNode) script.parentNode.removeChild(script);
-        }
-
-        window[cbName] = (data) => { cleanup(); resolve(data); };
-
-        const sep = url.includes('?') ? '&' : '?';
-        script = document.createElement('script');
-        script.src = url + sep + 'callback=' + encodeURIComponent(cbName) + '&_ts=' + Date.now();
-        script.onerror = () => { cleanup(); reject(new Error('JSONP network error')); };
-        document.head.appendChild(script);
-      });
-
-      return res;
-    } catch (e) {
-      if (attempt === retries) throw e;
-      await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
-    }
-  }
-}
-
-  function setStatus(msg, kind){
-    const el = UI.status();
-    if(!el) return;
-    el.textContent = msg || '';
-    el.className = 'bnStatus ' + (kind||'');
-  }
-
-  function parseTSVRowToObject(rowArr, keys){
-    const obj = {};
-    for(let i=0;i<keys.length;i++) obj[keys[i]] = rowArr[i] ?? '';
-    return obj;
-  }
-
-  function tryParsePayload(rowObj){
-    const raw = rowObj.payload;
-    if(!raw) return {};
-    try{ return JSON.parse(raw); }catch(e){ return {}; }
-  }
-
-  function normKey(s){
-    let x = String(s||'').replace(/\s+/g,' ').trim();
-    x = x.replace(/^(?:[TPА-ЯA-Z]{0,2}\s*)?\d+(?:[\.:]\d+)*[\.)\.:\-\s]+/i, '');
-    x = x.replace(/^[TP]\s*\d+\s*[\.)\.:\-\s]+/i, '');
-    return x.toLowerCase().replace(/ё/g,'е')
-      .replace(/[“”"'`]/g,'')
+  // Normalize strings for matching (questions/indices coming from Excel vs payload).
+  function normText(s){
+    return String(s||'')
+      .toLowerCase()
+      .replace(/\u00a0/g,' ')
+      .replace(/[“”\"'`]/g,'')
+      .replace(/[()\[\]{}]/g,'')
+      .replace(/[?!,:;•]/g,'')
       .replace(/\s+/g,' ')
-      .replace(/[^0-9a-zа-я .\-_/():,?]+/g,'')
       .trim();
   }
 
-  function normZone(z){
-    const v = String(z||'').trim().toLowerCase();
-    if(!v) return '';
-    if(v.includes('лицен')) return 'Лицензионный риск';
-    if(v.includes('руч') || v.includes('операц')) return 'Операционная неэффективность / ручной труд';
-    if(v.includes('истор') || v.includes('управ')) return 'Управляемость / отсутствие истории';
-    return 'Серые зоны (охват / архитектура)';
+  function extractCode(label){
+    // Supports: T1., P10., R3., etc. Returns 't1','p10', ...
+    const m = String(label||'').trim().match(/^\s*([TPR])\s*(\d{1,2})\s*\./i);
+    if(!m) return '';
+    return (m[1] + String(Number(m[2]))).toLowerCase();
   }
 
-  function getBankExpanded(){
-    if(window.__ITMEN_BANK_EXPANDED) return window.__ITMEN_BANK_EXPANDED;
-    const base = (window.ITMEN_QUESTION_BANK)||{};
-    const exp = {};
-    try{
-      Object.entries(base).forEach(([k,v])=>{
-        exp[String(k)] = v;
-        const nk = normKey(k);
-        if(nk) exp[nk] = v;
-        const nk2 = nk.replace(/^[tp]\s*\d+\s*[\.)\-:\s]+/i,'').trim();
-        if(nk2) exp[nk2] = v;
-      });
-    }catch(_e){}
-    window.__ITMEN_BANK_EXPANDED = exp;
-    return exp;
+  function normalizeTriggerName(trig){
+    const s = String(trig||'').trim();
+    if(!s) return '';
+    // Common index trigger aliases from sheets
+    if(/^COI\b/i.test(s) || /индекс\s+консистентности\s+данных/i.test(s)) return 'COI';
+    if(/^PSI\b/i.test(s) || /проектн(ая|ой)\s+готовност/i.test(s)) return 'PSI';
+    if(/техническ(ой|ая)\s+зрелост/i.test(s)) return 'Индекс технической зрелости';
+    if(/процессн(ой|ая)\s+зрелост/i.test(s)) return 'Индекс процессной зрелости';
+    if(/серые\s+зоны/i.test(s)) return 'Серые зоны инфраструктуры';
+    if(/лицензионн/i.test(s) && /риск/i.test(s)) return 'Лицензионный риск';
+    if(/операционн/i.test(s) && /(неэффектив|ручн)/i.test(s)) return 'Операционная неэффективность / ручной труд';
+    if(/управляемост/i.test(s) || /отсутствие\s+истории/i.test(s)) return 'Управляемость / отсутствие истории';
+    if(/потенциал\s+возврата\s+бюджета/i.test(s)) return 'Потенциал возврата бюджета';
+    if(/экономическ(ое|ий)\s+давлен/i.test(s)) return 'Индекс экономического давления';
+    // Normalize small wording differences for inputs
+    if(/^Bus\-factor/i.test(s)) return 'Bus-factor ≤2 (есть?)';
+    return s;
   }
-
-  // Compute risks by zones from interview answers in ACTIVE_ROW.
-  // Supports multiple schemas:
-  // 1) tech_01_label + tech_01_score (preferred)
-  // 2) tech_01_score only (fallback; uses question bank codes t1..t10)
-  // 3) tech_01 answer strings (Да/Нет/Частично) (fallback)
-  function computeHeatmapFromRow(row){
-    const bank = getBankExpanded();
-    const zones = {
-      'Серые зоны (охват / архитектура)': {w:0,s:0},
-      'Лицензионный риск': {w:0,s:0},
-      'Операционная неэффективность / ручной труд': {w:0,s:0},
-      'Управляемость / отсутствие истории': {w:0,s:0},
-    };
-
-    function parseScore(v){
-      if(v===null || v===undefined || v==='') return null;
-      const n = Number(v);
-      if(!Number.isNaN(n) && isFinite(n)){
-        if(n>=0 && n<=2) return n;
-      }
-      const s = String(v).trim().toLowerCase();
-      if(!s) return null;
-      if(s==='да' || s==='yes' || s==='y') return 2;
-      if(s==='частично' || s==='част' || s==='partly') return 1;
-      if(s==='нет' || s==='no' || s==='n') return 0;
-      return null;
-    }
-
-    function handle(prefix, count){
-      for(let i=1;i<=count;i++){
-        const idx = String(i).padStart(2,'0');
-        const label = (row[`${prefix}_${idx}_label`] || '').toString().trim();
-        const scoreRaw = (row[`${prefix}_${idx}_score`] !== undefined) ? row[`${prefix}_${idx}_score`] : row[`${prefix}_${idx}`];
-        const v = parseScore(scoreRaw);
-        if(v===null) continue;
-
-        // v: 0 Нет, 1 Частично, 2 Да
-        const answerRisk = (v===2)?0 : (v===1)?0.5 : 1;
-        const key = normKey(label);
-        const mCode = label.match(/^\s*([TP])\s*(\d+)\s*[\.)]/i);
-        const inferredCode = (prefix==='tech') ? ('t'+String(i)) : ('p'+String(i));
-        const codeKey = mCode ? (mCode[1].toLowerCase()+mCode[2]) : inferredCode;
-        const meta = (codeKey && bank[codeKey]) ? bank[codeKey] : (bank[key] || null);
-        if(!meta) continue;
-
-        const w = Number(meta.w)||1;
-        const zone = normZone(meta.zone);
-        if(!zones[zone]) zones[zone] = {w:0,s:0};
-        zones[zone].w += w;
-        zones[zone].s += w*answerRisk;
-      }
-    }
-
-    const techCount = Number(row.tech_count)||10;
-    const procCount = Number(row.proc_count)||10;
-    handle('tech', Math.min(10, techCount));
-    handle('proc', Math.min(10, procCount));
-
-    const out = {};
-    let totW=0, totS=0;
-    Object.keys(zones).forEach(z=>{
-      const Zw=zones[z].w;
-      const Zs=zones[z].s;
-      const risk = (Zw>0) ? (Zs/Zw) : null; // 0..1
-      out[z] = risk;
-      if(risk!==null){ totW += Zw; totS += Zs; }
-    });
-    out.__overall = (totW>0) ? (totS/totW) : null;
-    return out;
-  }
-  // expose for debugging
-  try{ window.computeThemeABM = computeThemeABM; }catch(_e){}
-
-  function computeThemeRisks(heatmap){
-    const m = heatmap || {};
-    const grey = m['Серые зоны (охват / архитектура)'] ?? 0;
-    const lic  = m['Лицензионный риск'] ?? 0;
-    const ops  = m['Операционная неэффективность / ручной труд'] ?? 0;
-    const gov  = m['Управляемость / отсутствие истории'] ?? 0;
-
-    // split zones into 8 thematics (simple, deterministic)
-    return {
-      'Видимость и охват': grey,
-      'CMDB и классификация': grey,
-      'Сетевое окружение и топология': grey,
-      'Эксплуатация и стабильность': ops,
-      'Изменения и DevOps': ops,
-      'SAM и оптимизация ПО': lic,
-      'Комплаенс, аудит и импортозамещение': lic,
-      'Стратегия, финансы и управляемость': gov,
-    };
-
-  // --- ABM scoring (sales-priority) -------------------------------------------------
-  // Uses: client indices + heatmap + deal triggers to prioritize themes for ABM.
-  // Output: THEME_ABM[theme] = { base01, basePct, boostPts, boost01, abm01, abmPct, tier, reasons[] }
-
-  const ABM_MATRIX = {
-    psi: [
-      { when: (v)=> v < 30, add: { 'Видимость и охват': 25, 'CMDB и классификация': 20, 'Стратегия, финансы и управляемость': 20, 'Изменения и DevOps': 15 } },
-      { when: (v)=> v >= 30 && v < 50, add: { 'Видимость и охват': 15, 'CMDB и классификация': 10, 'Стратегия, финансы и управляемость': 10 } },
-    ],
-    tech_index: [
-      { when: (v)=> v < 40, add: { 'Видимость и охват': 20, 'Сетевое окружение и топология': 15, 'Эксплуатация и стабильность': 15 } },
-      { when: (v)=> v >= 40 && v < 60, add: { 'Видимость и охват': 10, 'Сетевое окружение и топология': 8, 'Эксплуатация и стабильность': 8 } },
-    ],
-    proc_index: [
-      { when: (v)=> v < 40, add: { 'Стратегия, финансы и управляемость': 25, 'Изменения и DevOps': 20, 'Эксплуатация и стабильность': 10 } },
-      { when: (v)=> v >= 40 && v < 60, add: { 'Стратегия, финансы и управляемость': 12, 'Изменения и DevOps': 10 } },
-    ],
-    coi_rub: [
-      { when: (v)=> v >= 10_000_000, add: { 'Эксплуатация и стабильность': 25, 'SAM и оптимизация ПО': 20, 'Стратегия, финансы и управляемость': 15 } },
-      { when: (v)=> v >= 3_000_000 && v < 10_000_000, add: { 'Эксплуатация и стабильность': 15, 'SAM и оптимизация ПО': 12 } },
-    ],
-    triggers_yes: [
-      { key: 'risk_01_val', add: { 'Видимость и охват': 12, 'CMDB и классификация': 10 } }, // распределенная инфраструктура
-      { key: 'risk_03_val', add: { 'Эксплуатация и стабильность': 15, 'Стратегия, финансы и управляемость': 10 } }, // много ручных операций
-      { key: 'risk_04_val', add: { 'SAM и оптимизация ПО': 20, 'Комплаенс, аудит и импортозамещение': 15 } }, // риск неучтенного ПО
-      { key: 'risk_05_val', add: { 'Эксплуатация и стабильность': 20, 'Изменения и DevOps': 10 } }, // частые инциденты/простои
-      { key: 'risk_06_val', add: { 'Комплаенс, аудит и импортозамещение': 25, 'SAM и оптимизация ПО': 15 } }, // были внешние проверки
-      { key: 'risk_07_val', add: { 'Изменения и DevOps': 20, 'Стратегия, финансы и управляемость': 10 } }, // планируются крупные изменения
-    ],
-    critical: [
-      { key: 'tech_01_score', when: (v)=> v === 0, add: { 'Видимость и охват': 25, 'CMDB и классификация': 15 } },
-      { key: 'tech_04_score', when: (v)=> v === 0, add: { 'Видимость и охват': 15, 'Сетевое окружение и топология': 15 } },
-      { key: 'proc_01_score', when: (v)=> v === 0, add: { 'Стратегия, финансы и управляемость': 20 } },
-      { key: 'proc_02_score', when: (v)=> v === 0, add: { 'Стратегия, финансы и управляемость': 20 } },
-    ],
-  };
 
   function toNum(v){
-    if(v==null) return null;
-    if(typeof v === 'number') return isFinite(v) ? v : null;
-    const s = String(v).replace(/[\s\u00A0]/g,'').replace(',','.');
-    const m = s.match(/-?\d+(?:\.\d+)?/);
-    if(!m) return null;
-    const n = Number(m[0]);
-    return isFinite(n) ? n : null;
+    if(v === null || v === undefined) return NaN;
+    if(typeof v === 'number') return v;
+    const s = String(v).replace(',', '.').replace(/[^0-9.\-]/g,'').trim();
+    if(!s) return NaN;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
   }
 
-  function isYes(v){
-    if(v===true) return true;
-    if(v===false) return false;
-    const s = String(v||'').trim().toLowerCase();
-    return (s==='да' || s==='yes' || s==='y' || s==='true' || s==='1');
+  function clamp(n, a, b){
+    if(!Number.isFinite(n)) return a;
+    return Math.max(a, Math.min(b, n));
   }
 
-  function addBoost(boostMap, reasonsMap, theme, pts, reason){
-    if(!theme || !isFinite(pts) || pts===0) return;
-    boostMap[theme] = (boostMap[theme] || 0) + pts;
-    if(reason){
-      if(!reasonsMap[theme]) reasonsMap[theme] = [];
-      reasonsMap[theme].push(reason);
-    }
+  function debounce(fn, ms){
+    let t=null;
+    return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
   }
 
-  function applyRuleSet(value, rules, boostMap, reasonsMap, label){
-    if(value==null) return;
-    for(const r of rules){
-      try{
-        if(r.when(value)){
-          for(const [t,pts] of Object.entries(r.add||{})){
-            addBoost(boostMap, reasonsMap, t, pts, `${label}: ${Math.round(value)} → +${pts}`);
-          }
-        }
-      }catch(_){}
-    }
+  function setStatus(msg, type){
+    if(!els.bnStatus) return;
+    els.bnStatus.textContent = msg || '';
+    els.bnStatus.className = 'bnStatus' + (type ? (' '+type) : '');
   }
 
-  function computeThemeABM(rowObj, themeRisks01){
-    const themes = (BN_CATALOG && BN_CATALOG.themes) ? BN_CATALOG.themes : Object.keys(themeRisks01||{});
-    const boostPts = {};
-    const reasons = {};
 
-    // indices from DB headers: psi2Score, techIndex, procIndex, coi_total_loss
-    const psi = toNum(rowObj?.psi2Score);
-    const tech = toNum(rowObj?.techIndex);
-    const proc = toNum(rowObj?.procIndex);
-    const coi = toNum(rowObj?.coi_total_loss);
-
-    applyRuleSet(psi, ABM_MATRIX.psi, boostPts, reasons, 'PSI');
-    applyRuleSet(tech, ABM_MATRIX.tech_index, boostPts, reasons, 'TechIndex');
-    applyRuleSet(proc, ABM_MATRIX.proc_index, boostPts, reasons, 'ProcIndex');
-    applyRuleSet(coi, ABM_MATRIX.coi_rub, boostPts, reasons, 'COI ₽/год');
-
-    // triggers (yes/no)
-    for(const tr of ABM_MATRIX.triggers_yes){
-      const v = rowObj?.[tr.key];
-      if(isYes(v)){
-        for(const [t,pts] of Object.entries(tr.add||{})){
-          addBoost(boostPts, reasons, t, pts, `Триггер ${tr.key}=Да → +${pts}`);
-        }
-      }
-    }
-
-    // critical flags
-    for(const c of ABM_MATRIX.critical){
-      const v = toNum(rowObj?.[c.key]);
-      if(v==null) continue;
-      try{
-        if(c.when(v)){
-          for(const [t,pts] of Object.entries(c.add||{})){
-            addBoost(boostPts, reasons, t, pts, `Critical ${c.key}=${v} → +${pts}`);
-          }
-        }
-      }catch(_){}
-    }
-
-    // build ABM map
-    const out = {};
-    for(const t of themes){
-      const base01 = Number(themeRisks01?.[t] ?? 0) || 0;
-      const basePct = Math.max(0, Math.min(100, base01*100));
-      const bPts = Math.max(0, boostPts[t] || 0);
-      const b01 = Math.min(1, bPts/100); // normalize by 100 pts
-      const abm01 = Math.max(0, Math.min(1, 0.55*base01 + 0.45*b01));
-      out[t] = {
-        base01, basePct: Math.round(basePct),
-        boostPts: Math.round(bPts), boost01: b01,
-        abm01, abmPct: Math.round(abm01*100),
-        reasons: reasons[t] || [],
-        tier: 'roadmap',
-      };
-    }
-
-    // tiers: top-2 primary, next-2 secondary
-    const sorted = Object.entries(out).sort((a,b)=> (b[1].abm01 - a[1].abm01));
-    sorted.slice(0,2).forEach(([t])=> out[t].tier='primary');
-    sorted.slice(2,4).forEach(([t])=> out[t].tier='secondary');
-
-    return out;
-  }
-  // -------------------------------------------------------------------------------
-
-  }
-
-  function strengthForBN(bn){
-    const zoneKey = normZone(bn.zone);
-    const zoneRisk = (HEATMAP && HEATMAP[zoneKey]!=null) ? HEATMAP[zoneKey] : 0;
-    const riskPct = zoneRisk * 100;
-    const weight = Number(bn.weight)||1;
-    // strength: risk × weight/3
-    return (riskPct * (weight/3));
-  }
-
-  function groupBNByTheme(items){
-    const map = {};
-    (items||[]).forEach(bn=>{
-      const t = bn.theme || 'Стратегия, финансы и управляемость';
-      if(!map[t]) map[t] = [];
-      map[t].push(bn);
-    });
-    Object.keys(map).forEach(t=>{
-      map[t].sort((a,b)=> strengthForBN(b) - strengthForBN(a));
-    });
-    return map;
-  }
-
-  function fmtPct01(v){
-    if(v==null || !isFinite(Number(v))) return '—';
-    return Math.round(Number(v)*100) + '%';
-  }
-
-  function renderThemes(){
-    const list = UI.themeList();
-    if(!list) return;
-
-    const baseThemes = (BN_CATALOG && BN_CATALOG.themes) ? BN_CATALOG.themes : Object.keys(THEME_RISKS||{});
-    const themes = [...baseThemes].sort((a,b)=>{
-      const aa = (THEME_ABM && THEME_ABM[a]) ? THEME_ABM[a].abm01 : (THEME_RISKS[a]||0);
-      const bb = (THEME_ABM && THEME_ABM[b]) ? THEME_ABM[b].abm01 : (THEME_RISKS[b]||0);
-      return bb - aa;
-    });
-
-    const rows = themes.map(t=>{
-      const r01 = Number(THEME_RISKS[t] || 0) || 0;
-      const abm = (THEME_ABM && THEME_ABM[t]) ? THEME_ABM[t] : null;
-      const active = (t===ACTIVE_THEME) ? ' active' : '';
-      const tier = abm ? abm.tier : 'roadmap';
-      const tierLabel = tier==='primary' ? 'Primary' : (tier==='secondary' ? 'Secondary' : '');
-      const meta = abm
-        ? `Риск: <b>${fmtPct01(r01)}</b> · ABM: <b>${Math.round((abm.abm01||0)*100)}%</b>${tierLabel?` · <span class="tier ${tier}">${tierLabel}</span>`:''}`
-        : `Риск: <b>${fmtPct01(r01)}</b>`;
-      const barPct = abm ? Math.round((abm.abm01||0)*100) : Math.round(r01*100);
-
-      return `<button class="tabBtn${active}" data-theme="${esc(t)}">
-  <div class="tabTitle">${esc(t)}</div>
-  <div class="tabMeta">${meta}</div>
-  <div class="miniBar"><i style="width:${barPct}%"></i></div>
-</button>`;
-    }).join('');
-
-    list.innerHTML = rows || '<div class="small">Нет данных — выбери компанию и заполни интервью.</div>';
-
-    list.querySelectorAll('button[data-theme]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        ACTIVE_THEME = btn.getAttribute('data-theme') || '';
-        renderThemes();
-        renderNeeds();
-      }, {passive:true});
-    });
-  }
-
-  function renderNeeds(){
-    const box = UI.needsList();
-    if(!box) return;
-    if(!BN_CATALOG){ box.innerHTML=''; return; }
-
-    const all = BN_CATALOG.items || [];
-    const grouped = groupBNByTheme(all);
-
-    const theme = ACTIVE_THEME || Object.keys(grouped).sort((a,b)=> (THEME_RISKS[b]||0)-(THEME_RISKS[a]||0))[0] || '';
-    ACTIVE_THEME = theme;
-
-    // IMPORTANT UX CHANGE:
-    // Previously we hid BN items when "strength" was 0 (risk low / answers indicate "everything ok").
-    // This made the page look "broken" for companies with low calculated risk.
-    // Now we always show BN list; items with 0 strength are marked as "не активировано" but still selectable.
-    const bnList = (grouped[theme] || []);
-
-
-// filters (manager helper)
-const fTrig = !!(UI.fltTriggers() && UI.fltTriggers().checked);
-const fCrit = !!(UI.fltCritical() && UI.fltCritical().checked);
-const fMain = !!(UI.fltMain() && UI.fltMain().checked);
-
-let filtered = bnList;
-if(fTrig) filtered = filtered.filter(x=> themeHasTrigger_(x.theme || theme));
-if(fCrit) filtered = filtered.filter(x=> themeHasCritical_(x.theme || theme));
-if(fMain) filtered = filtered.filter(x=> bnIsMain_(x.id));
-
-    // show only Top N inside theme (keeps UX small)
-    const TOP_N = 10;
-    const top = filtered.slice(0, TOP_N);
-
-    if(!top.length){
-      box.innerHTML = `<div class="small">По тематике «${esc(theme)}» нет бизнес‑потребностей в каталоге.</div>`;
-      UI.needPanel().innerHTML = `<div class="muted">Выбери бизнес‑потребность слева.</div>`;
-      renderThemes();
-      return;
-    }
-
-    if(!ACTIVE_BN_ID || !top.some(x=>x.id===ACTIVE_BN_ID)) ACTIVE_BN_ID = top[0].id;
-
-    box.innerHTML = top.map(bn=>{
-      const active = (bn.id===ACTIVE_BN_ID) ? ' active' : '';
-      const s = Math.round(strengthForBN(bn));
-      const sLabel = (s>0) ? String(s) : '0 (не активировано)';
-      const main = bnIsMain_(bn.id);
-      const star = main ? ' <span class="star">★</span>' : '';
-      return `<button class="tabBtn${active}" data-bn="${esc(bn.id)}">
-        <div class="tabTitle">${esc(bn.name)}${star}</div>
-        <div class="tabMeta">Сила: <b>${Math.round(str)}</b>${act?` (активировано)`:` (не активировано)`} · Вес: <b>${bn.weight||1}</b> · Зона: <b>${esc(bn.zone||'—')}</b></div>
-        <div class="miniBar"><i style="width:${Math.min(100,Math.max(0,Math.round(str)))}%"></i></div>
-      </button>`;
-    }).join('');
-
-    box.querySelectorAll('button[data-bn]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        ACTIVE_BN_ID = btn.getAttribute('data-bn') || '';
-        renderNeeds();
-        renderNeedPanel();
-      }, {passive:true});
-    });
-
-    renderThemes();
-    renderNeedPanel();
-  }
-
-  function getSessionStore(){
-    const payload = tryParsePayload(ACTIVE_ROW || {});
-    if(!payload.business_needs_sessions) payload.business_needs_sessions = {};
-    return payload;
-  }
-
-  function ensureBnSession(payload, bnId){
-    payload.business_needs_sessions = payload.business_needs_sessions || {};
-    if(!payload.business_needs_sessions[bnId]){
-      payload.business_needs_sessions[bnId] = {
-        bn_id: bnId,
-        theme: ACTIVE_THEME || '',
-        strength: 0,
-        selected_causes: [],
-        selected_pains: [],
-        answers: {},
-        manager_notes: '',
-        is_main: false,
-        manager_comment: ''
-      };
-    }
-    return payload.business_needs_sessions[bnId];
-  }
-
-  function renderNeedPanel(){
-    const panel = UI.needPanel();
-    if(!panel) return;
-
-    if(!ACTIVE_ROW){
-      panel.innerHTML = '<div class="muted">Сначала выбери компанию и нажми «Загрузить».</div>';
-      return;
-    }
-
-    const bn = (BN_CATALOG.items || []).find(x=>x.id===ACTIVE_BN_ID);
-    if(!bn){ panel.innerHTML='<div class="muted">Выбери бизнес‑потребность слева.</div>'; return; }
-
-    const payload = getSessionStore();
-    const sess = ensureBnSession(payload, bn.id);
-    sess.strength = strengthForBN(bn);
-
-    const causes = bn.causes || [];
-    const pains  = bn.pains || [];
-    const questions = bn.questions || [];
-
-    function isChecked(arr, v){ return Array.isArray(arr) && arr.includes(v); }
-
-    
-panel.innerHTML = `
-  <div class="needHead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
-    <div>
-      <div class="needTitle">${esc(bn.name)}</div>
-      <div class="small">Тематика: <b>${esc(bn.theme||'—')}</b> · Зона: <b>${esc(bn.zone||'—')}</b> · Сила: <b>${Math.round(sess.strength)}</b></div>
-      <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">
-        <label class="pill"><input type="checkbox" id="bnIsMain" ${sess.is_main?'checked':''}/> <span class="star">★</span> Основная</label>
-      </div>
-    </div>
-    <div class="needHeadRight" style="display:flex;gap:10px">
-      <button type="button" class="btn ghost" id="bnCollapseAll">Свернуть</button>
-      <button type="button" class="btn" id="bnSaveNow">Сохранить</button>
-    </div>
-  </div>
-
-  <div class="workTop">
-    <div class="workBox">
-      <h3>Подробное описание</h3>
-      <div class="blockText">${esc(bn.task || '—')}</div>
-      <div class="hr" style="margin:12px 0"></div>
-      <h3>Комментарий менеджера</h3>
-      <textarea class="qAns" id="bnMgrComment" placeholder="Коротко: что подтвердили / следующий шаг">${esc(sess.manager_comment||'')}</textarea>
-    </div>
-
-    <div class="workBox">
-      <h3>Вопросы</h3>
-      <div class="qaGrid">
-        ${questions.map((q,idx)=>`<div class="qRow"><div class="qTxt">${esc(q)}</div></div>`).join('')}
-      </div>
-    </div>
-
-    <div class="workBox">
-      <h3>Ответы</h3>
-      <div class="qaGrid">
-        ${questions.map((q,idx)=>{
-          const key = `q_${idx}`;
-          const val = (sess.answers && sess.answers[key]) ? sess.answers[key] : '';
-          return `<div class="qRow"><textarea class="qAns" data-kind="answer" data-q="${esc(key)}" placeholder="Ответ (фиксируем как есть)">${esc(val)}</textarea></div>`;
-        }).join('')}
-      </div>
-    </div>
-  </div>
-
-  <div class="workBelow">
-    <div class="workBox">
-      <h3>Причины (отметь, что подтверждено)</h3>
-      <div class="checkGrid">
-        ${causes.map((c,idx)=>{
-          const id = `c_${bn.id}_${idx}`;
-          return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="cause" value="${esc(c)}" ${isChecked(sess.selected_causes,c)?'checked':''}/> <span>${esc(c)}</span></label>`;
-        }).join('')}
-      </div>
-
-      <div class="hr" style="margin:12px 0"></div>
-      <h3>Боли (что реально болит)</h3>
-      <div class="checkGrid">
-        ${pains.map((p,idx)=>{
-          const id = `p_${bn.id}_${idx}`;
-          return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="pain" value="${esc(p)}" ${isChecked(sess.selected_pains,p)?'checked':''}/> <span>${esc(p)}</span></label>`;
-        }).join('')}
-      </div>
-
-      <div class="hr" style="margin:12px 0"></div>
-      <h3>ITIL / KPI</h3>
-      <div class="small">${esc((bn.itil||'') + (bn.kpi?(' · KPI: '+bn.kpi):'')) || '—'}</div>
-    </div>
-
-    <div class="workBox">
-      <h3>Нужный функционал</h3>
-      <div class="blockText">${esc(bn.functional || '—')}</div>
-      <div class="hr" style="margin:12px 0"></div>
-      <h3>Ожидаемый результат</h3>
-      <div class="blockText">${esc(bn.result || '—')}</div>
-    </div>
-  </div>
-
-  <div class="workOne workBox">
-    <h3>Стратегическое резюме</h3>
-    <div id="bnStrategicSummary" class="blockText"></div>
-  </div>
-`;
-                return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="cause" value="${esc(c)}" ${isChecked(sess.selected_causes,c)?'checked':''}/> <span>${esc(c)}</span></label>`;
-              }).join('') || '<div class="small">—</div>'}
-            </div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details open class="details" id="detPains">
-            <summary>Боли (что реально болит)</summary>
-            <div class="checkGrid">
-              ${pains.map((p,idx)=>{
-                const id = `p_${bn.id}_${idx}`;
-                return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="pain" value="${esc(p)}" ${isChecked(sess.selected_pains,p)?'checked':''}/> <span>${esc(p)}</span></label>`;
-              }).join('') || '<div class="small">—</div>'}
-            </div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details open class="details" id="detQ">
-            <summary>Вопросы (фиксируем ответы)</summary>
-            <div class="qList">
-              ${questions.map((q,idx)=>{
-                const key = `q${idx+1}`;
-                const val = (sess.answers && sess.answers[key]) ? String(sess.answers[key]) : '';
-                return `<div class="qItem">
-                  <div class="qText">${esc(q)}</div>
-                  <textarea class="qAnswer" data-qkey="${esc(key)}" placeholder="Ответ (фиксируем как есть)">${esc(val)}</textarea>
-                </div>`;
-              }).join('') || '<div class="small">—</div>'}
-            </div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details class="details" open id="detIt">
-            <summary>ITIL комментарий</summary>
-            <div class="blockText">${esc(bn.itil || '—')}</div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details class="details" open id="detMgr">
-            <summary>Подсказки менеджеру</summary>
-            <div class="twoCols">
-              <div>
-                <div class="miniTitle">В каком процессе используется</div>
-                <div class="blockText">${esc(bn.process || '—')}</div>
-              </div>
-              <div>
-                <div class="miniTitle">Какой KPI улучшает</div>
-                <div class="blockText">${esc(bn.kpi || '—')}</div>
-              </div>
-            </div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details class="details" open id="detFunc">
-            <summary>Нужный функционал ИТМен</summary>
-            <div class="blockText">${esc(bn.functional || '—')}</div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details class="details" id="detRes">
-            <summary>Ожидаемый результат</summary>
-            <div class="blockText">${esc(bn.result || '—')}</div>
-          </details>
-        </div>
-
+  // ===== Loader overlay (for long operations) =====
+  function ensureLoader(){
+    if(document.getElementById('bnLoader')) return;
+    const d = document.createElement('div');
+    d.id = 'bnLoader';
+    d.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);z-index:9999;';
+    d.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
+        <div style="width:34px;height:34px;border:4px solid #ddd;border-top-color:#ef4444;border-radius:50%;animation:bnspin 1s linear infinite;"></div>
+        <div id="bnLoaderText" style="font:600 14px Inter,system-ui;color:#111827">Загрузка…</div>
       </div>
     `;
+    const st = document.createElement('style');
+    st.textContent = '@keyframes bnspin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(st);
+    document.body.appendChild(d);
+  }
 
-    // bind inputs
-    panel.querySelectorAll('input[type="checkbox"][data-kind]').forEach(ch=>{
-      ch.addEventListener('change', ()=>{
-        const kind = ch.getAttribute('data-kind');
-        const val = ch.value;
-        if(kind==='cause'){
-          sess.selected_causes = Array.isArray(sess.selected_causes) ? sess.selected_causes : [];
-          if(ch.checked && !sess.selected_causes.includes(val)) sess.selected_causes.push(val);
-          if(!ch.checked) sess.selected_causes = sess.selected_causes.filter(x=>x!==val);
-        }else{
-          sess.selected_pains = Array.isArray(sess.selected_pains) ? sess.selected_pains : [];
-          if(ch.checked && !sess.selected_pains.includes(val)) sess.selected_pains.push(val);
-          if(!ch.checked) sess.selected_pains = sess.selected_pains.filter(x=>x!==val);
-        }
-      }, {passive:true});
-    
-const mainCb = panel.querySelector('#bnIsMain');
-mainCb && mainCb.addEventListener('change', ()=>{
-  sess.is_main = !!mainCb.checked;
-  try{ renderNeeds(); }catch(e){ console.error(e); }
-});
+  function showLoader(text){
+    ensureLoader();
+    const d = document.getElementById('bnLoader');
+    const t = document.getElementById('bnLoaderText');
+    if(t) t.textContent = text || 'Загрузка…';
+    if(d) d.style.display = 'flex';
+  }
 
-const mgrTa = panel.querySelector('#bnMgrComment');
-mgrTa && mgrTa.addEventListener('input', ()=>{
-  sess.manager_comment = mgrTa.value;
-});
+  function hideLoader(){
+    const d = document.getElementById('bnLoader');
+    if(d) d.style.display = 'none';
+  }
 
-});
+  // ===== Config / HTTP =====
+  function webappUrl(){
+    return window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || window.WEBAPP_URL || '';
+  }
 
-    panel.querySelectorAll('textarea.qAnswer[data-qkey]').forEach(ta=>{
-      ta.addEventListener('input', ()=>{
-        const key = ta.getAttribute('data-qkey');
-        sess.answers = sess.answers || {};
-        sess.answers[key] = ta.value;
-      });
+  async function gsGet(params){
+    const base = webappUrl();
+    if(!base) throw new Error('GS_WEBAPP_URL is not set (config.js)');
+    const url = new URL(base);
+    Object.entries(params||{}).forEach(([k,v])=> url.searchParams.set(k, String(v)));
+    const res = await fetch(url.toString(), { method:'GET', credentials:'omit' });
+    const txt = await res.text();
+    try{ return JSON.parse(txt); }
+    catch(e){ throw new Error('Bad JSON from Apps Script: ' + txt.slice(0,180)); }
+  }
+
+  async function gsPost(action, obj){
+    const base = webappUrl();
+    if(!base) throw new Error('GS_WEBAPP_URL is not set (config.js)');
+    const body = new URLSearchParams();
+    body.set('action', action);
+    body.set('data', JSON.stringify(obj||{}));
+    const res = await fetch(base, {
+      method:'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+      body: body.toString(),
+      credentials:'omit'
     });
-
-    const collapseBtn = panel.querySelector('#bnCollapseAll');
-    collapseBtn && collapseBtn.addEventListener('click', ()=>{
-      panel.querySelectorAll('details.details').forEach(d=>{ d.open = false; });
-    });
-
-    const saveNow = panel.querySelector('#bnSaveNow');
-    saveNow && saveNow.addEventListener('click', async ()=>{
-      await saveCurrent();
-    });
-
-    // keep row object updated
-    ACTIVE_ROW.payload = JSON.stringify(payload);
-
-    try{
-      const sumEl = panel.querySelector('#bnStrategicSummary');
-      if(sumEl){
-        const topCauses = (sess.selected_causes||[]).slice(0,4);
-        const topPains = (sess.selected_pains||[]).slice(0,4);
-        const ansCount = sess.answers ? Object.values(sess.answers).filter(x=>String(x||'').trim()).length : 0;
-        sumEl.innerHTML = `<b>Что важно:</b> сила ${Math.round(sess.strength)} · ответов: ${ansCount}`
-          + (sess.is_main?` · <span class="star">★ основная</span>`:'')
-          + (topCauses.length?`<br><b>Причины:</b> ${topCauses.map(esc).join(' · ')}`:'')
-          + (topPains.length?`<br><b>Боли:</b> ${topPains.map(esc).join(' · ')}`:'')
-          + (bn.result?`<br><b>Ожидаемый результат:</b> ${esc(bn.result)}`:'');
-      }
-    }catch(e){ console.error(e); }
-
-    renderSummary();
+    const txt = await res.text();
+    try{ return JSON.parse(txt); }
+    catch(e){ throw new Error('Bad JSON from Apps Script: ' + txt.slice(0,180)); }
   }
 
-  function renderSummary(){
-    const el = UI.summaryPanel();
-    if(!el) return;
-    const payload = tryParsePayload(ACTIVE_ROW||{});
-    const sessMap = payload.business_needs_sessions || {};
-    const entries = Object.values(sessMap);
-    if(!entries.length){
-      el.innerHTML = '<div class="muted">Заполни причины/боли/ответы — здесь появится стратегическое резюме.</div>';
-      return;
+  // ===== State =====
+  let CATALOG = null;
+  let RULES = null;
+  let SELECTED_THEME = '';
+  let SELECTED_NEED_ID = '';
+  const BN_STATE = {
+    // needId -> {causes:Set, pains:Set, answers:Array<string>}
+    picks: {}
+  };
+
+  function ensurePick(needId){
+    if(!BN_STATE.picks[needId]){
+      BN_STATE.picks[needId] = { causes:new Set(), pains:new Set(), answers:[] };
     }
-
-    // sort by strength
-    entries.sort((a,b)=> (Number(b.strength)||0) - (Number(a.strength)||0));
-    const top3 = entries.slice(0,3);
-
-    const bnById = {};
-    (BN_CATALOG.items||[]).forEach(x=>{ bnById[x.id]=x; });
-
-    // functional aggregation
-    const funcSet = new Set();
-    for(const e of entries){
-      const bn = bnById[e.bn_id];
-      if(!bn) continue;
-      const txt = (bn.functional||'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
-      txt.forEach(x=> funcSet.add(x));
-    }
-
-    el.innerHTML = `
-      <div class="card">
-        <div class="sectionTitle">Стратегическое резюме</div>
-        <div class="small">Собрано автоматически по отмеченным бизнес‑потребностям + вес/риск.</div>
-        <div class="hr"></div>
-
-        <div class="block">
-          <div class="blockTitle">Ключевые 3 бизнес‑задачи</div>
-          <ol class="ol">
-            ${top3.map(e=>{
-              const bn = bnById[e.bn_id] || {name:e.bn_id};
-              return `<li><b>${esc(bn.name)}</b> <span class="muted">(сила ${Math.round(Number(e.strength)||0)})</span></li>`;
-            }).join('')}
-          </ol>
-        </div>
-
-        <div class="block">
-          <div class="blockTitle">Необходимый функционал на демонстрации</div>
-          <ul class="ul">
-            ${Array.from(funcSet).slice(0,30).map(x=>`<li>${esc(x)}</li>`).join('') || '<li>—</li>'}
-          </ul>
-        </div>
-
-        <div class="block">
-          <div class="blockTitle">Дальнейшие действия (черновик)</div>
-          <div class="blockText">1) Подтвердить 2–3 боли цифрами (в ITSM/учёте/мониторинге). 2) На демо показать сценарии под Top‑3 BN. 3) Зафиксировать пилотную цель (покрытие/CMDB/SAM/Change) и KPI успеха.</div>
-        </div>
-
-      </div>
-    `;
+    return BN_STATE.picks[needId];
   }
 
-  async function saveCurrent(){
-    if(!getWebappUrl()){ setStatus('GS_WEBAPP_URL пустой (config.js).', 'err'); return; }
-    if(!ACTIVE_ROW){ setStatus('Не выбрана компания.', 'err'); return; }
-
-    const payloadObj = tryParsePayload(ACTIVE_ROW);
-    // attach helper info
-    payloadObj.__bn_saved_at = new Date().toISOString();
-    payloadObj.__bn_version = VERSION;
-
-    // Compose "payload" row (we rely on Apps Script storing payload JSON)
-    const base = getWebappUrl();
-    const url = base + (base.includes('?') ? '&' : '?') + 'action=save';
-
-    try{
-      setStatus('Сохраняю…', 'warn');
-      const body = 'action=save&payload=' + encodeURIComponent(JSON.stringify(payloadObj));
-      const res = await fetch(url, {
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
-        body
-      });
-      const text = await res.text();
-      let data = null;
-      try{ data = JSON.parse(text); }catch(_e){}
-      if(!data || !data.ok){
-        setStatus('Ошибка сохранения (action=save). Проверь Apps Script.', 'err');
-        console.warn('save response', text);
-        return;
-      }
-      setStatus('Сохранено.', 'ok');
-    }catch(e){
-      console.error(e);
-      setStatus('Ошибка сети при сохранении.', 'err');
-    }
-  }
-
-  // ===== QuickDock: search + load, consistent with other pages =====
-  let searchTimer = null;
-  let searchSeq = 0;
-
-  function bindQuickDock(){
-    const input = document.getElementById('dockCompany');
-    const suggest = document.getElementById('dockSuggest');
-    const loadBtn = document.getElementById('dockLoadBtn');
-
-    if(!input || !suggest) return;
-
-    input.addEventListener('input', ()=>{
-      clearTimeout(searchTimer);
-      const q = input.value.trim();
-      if(q.length < 3){ suggest.style.display='none'; suggest.innerHTML=''; return; }
-      const mySeq = ++searchSeq;
-      suggest.style.display='block';
-      suggest.innerHTML = `<div class="dockItem"><b>Ищу…</b><div class="small">${esc(q)}</div></div>`;
-      searchTimer = setTimeout(()=> runSearch(q, mySeq), 250);
-    });
-
-    if(loadBtn){
-      loadBtn.addEventListener('click', ()=>{
-        const c = input.value.trim();
-        if(c) loadCompany(c);
-      });
-    }
-
-    // collapse toggle (same logic as other pages)
-    const KEY = 'itmen_dock_collapsed_v1';
-    const btn = document.getElementById('dockToggle');
-    function apply(){
-      const collapsed = (localStorage.getItem(KEY) === '1');
-      document.body.classList.toggle('dockCollapsed', collapsed);
-      if(btn) btn.textContent = collapsed ? '▶' : '◀';
-      if(btn) btn.title = collapsed ? 'Развернуть панель' : 'Свернуть панель';
-    }
-    try{ apply(); }catch(_e){}
-    btn && btn.addEventListener('click', ()=>{
-      const collapsed = document.body.classList.contains('dockCollapsed');
-      try{ localStorage.setItem(KEY, collapsed ? '0' : '1'); }catch(_e){}
-      apply();
-    });
-
-    // auto-load by query param
-    const params = new URLSearchParams(location.search);
-    const c = params.get('company');
-    if(c){
-      input.value = c;
-      loadCompany(c);
-    }
-  }
-
-  async function runSearch(q, mySeq){
-    if(!getWebappUrl()) return;
-    try{
-      const url = getWebappUrl() + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
-      const data = await jsonp(url, 45000);
-      if(mySeq !== searchSeq) return;
-      if(!data || !data.ok){ return; }
-      const items = Array.isArray(data.items) ? data.items : [];
-      const map = new Map();
-      for(const it of items){
-        const name = (it.company||'').trim();
-        if(!name) continue;
-        const ts = it.timestamp || '';
-        const prev = map.get(name);
-        if(!prev) map.set(name, {name, ts});
-        else if(ts && (!prev.ts || ts > prev.ts)) prev.ts = ts;
-      }
-      const list = Array.from(map.values()).sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
-      const suggest = document.getElementById('dockSuggest');
-      if(!suggest) return;
-      if(!list.length){ suggest.style.display='none'; suggest.innerHTML=''; return; }
-      suggest.innerHTML = list.slice(0,10).map(it=>
-        `<div class="dockItem" data-company="${esc(it.name)}"><b>${esc(it.name)}</b><div class="small">Обновлено: ${esc(it.ts||'—')}</div></div>`
-      ).join('');
-      suggest.style.display='block';
-      suggest.querySelectorAll('.dockItem[data-company]').forEach(el=>{
-        el.addEventListener('click', ()=>{
-          const c = el.getAttribute('data-company')||'';
-          document.getElementById('dockCompany').value = c;
-          suggest.style.display='none';
-          suggest.innerHTML='';
-          loadCompany(c);
-        });
-      });
-    }catch(e){
-      // ignore
-    }
-  }
-
-  async function loadCompany(company){
-    if(!getWebappUrl()){ setStatus('GS_WEBAPP_URL пустой (config.js).', 'err'); return; }
-    ACTIVE_COMPANY = company;
-    ACTIVE_ROW = null;
-    HEATMAP = null;
-    THEME_RISKS = {};
-    ACTIVE_THEME = '';
-    ACTIVE_BN_ID = '';
-
-    if(UI.companyLabel()) UI.companyLabel().textContent = company;
-    setStatus('Загружаю данные…', 'warn');
-
-    try{
-      // 1) get latest row for company
-      // Apps Script router uses action=latest (alias of get). Keep legacy getLatest by also supporting alias on backend.
-      const url = getWebappUrl() + '?action=latest_bn&company=' + encodeURIComponent(company);
-      const data = await jsonp(url, 45000);
-
-// Apps Script may return either:
-//  - legacy: { ok:true, row:[...] } where row is an array aligned to SHEET_KEYS
-//  - compact: { ok:true, payload:{...} } or { ok:true, item:{...} } where payload/item is already an object
-if(!data || !data.ok){
-  setStatus('Не найдено данных по компании. Сначала заполни интервью/индексы.', 'err');
-  return;
-}
-
-let rowObj = null;
-if (Array.isArray(data.row)) {
-  const keys = (window.SHEET_KEYS || []);
-  rowObj = parseTSVRowToObject(data.row, keys);
-} else if (data.payload && typeof data.payload === 'object') {
-  rowObj = data.payload;
-} else if (data.item && typeof data.item === 'object') {
-  rowObj = data.item;
-}
-
-if(!rowObj){
-  // We got a response but it doesn't include a usable row.
-  setStatus('Данные по компании не подцепились (формат ответа latest_bn).', 'err');
-  return;
-}
-
-ACTIVE_ROW = rowObj;
-
-      // 2) compute heatmap from saved tech/proc answers
-      HEATMAP = computeHeatmapFromRow(rowObj);
-      THEME_RISKS = computeThemeRisks(HEATMAP);
-            // ABM scoring (hardened)
-      try{
-        if(typeof computeThemeABM==='function'){
-          THEME_ABM = computeThemeABM(rowObj, THEME_RISKS) || {};
-        }else{
-          console.warn('computeThemeABM is not defined — fallback to base risk ordering');
-          THEME_ABM = {};
-        }
-      }catch(e){
-        console.error('computeThemeABM error:', e);
-        THEME_ABM = {};
-      }
-
-      // 3) render
-      setStatus('Данные загружены. Выбери тематику и BN.', 'ok');
-      renderThemes();
-      renderNeeds();
-      try{
-      const sumEl = panel.querySelector('#bnStrategicSummary');
-      if(sumEl){
-        const topCauses = (sess.selected_causes||[]).slice(0,4);
-        const topPains = (sess.selected_pains||[]).slice(0,4);
-        const ansCount = sess.answers ? Object.values(sess.answers).filter(x=>String(x||'').trim()).length : 0;
-        sumEl.innerHTML = `<b>Что важно:</b> сила ${Math.round(sess.strength)} · ответов: ${ansCount}`
-          + (sess.is_main?` · <span class="star">★ основная</span>`:'')
-          + (topCauses.length?`<br><b>Причины:</b> ${topCauses.map(esc).join(' · ')}`:'')
-          + (topPains.length?`<br><b>Боли:</b> ${topPains.map(esc).join(' · ')}`:'')
-          + (bn.result?`<br><b>Ожидаемый результат:</b> ${esc(bn.result)}`:'');
-      }
-    }catch(e){ console.error(e); }
-
-    renderSummary();
-
-      // update query string for share
-      const qs = '?company=' + encodeURIComponent(company);
-      history.replaceState(null,'', location.pathname + qs);
-
-      // update quickdock links
-      try{ updateDockLinks(company); }catch(_e){}
-
-    }catch(e){
-      console.error(e);
-      setStatus('Ошибка обработки данных (см. Console).', 'err');
-    }
-  }
-
-  function updateDockLinks(company){
-    const qs = company ? ('?company='+encodeURIComponent(company)) : '';
-    document.querySelectorAll('.toolGrid a.tool').forEach(a=>{
-      const href = a.getAttribute('href')||'';
-      if(!href || href.startsWith('http')) return;
-      const base = href.split('?')[0];
-      const v = href.includes('v=') ? href.split('v=')[1] : '';
-      const ver = v ? ('?v='+encodeURIComponent(v)) : '';
-      // keep existing v param, add company
-      const join = ver ? (ver + '&company='+encodeURIComponent(company)) : ('?company='+encodeURIComponent(company));
-      a.setAttribute('href', base + join);
-    });
-  }
-
+  // ===== Catalog loading =====
   async function loadCatalog(){
+    if(CATALOG) return CATALOG;
+    const res = await fetch('bn_catalog.json', {cache:'no-store'});
+    CATALOG = await res.json();
+    return CATALOG;
+  }
+
+  async function loadRules(){
+    if(RULES) return RULES;
     try{
-      const res = await fetch('bn_catalog.json?v=' + encodeURIComponent(VERSION||'1'));
-      BN_CATALOG = await res.json();
+      const res = await fetch('bn_rules.json', {cache:'no-store'});
+      RULES = await res.json();
+      return RULES;
     }catch(e){
-      console.error('bn_catalog load error', e);
-      BN_CATALOG = {themes:[], items:[]};
+      console.warn('bn_rules.json not found or invalid. Falling back to heuristic priorities.', e);
+      RULES = null;
+      return null;
     }
   }
 
-  
-  function findDockElements() {
-    // Try common ids first (old + new)
-    const input =
-      document.getElementById('dockCompany') ||
-      document.getElementById('dock_company') ||
-      document.getElementById('companySearch') ||
-      document.querySelector('input[placeholder*="компан"]') ||
-      document.querySelector('#quickDock input[type="text"]') ||
-      document.querySelector('.quickDock input[type="text"]') ||
-      document.querySelector('.quick-dock input[type="text"]');
+  // ===== Priority model =====
+  // Primary model is rule-driven (bn_rules.json).
+  // If rules are missing, we fallback to a lightweight heuristic.
 
-    const btn =
-      document.getElementById('dockLoadBtn') ||
-      document.getElementById('dock_load') ||
-      document.getElementById('btnLoadCompany') ||
-      Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]'))
-        .find(el => (el.innerText||el.value||'').toLowerCase().includes('загруз'));
-
-    // Suggest container (create if missing)
-    let suggest =
-      document.getElementById('dockSuggest') ||
-      document.getElementById('dock_suggest') ||
-      document.querySelector('#dockSuggest, #dock_suggest') ||
-      document.querySelector('.dock-suggest');
-
-    if (!suggest && input) {
-      suggest = document.createElement('div');
-      suggest.id = 'dockSuggest';
-      suggest.className = 'dock-suggest';
-      suggest.style.position = 'absolute';
-      suggest.style.zIndex = 9999;
-      suggest.style.background = '#fff';
-      suggest.style.border = '1px solid rgba(0,0,0,0.12)';
-      suggest.style.borderRadius = '10px';
-      suggest.style.boxShadow = '0 10px 30px rgba(0,0,0,0.10)';
-      suggest.style.padding = '6px';
-      suggest.style.maxHeight = '320px';
-      suggest.style.overflow = 'auto';
-      suggest.style.display = 'none';
-      document.body.appendChild(suggest);
-    }
-
-    return { input, btn, suggest };
+  function getInterview(){
+    return window.__BN_DATA || null;
   }
 
-  function positionSuggest(inputEl, suggestEl) {
-    if (!inputEl || !suggestEl) return;
-    const r = inputEl.getBoundingClientRect();
-    suggestEl.style.left = (window.scrollX + r.left) + 'px';
-    suggestEl.style.top = (window.scrollY + r.bottom + 6) + 'px';
-    suggestEl.style.width = Math.max(260, r.width) + 'px';
+  function signalPct(data, key){
+    if(!data) return NaN;
+    const v = data[key] ?? data[String(key).toLowerCase()];
+    const n = toNum(v);
+    if(!Number.isFinite(n)) return NaN;
+    // allow 0..1 or 0..100
+    return n <= 1 ? n*100 : n;
   }
 
-  async function runDockSearch(qRaw) {
-    const q = String(qRaw||'').trim();
-    const { input, suggest } = findDockElements();
-    if (!input || !suggest) return;
-    if (q.length < 2) { suggest.style.display='none'; suggest.innerHTML=''; return; }
-
-    positionSuggest(input, suggest);
-    suggest.style.display='block';
-    suggest.innerHTML = '<div style="padding:8px 10px;color:#666">Ищу в БД…</div>';
-
-    const url = getWebappUrl() + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
-    const data = await jsonp(url, 45000, 2);
-    const items = (data && (data.items || data.item || data.rows || data.row)) ? (data.items || data.rows || []) : [];
-    // Normalize: allow server to return {items:[...]} or {item:{...}}
-    const norm = Array.isArray(items) ? items : (data.item ? [data.item] : []);
-    if (!norm.length) {
-      suggest.innerHTML = '<div style="padding:8px 10px;color:#666">Ничего не найдено</div>';
-      return;
-    }
-    suggest.innerHTML = '';
-    norm.forEach((it) => {
-      const company = it.company || it._company || it.name || '';
-      const row = it.row || it._row || '';
-      const ts = it.timestamp || it.ts || '';
-      const div = document.createElement('div');
-      div.style.padding = '8px 10px';
-      div.style.borderRadius = '8px';
-      div.style.cursor = 'pointer';
-      div.onmouseenter = () => div.style.background='rgba(0,0,0,0.04)';
-      div.onmouseleave = () => div.style.background='transparent';
-      div.innerHTML = '<div style="font-weight:600">'+ escapeHtml(company) +'</div>' +
-        '<div style="font-size:12px;color:#666">row: '+ escapeHtml(String(row)) +' • '+ escapeHtml(String(ts)) +'</div>';
-      div.onclick = async () => {
-        suggest.style.display='none';
-        input.value = company;
-        await loadCompany(company);
-      };
-      suggest.appendChild(div);
-    });
+  function normalizeThemeName(s){
+    const t = String(s||'').trim();
+    if(!t) return '';
+    if(t === 'Управление жизненным циклом ИТ-активов') return 'Управление жизненным циклом ИТ-активов и их ответственностью';
+    if(t === 'Финансы и бюджет (SAM + ITAM + FinOps)') return 'Финансы и бюджет (пересечение SAM + ITAM + FinOps)';
+    return t;
   }
 
-  function bindDockSearch() {
-    const { input, btn, suggest } = findDockElements();
-    if (!input) return false;
+  function computeBudgetAnnual(data){
+    const w = clamp(toNum(data?.workplaces), 0, 1e9);
+    const s = clamp(toNum(data?.servers), 0, 1e9);
+    if(!Number.isFinite(w) && !Number.isFinite(s)) return NaN;
+    const costPerWorkplace = 12000; // ₽/мес
+    const costPerServer    = 45000; // ₽/мес
+    const monthly = (Number.isFinite(w)? w*costPerWorkplace : 0) + (Number.isFinite(s)? s*costPerServer : 0);
+    return monthly * 12;
+  }
 
-    let last = '';
-    let t = null;
-    const trigger = () => {
-      const v = input.value;
-      if (v === last) return;
-      last = v;
-      if (t) clearTimeout(t);
-      t = setTimeout(() => runDockSearch(v).catch(err => {
-        console.error('Dock search error:', err);
-        if (suggest) { suggest.style.display='block'; suggest.innerHTML='<div style="padding:8px 10px;color:#b00">Ошибка поиска</div>'; }
-      }), 250);
+  function getIndexValueByName(indexName, data){
+    const n = String(indexName||'').trim();
+    if(!data) return NaN;
+    const pick = (k)=>{
+      const v = (data?.[k] ?? data?.[String(k).toLowerCase()]);
+      const num = toNum(v);
+      return Number.isFinite(num) ? num : NaN;
     };
 
-    ['input','keyup','change','paste'].forEach(evt => input.addEventListener(evt, trigger));
-    input.addEventListener('focus', trigger);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); loadCompany(input.value).catch(console.error); }
+    if(n === 'PSI') return clamp(signalPct(data, 'psi2Score') ?? signalPct(data,'psi'), 0, 100);
+    if(n === 'Индекс технической зрелости') return clamp(signalPct(data,'techIndex') ?? signalPct(data,'tech'), 0, 100);
+    if(n === 'Индекс процессной зрелости') return clamp(signalPct(data,'procIndex') ?? signalPct(data,'proc'), 0, 100);
+    if(n === 'Потенциал возврата бюджета') return clamp(signalPct(data,'recoverIndex') ?? signalPct(data,'recover'), 0, 100);
+    if(n === 'Индекс экономического давления') return clamp(signalPct(data,'painIndex') ?? signalPct(data,'pain') ?? signalPct(data,'aiIndex') ?? signalPct(data,'ai'), 0, 100);
+
+    if(n === 'Серые зоны инфраструктуры') return clamp(signalPct(data,'risk_grey_pct') ?? signalPct(data,'riskGreyPct'), 0, 100);
+    if(n === 'Лицензионный риск') return clamp(signalPct(data,'risk_lic_pct') ?? signalPct(data,'riskLicPct'), 0, 100);
+    if(n === 'Операционная неэффективность / ручной труд') return clamp(signalPct(data,'risk_ops_pct') ?? signalPct(data,'riskOpsPct'), 0, 100);
+    if(n === 'Управляемость / отсутствие истории') return clamp(signalPct(data,'risk_gov_pct') ?? signalPct(data,'riskGovPct'), 0, 100);
+
+    if(n === 'COI'){
+      const loss = pick('coiTotal') ?? pick('coi_total_loss');
+      const budget = computeBudgetAnnual(data);
+      if(!Number.isFinite(loss) || !Number.isFinite(budget) || budget<=0) return NaN;
+      const share = loss / budget;
+      const score = 100 * (1 - clamp(share/0.04, 0, 1));
+      return Math.round(clamp(score, 0, 100));
+    }
+    return NaN;
+  }
+
+  function findMaturityAnswer(prefix, questionLabel, data){
+    if(!data) return '';
+    const wantCode = extractCode(questionLabel);
+    const wantNorm = normText(questionLabel);
+    const max = (prefix==='risk') ? 8 : 10;
+    for(let i=1;i<=max;i++){
+      const n = String(i).padStart(2,'0');
+      const keyL = `${prefix}_${n}_label`;
+      const keyV = prefix==='risk' ? `${prefix}_${n}_val` : `${prefix}_${n}_score`;
+      const lbl = String(data?.[keyL] ?? '').trim();
+      if(!lbl) continue;
+      const gotCode = extractCode(lbl);
+      const ok = (wantCode && gotCode && wantCode===gotCode) || (!wantCode && normText(lbl)===wantNorm);
+      if(ok){
+        const v = String(data?.[keyV] ?? '').trim();
+        if(prefix==='risk') return v==='1' ? 'Да' : (v==='0' ? 'Нет' : '');
+        if(v==='2') return 'Да';
+        if(v==='1') return 'Частично';
+        if(v==='0') return 'Нет';
+        return '';
+      }
+    }
+    return '';
+  }
+
+  function getQuestionValue(questionLabel, data){
+    const q = String(questionLabel||'').trim();
+    if(!q || !data) return { kind:'none', value:null };
+
+    if(/^T\d+\./.test(q)) return { kind:'choice', value: findMaturityAnswer('tech', q, data) };
+    if(/^P\d+\./.test(q)) return { kind:'choice', value: findMaturityAnswer('proc', q, data) };
+    {
+      const a = findMaturityAnswer('risk', q, data);
+      if(a) return { kind:'choice', value:a };
+    }
+
+    const MAP = {
+      'Кол-во рабочих мест':'workplaces',
+      'Кол-во серверов':'servers',
+      'Кол-во филиалов':'branches',
+      'VDI':'vdi',
+      'Закрытый контур':'closed',
+      'Модель размещения':'hostingModel',
+      'Домены AD / каталогов (кол-во)':'adDomains',
+      'Сегментация сети':'netSeg',
+      'Терминальные фермы / RDS / VDI farms':'terminalFarms',
+      'Возраст основного железа':'hwAge',
+      'Учет железа (как сейчас)':'hwAccounting',
+      'Резервирование критичных серверов':'redundancy',
+      'Средняя зарплата IT (₽/мес) GROSS':'salary',
+      'Кол-во IT сотрудников':'itCount',
+      '% ручных операций':'manualPct',
+      'Бюджет на лицензии (₽/год)':'licBudget',
+      '% неиспользуемого ПО':'unusedPct',
+      '% неиспользуемых VM':'vmUnusedPct',
+      'Бюджет на железо (₽/год)':'hwBudget',
+      'План обновления железа':'hwPlan',
+      'Часов простоя в год':'downtimeHours',
+      'Стоимость часа простоя (₽/час)':'downtimeCost',
+      'Инцидентов в месяц':'incidentsPerMonth',
+      'Сервис-деск':'serviceDesk',
+      'Bus-factor ≤2 (есть?)':'keyPeopleRisk',
+      'Документированность (0–2)':'docScore',
+      '% устаревших ОС/ПО':'obsoletePct'
+    };
+    const qNorm = normText(q);
+    // direct match
+    let key = MAP[q];
+    // fallback: normalized match (helps with small wording variations like missing "(есть?)")
+    if(!key){
+      for(const [k,v] of Object.entries(MAP)){
+        if(normText(k)===qNorm){ key=v; break; }
+      }
+    }
+    if(key){
+      const raw = (data?.[key] ?? data?.[String(key).toLowerCase()]);
+      if(key==='keyPeopleRisk' || key==='docScore'){
+        const num = toNum(raw);
+        return { kind:'number', value: Number.isFinite(num) ? num : null };
+      }
+      if(key==='serviceDesk' || key==='hwPlan'){
+        const s = String(raw ?? '').trim();
+        return { kind:'choice', value: s ? 'Да' : '' };
+      }
+      if(['vdi','closed','netSeg','terminalFarms','hwAccounting','redundancy','hostingModel'].includes(key)){
+        const s = String(raw ?? '').trim();
+        if(!s) return {kind:'choice', value:''};
+        const low = s.toLowerCase();
+        if(low==='нет' || low==='no' || low==='0') return {kind:'choice', value:'Нет'};
+        return {kind:'choice', value:'Да'};
+      }
+      const num = toNum(raw);
+      if(Number.isFinite(num)) return { kind:'number', value:num };
+      const s = String(raw ?? '').trim();
+      return s ? {kind:'text', value:s} : {kind:'none', value:null};
+    }
+
+    if(q in data) return {kind:'text', value:data[q]};
+    return { kind:'none', value:null };
+  }
+
+  function parseCond(cond){
+    const s = String(cond||'').trim();
+    if(!s) return {type:'any'};
+    const ss = s.replace(/–/g,'-').replace(/−/g,'-');
+    if(/^(да|нет|частично)$/i.test(ss)) return {type:'choice', v:ss.toLowerCase()};
+    let m = ss.match(/^([<>]=?)\s*(-?\d+(?:[\.,]\d+)?)$/);
+    if(m) return {type:'cmp', op:m[1], num:Number(m[2].replace(',','.'))};
+    m = ss.match(/^(-?\d+(?:[\.,]\d+)?)\s*-\s*(-?\d+(?:[\.,]\d+)?)$/);
+    if(m) return {type:'range', a:Number(m[1].replace(',','.')), b:Number(m[2].replace(',','.'))};
+    m = ss.match(/^(-?\d+(?:[\.,]\d+)?)$/);
+    if(m) return {type:'eq', num:Number(m[1].replace(',','.'))};
+    return {type:'text', v:ss.toLowerCase()};
+  }
+
+  function matchCond(valueObj, condStr){
+    const c = parseCond(condStr);
+    if(c.type==='any') return true;
+    if(c.type==='choice'){
+      const v = String(valueObj?.value ?? '').trim().toLowerCase();
+      return v === c.v;
+    }
+    const vNum = toNum(valueObj?.value);
+    if(c.type==='cmp'){
+      if(!Number.isFinite(vNum)) return false;
+      if(c.op==='<' ) return vNum <  c.num;
+      if(c.op==='<=') return vNum <= c.num;
+      if(c.op==='>' ) return vNum >  c.num;
+      if(c.op==='>=') return vNum >= c.num;
+      return false;
+    }
+    if(c.type==='range'){
+      if(!Number.isFinite(vNum)) return false;
+      const a = Math.min(c.a,c.b), b = Math.max(c.a,c.b);
+      return vNum >= a && vNum <= b;
+    }
+    if(c.type==='eq'){
+      if(!Number.isFinite(vNum)) return false;
+      return vNum === c.num;
+    }
+    if(c.type==='text'){
+      const v = String(valueObj?.value ?? '').trim().toLowerCase();
+      return v === c.v;
+    }
+    return false;
+  }
+
+  function computeThemeScores(data){
+    const out = {};
+    const themes = (CATALOG?.themes||[]).map(t => {
+      if(typeof t === 'string') return t;
+      if(t && typeof t === 'object') return t.name || t.id || '';
+      return String(t||'');
+    }).map(normalizeThemeName).filter(Boolean);
+    themes.forEach(t=> out[t]=0);
+    if(!data) return out;
+
+    if(RULES && RULES.theme_index && RULES.theme_questions){
+      const idxRules = RULES.theme_index || [];
+      const qRules = (RULES.theme_questions || []).filter(r=> String(r.theme||'') !== '—');
+
+      for(const theme0 of themes){
+        const theme = normalizeThemeName(theme0);
+        let indexPts = 0;
+        let qPts = 0;
+
+        const idxRows = idxRules.filter(r=> normalizeThemeName(r.theme) === theme);
+        const byIdx = {};
+        idxRows.forEach(r=>{ const k=String(r.index||'').trim(); (byIdx[k] ||= []).push(r); });
+        Object.entries(byIdx).forEach(([idxName, rows])=>{
+          const v = getIndexValueByName(idxName, data);
+          if(!Number.isFinite(v)) return;
+          for(const r of rows){
+            if(matchCond({kind:'number', value:v}, r.cond)) { indexPts += toNum(r.points)||0; break; }
+          }
+        });
+
+        const qRows = qRules.filter(r=> normalizeThemeName(r.theme) === theme);
+        const byQ = {};
+        qRows.forEach(r=>{ const k=String(r.question||'').trim(); (byQ[k] ||= []).push(r); });
+        Object.entries(byQ).forEach(([qLabel, rows])=>{
+          const v = getQuestionValue(qLabel, data);
+          if(!v || v.kind==='none') return;
+          for(const r of rows){
+            if(matchCond(v, r.cond)) { qPts += toNum(r.points)||0; break; }
+          }
+        });
+
+        const blended = (indexPts*0.4 + qPts*0.6);
+        out[theme] = Math.round(clamp(blended, 0, 100));
+      }
+      return out;
+    }
+
+    // Core indices (0..100)
+    const pain  = clamp(signalPct(data,'painIndex'), 0, 100);
+    const risk  = clamp(signalPct(data,'riskIndex'), 0, 100);
+    const obso  = clamp(signalPct(data,'obsolIndex'), 0, 100);
+    const tech  = clamp(signalPct(data,'techIndex'), 0, 100);
+    const proc  = clamp(signalPct(data,'procIndex'), 0, 100);
+    const bus   = clamp(signalPct(data,'busIndex'), 0, 100);
+    const ready = clamp(signalPct(data,'readyIndex'),0, 100);
+    const recov = clamp(signalPct(data,'recoverIndex'),0,100);
+    const prob  = clamp(signalPct(data,'probIndex'),0,100);
+
+    // Useful numeric signals from interview
+    const manualPct   = clamp(signalPct(data,'manualPct'),0,100);
+    const unusedPct   = clamp(signalPct(data,'unusedPct'),0,100);
+    const vmUnusedPct = clamp(signalPct(data,'vmUnusedPct'),0,100);
+    const obsoletePct = clamp(signalPct(data,'obsoletePct'),0,100);
+    const docScore    = clamp(signalPct(data,'docScore'),0,100);
+
+    const psiBad = (function(){
+      try{
+        const keys = Object.keys(data||{}).filter(k=>/^psi_\d{2}_ok$/i.test(k));
+        if(!keys.length) return 0;
+        let bad=0;
+        keys.forEach(k=>{
+          const v = data[k];
+          const s = String(v===undefined?"":v).trim().toLowerCase();
+          if(v===0 || v===false || s==='нет' || s==='no' || s==='false') bad++;
+        });
+        return (bad/keys.length)*100;
+      }catch(e){ return 0; }
+    })();
+
+    // Gaps (the worse, the higher priority)
+    const gapTech  = 100 - (Number.isFinite(tech)?tech:50);
+    const gapProc  = 100 - (Number.isFinite(proc)?proc:50);
+    const gapBus   = 100 - (Number.isFinite(bus)?bus:50);
+    const gapReady = 100 - (Number.isFinite(ready)?ready:50);
+
+    // Helper: average with NaN-safe
+    const avg = (...xs)=>{
+      const a = xs.filter(v=>Number.isFinite(v));
+      if(!a.length) return 0;
+      return a.reduce((s,v)=>s+v,0)/a.length;
+    };
+
+    // Map to your 8 new thematics
+    out['Видимость и единый источник данных'] =
+      clamp(avg(gapTech, gapProc, pain, prob) * 0.85 + manualPct*0.15, 0, 100);
+
+    out['Сбор, агрегация и управление качеством данных'] =
+      clamp(avg(pain, gapProc, manualPct, (100-docScore), psiBad) , 0, 100);
+
+    out['Контроль изменений и конфигурации (Change / Drift)'] =
+      clamp(avg(risk, gapProc, gapTech, prob, psiBad*0.6) , 0, 100);
+
+    out['Контроль технических и киберрисков инфраструктуры'] =
+      clamp(avg(risk, recov, obso, prob) , 0, 100);
+
+    out['Управление жизненным циклом ИТ-активов и их ответственностью'] =
+      clamp(avg(obso, obsoletePct, gapProc, gapTech) , 0, 100);
+
+    out['Управление программным обеспечением, лицензиями и рисками (SAM + Security + импортозамещение)'] =
+      clamp(avg(risk, unusedPct, obso, prob) , 0, 100);
+
+    out['Финансы и бюджет (пересечение SAM + ITAM + FinOps)'] =
+      clamp(avg(gapBus, unusedPct, vmUnusedPct, gapReady) , 0, 100);
+
+    out['Отчетность и стратегическое управление'] =
+      clamp(avg(gapBus, gapProc, (100-docScore), bus, psiBad) * 0.9 , 0, 100);
+
+    themes.forEach(k=>{
+      if(!Number.isFinite(out[k])) out[k]=0;
+      out[k]=Math.round(clamp(out[k],0,100));
     });
+    return out;
+  }
 
-    if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); loadCompany(input.value).catch(console.error); });
+  function needStrength(item, themeScores){
+    const w = clamp(toNum(item.weight), 1, 3);
+    const data = getInterview();
+    let pts = 0;
 
-    window.addEventListener('scroll', () => positionSuggest(input, suggest), { passive:true });
-    window.addEventListener('resize', () => positionSuggest(input, suggest));
+    if(RULES && RULES.need_triggers && data){
+      const rows = (RULES.need_triggers||[]).filter(r=> String(r.need||'').trim() === String(item.name||'').trim());
+      const byTrig = {};
+      rows.forEach(r=>{ const k=normalizeTriggerName(r.trigger); (byTrig[k] ||= []).push(r); });
+      Object.entries(byTrig).forEach(([trig, trs])=>{
+        const trigName = normalizeTriggerName(trig);
+        const idxVal = getIndexValueByName(trigName, data);
+        const vObj = Number.isFinite(idxVal) ? {kind:'number', value:idxVal} : getQuestionValue(trigName, data);
+        if(!vObj || vObj.kind==='none') return;
+        for(const r of trs){
+          if(matchCond(vObj, r.cond)) { pts += toNum(r.points)||0; break; }
+        }
+      });
+    }else{
+      const tScore = clamp(toNum(themeScores[item.theme] ?? 40), 0, 100);
+      pts = tScore;
+    }
 
+    const mult = clamp(0.85 + (w-1)*0.075, 0.85, 1.00);
+    return Math.round(clamp(pts * mult, 0, 100));
+  }
+
+  // ===== Rendering: Themes =====
+  function renderThemes(themeScores){
+    if(!els.themeList || !CATALOG) return;
+
+    // Support both formats: ['name', ...] or [{id,name}, ...]
+    const themes = (CATALOG.themes||[]).map(t => {
+      if(typeof t === 'string') return {id:t, name:t};
+      if(t && typeof t === 'object') return {id: t.id || t.name, name: t.name || t.id};
+      return {id:String(t), name:String(t)};
+    }).filter(t=>t.name);
+
+    // Sort by score desc if company loaded.
+    if(getInterview()){
+      themes.sort((a,b)=> (themeScores[b.name]||0) - (themeScores[a.name]||0));
+    }
+
+    els.themeList.innerHTML='';
+    themes.forEach((t)=>{
+      const score = clamp(toNum(themeScores[t.name]), 0, 100);
+      const btn = document.createElement('button');
+      btn.type='button';
+      btn.className = 'tabBtn' + (t.name===SELECTED_THEME ? ' active' : '');
+      btn.innerHTML = `
+        <div class="tabTitle">${escapeHtml(t.name)} <span class="badge" style="margin-left:8px">Приоритет: ${score}</span></div>
+        <div class="tabMeta">Основано на интервью (индексы/риски). Выше — важнее.</div>
+        <div class="miniBar"><i style="width:${score}%"></i></div>
+      `;
+      btn.onclick = ()=>{
+        SELECTED_THEME = t.name;
+        renderAll();
+      };
+      els.themeList.appendChild(btn);
+    });
+  }
+
+  // ===== Filters =====
+  function passesFilters(item){
+    const trig = !!(els.fltTriggers && els.fltTriggers.checked);
+    const crit = !!(els.fltCritical && els.fltCritical.checked);
+    const main = !!(els.fltMain && els.fltMain.checked);
+    if(trig){
+      if(item.trigger !== true) return false;
+    }
+    if(crit){
+      if(Number(item.weight||0) < 3) return false;
+    }
+    if(main){
+      if(Number(item.weight||0) < 2) return false;
+    }
     return true;
   }
 
-  
-function bindHeaderCompanySearch(){
-  const input = document.getElementById('bnCompanyInput');
-  const btn = document.getElementById('bnCompanyBtn');
-  const suggestEl = document.getElementById('bnCompanySuggest');
-  if(!input || !btn || !suggestEl) return;
+  // ===== Rendering: Needs =====
+  function renderNeeds(themeScores){
+    if(!els.needsList || !CATALOG) return;
 
-  let timer = null;
+    const items = (CATALOG.items||[])
+      .filter(it => !SELECTED_THEME || String(it.theme||'') === SELECTED_THEME)
+      .filter(passesFilters)
+      .map(it => ({...it, __strength: needStrength(it, themeScores)}))
+      .sort((a,b)=> (b.__strength - a.__strength) || (Number(b.weight||0)-Number(a.weight||0)));
 
-  function renderSuggest(items){
-    if(!items || !items.length){
-      suggestEl.style.display = 'none';
-      suggestEl.innerHTML = '';
+    els.needsList.innerHTML='';
+
+    items.forEach((it)=>{
+      const row = document.createElement('div');
+      row.className = 'needRow' + (it.id===SELECTED_NEED_ID ? ' active' : '');
+      const strength = clamp(toNum(it.__strength), 0, 100);
+      const star = strength >= 70 ? '<span class="star">★</span>' : '';
+      row.innerHTML = `
+        <div class="needLeft">
+          <div class="needName">${escapeHtml(it.name||it.id||'')} ${star}</div>
+          <div class="needMeta">${escapeHtml((it.zone?it.zone:'') + (it.theme?(' · '+it.theme):''))}</div>
+        </div>
+        <div class="needRight" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <span class="badge">Приоритет: ${strength}</span>
+          <span class="badge">Вес: ${Number(it.weight||0)}</span>
+        </div>
+      `;
+      row.onclick = ()=>{
+        SELECTED_NEED_ID = it.id;
+        renderNeedPanel(it, themeScores);
+        // highlight selection in grid
+        renderNeeds(themeScores);
+      };
+      els.needsList.appendChild(row);
+    });
+
+    if(!items.length){
+      els.needsList.innerHTML = '<div class="muted">Ничего не найдено по фильтрам.</div>';
+    }
+  }
+
+  function renderChecklist(title, items, set, onChange){
+    const safeItems = Array.isArray(items) ? items : [];
+    const html = safeItems.length ? safeItems.map((txt, idx)=>{
+      const checked = set.has(String(txt)) ? 'checked' : '';
+      const id = `${title}_${idx}_${Math.random().toString(16).slice(2)}`;
+      return `
+        <label class="checkItem" for="${id}">
+          <input id="${id}" type="checkbox" data-value="${escapeHtml(String(txt))}" ${checked}/>
+          <span>${escapeHtml(String(txt))}</span>
+        </label>
+      `;
+    }).join('') : '<div class="muted">—</div>';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'block';
+    wrap.innerHTML = `
+      <div class="blockTitle">${escapeHtml(title)}</div>
+      <div class="checkGrid">${html}</div>
+    `;
+    // bind events
+    wrap.querySelectorAll('input[type="checkbox"]').forEach((inp)=>{
+      inp.addEventListener('change', ()=>{
+        const v = inp.getAttribute('data-value') || '';
+        if(inp.checked) set.add(v); else set.delete(v);
+        onChange && onChange();
+      });
+    });
+    return wrap;
+  }
+
+  function renderQuestions(questions, answers, onChange){
+    const safeQ = Array.isArray(questions) ? questions : [];
+    const box = document.createElement('div');
+    box.className = 'block';
+    box.innerHTML = `<div class="blockTitle">Вопросы (ответы — свободный ввод)</div>`;
+
+    const list = document.createElement('div');
+    list.className = 'qList';
+
+    if(!safeQ.length){
+      list.innerHTML = '<div class="muted">—</div>';
+    }else{
+      safeQ.forEach((q, idx)=>{
+        const val = answers[idx] || '';
+        const row = document.createElement('div');
+        row.className = 'qRow';
+        row.innerHTML = `
+          <div class="qText">${escapeHtml(String(q))}</div>
+          <textarea class="qAnswer" data-idx="${idx}" placeholder="Ответ…">${escapeHtml(String(val))}</textarea>
+        `;
+        row.querySelector('textarea').addEventListener('input', (e)=>{
+          const i = Number(e.target.getAttribute('data-idx'));
+          answers[i] = e.target.value;
+          onChange && onChange();
+        });
+        list.appendChild(row);
+      });
+    }
+    box.appendChild(list);
+    return box;
+  }
+
+  function renderNeedPanel(it, themeScores){
+    if(!els.needPanel) return;
+    const strength = needStrength(it, themeScores);
+    const pick = ensurePick(it.id);
+
+    // Ensure answers length
+    const qCount = Array.isArray(it.questions) ? it.questions.length : 0;
+    if(pick.answers.length < qCount){
+      pick.answers = pick.answers.concat(new Array(qCount - pick.answers.length).fill(''));
+    }
+
+    els.needPanel.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.className = 'needHead';
+    head.innerHTML = `
+      <div>
+        <div class="needTitle">${escapeHtml(it.name||it.id||'')}</div>
+        <div class="small">${escapeHtml(it.theme||'')} · ${escapeHtml(it.zone||'')} · Вес ${Number(it.weight||0)} · <b>Приоритет ${strength}</b></div>
+      </div>
+      <div class="needHeadRight">
+        <span class="pill"><span class="star">★</span> Выбери причины/боли и заполни ответы — это сохранится в BN_Log</span>
+      </div>
+    `;
+    els.needPanel.appendChild(head);
+
+    const desc = document.createElement('div');
+    desc.className = 'block';
+    desc.innerHTML = `
+      <div class="blockTitle">Описание / бизнес‑задача</div>
+      <div class="blockText">${escapeHtml(it.task||'')}</div>
+    `;
+    els.needPanel.appendChild(desc);
+
+    // Questions with free input (должны идти сразу после описания)
+    els.needPanel.appendChild(renderQuestions(it.questions, pick.answers, ()=>{}));
+
+    // Causes & Pains with checkboxes
+    const two = document.createElement('div');
+    two.className = 'twoCols';
+    const onPickChange = ()=>{ /* no-op for now */ };
+    two.appendChild(renderChecklist('Причины (мультивыбор)', it.causes, pick.causes, onPickChange));
+    two.appendChild(renderChecklist('Боли (мультивыбор)', it.pains, pick.pains, onPickChange));
+    els.needPanel.appendChild(two);
+
+    // Details blocks
+    const mkDetails = (title, text)=>{
+      const d = document.createElement('details');
+      d.className='details';
+      d.innerHTML = `<summary>${escapeHtml(title)}</summary><pre class="pre">${escapeHtml(text||'')}</pre>`;
+      return d;
+    };
+    els.needPanel.appendChild(mkDetails('ITIL', it.itil||''));
+    els.needPanel.appendChild(mkDetails('Процессы / интеграции', it.process||''));
+    els.needPanel.appendChild(mkDetails('KPI', it.kpi||''));
+    els.needPanel.appendChild(mkDetails('Класс решений', it.solutions_class||''));
+    els.needPanel.appendChild(mkDetails('Функционал ИТМен', it.functional||''));
+    const res = document.createElement('div');
+    res.className='block';
+    res.innerHTML = `<div class="blockTitle">Ожидаемый результат</div><pre class="pre">${escapeHtml(it.result||'')}</pre>`;
+    els.needPanel.appendChild(res);
+  }
+
+  // ===== Company search / load =====
+  let lastSearchToken = 0;
+
+  async function searchCompany(q, target){
+    const token = ++lastSearchToken;
+    q = String(q||'').trim();
+    if(!q || q.length < 2){
+      renderSuggest(target, []);
       return;
     }
-    suggestEl.style.display = 'block';
-    suggestEl.innerHTML = items.map(it => {
-      const ts = it.timestamp ? new Date(it.timestamp).toLocaleString() : '';
-      const row = (it.row !== undefined && it.row !== null) ? ('#'+it.row) : '';
-      return `<div class="item" data-company="${escapeHtml(it.company||'')}" data-row="${it.row||''}">
-        <div>${escapeHtml(it.company||'')}</div>
-        <div class="meta">${escapeHtml(row)} ${escapeHtml(ts)}</div>
-      </div>`;
-    }).join('');
-    suggestEl.querySelectorAll('.item').forEach(el=>{
-      el.addEventListener('click', ()=>{
-        const company = el.getAttribute('data-company');
-        input.value = company;
-        suggestEl.style.display='none';
-        suggestEl.innerHTML='';
-        // Load company (latest_bn) and render
-        loadCompany(company);
-      });
+        setStatus('Поиск компании…', 'warn');
+    setSuggestLoading(target);
+
+    try{
+      const out = await gsGet({action:'search', q, limit:10});
+      if(token !== lastSearchToken) return;
+      if(!out || out.ok !== true) throw new Error(out && out.error ? out.error : 'search failed');
+      renderSuggest(target, out.items||[]);
+    }catch(err){
+      if(token !== lastSearchToken) return;
+      console.error('BN search error:', err);
+      renderSuggest(target, []);
+    }
+  }
+
+  function setSuggestLoading(target){
+    const box = (target==='dock') ? els.dockSuggest : els.bnCompanySuggest;
+    if(!box) return;
+    box.innerHTML = '<div class="bnSuggestItem" style="opacity:.8;">Поиск…</div>';
+    box.style.display = 'block';
+  }
+
+
+
+  function renderSuggest(target, items){
+    const box = target === 'dock' ? els.dockSuggest : els.bnCompanySuggest;
+    if(!box) return;
+    if(!items || !items.length){
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+    box.innerHTML = items.map(it => `
+      <div class="dockItem" data-row="${it.row||''}" data-company="${escapeHtml(it.company||'')}">
+        <b>${escapeHtml(it.company||'')}</b>
+        <div class="small">${escapeHtml(String(it.timestamp||''))}</div>
+      </div>
+    `).join('');
+    box.style.display = 'block';
+    box.querySelectorAll('.dockItem').forEach((node)=>{
+      node.onclick = ()=>{
+        const company = node.getAttribute('data-company') || '';
+        const row = Number(node.getAttribute('data-row')||0);
+        if(target === 'dock'){
+          if(els.dockCompany) els.dockCompany.value = company;
+        }else{
+          if(els.bnCompanyInput) els.bnCompanyInput.value = company;
+        }
+        box.style.display='none';
+        loadCompany({company, row});
+      };
     });
   }
 
-  async function doSearch(){
-    const q = (input.value || '').trim();
-    if(q.length < 2){
-      suggestEl.style.display='none';
-      suggestEl.innerHTML='';
-      return;
-    }
+  async function loadCompany({company, row}){
+    company = String(company||'').trim();
+    if(!company && !row) return;
+    showLoader('Загрузка данных по компании…');
+    setStatus('Загрузка данных по компании…', 'warn');
     try{
-      const url = getWebappUrl() + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
-      const data = await jsonp(url, 45000, 2);
-      if(data && data.ok && Array.isArray(data.items)){
-        renderSuggest(data.items);
-      }else{
-        renderSuggest([]);
+      const out = await gsGet(row ? {action:'get', row} : {action:'get', company});
+      if(!out || out.ok !== true) throw new Error(out && out.error ? out.error : 'get failed');
+      const payload = out.payload || out.item || {};
+
+      const name = payload._company || payload.company || company || '';
+      window.__BN_COMPANY = name;
+      window.__BN_DATA = payload;
+
+      if(els.bnCompanyLabel) els.bnCompanyLabel.textContent = name || '—';
+      const ts = payload.timestamp || payload.Timestamp || payload._timestamp || '';
+      const rowNum = payload._row || '';
+      const v = payload.version || payload.Version || '';
+      if(els.bnSummary){
+        els.bnSummary.textContent = `Источник: PSI_Log${rowNum?(' · строка '+rowNum):''}${ts?(' · '+ts):''}${v?(' · '+v):''}`;
       }
-    }catch(e){
-      console.warn('BN header search failed', e);
-      renderSuggest([]);
+
+      // Reset selections for new company (optional)
+      BN_STATE.picks = {};
+      SELECTED_THEME = '';
+      SELECTED_NEED_ID = '';
+
+      setStatus('Данные загружены: ' + (name||''), 'ok');
+      hideLoader();
+      renderAll();
+    }catch(err){
+      console.error('BN load error:', err);
+      hideLoader();
+      setStatus('Ошибка загрузки: ' + (err && err.message ? err.message : err), 'err');
     }
   }
 
-  input.addEventListener('input', ()=>{
-    if(timer) clearTimeout(timer);
-    timer = setTimeout(doSearch, 250);
-  });
-  input.addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter'){
-      e.preventDefault();
-      doSearch();
-    }
-  });
-  btn.addEventListener('click', doSearch);
-}
+  // ===== Save =====
+  function buildSavePayload(themeScores){
+    const company = (window.__BN_COMPANY || '').trim();
+    if(!company) throw new Error('Компания не выбрана');
+    const data = getInterview() || {};
+    const thematics = (CATALOG.themes||[])
+      .slice()
+      .sort((a,b)=> (themeScores[b]||0) - (themeScores[a]||0))
+      .slice(0,8);
 
-function ensureDockBound() {
-    // Try immediately, then retry for a few seconds (because the dock is injected by frame_start.js)
-    if (bindDockSearch()) return;
-    let tries = 0;
-    const iv = setInterval(() => {
-      tries++;
-      if (bindDockSearch() || tries > 40) clearInterval(iv);
-    }, 150);
+    // top needs by strength
+    const items = (CATALOG.items||[])
+      .map(it=>({ ...it, __strength: needStrength(it, themeScores) }))
+      .sort((a,b)=> b.__strength - a.__strength)
+      .slice(0,20);
+
+    const bns = items.map(it=>{
+      const pick = ensurePick(it.id);
+      return {
+        bn_id: it.id,
+        bn_name: it.name,
+        strength: it.__strength,
+        zone: it.zone,
+        functional: it.functional,
+        causes: Array.from(pick.causes),
+        pains: Array.from(pick.pains),
+        answers: (pick.answers||[]).slice(0,10)
+      };
+    });
+
+    return {
+      company_name: company,
+      source_row: data._row || '',
+      source_timestamp: data.timestamp || data.Timestamp || '',
+      thematics,
+      bns
+    };
   }
 
-  // --- Fallback binder (v117): гарантируем, что поиск компаний всегда привязан.
-  // Причина: на GitHub Pages легко поймать ситуацию, когда старый JS кэшируется
-  // или селекторы/инициализация меняются, и события не вешаются.
-  function bindCompanySearchFallback() {
-    const dockInput = document.getElementById('dockCompany');
-    const dockSuggest = document.getElementById('dockSuggest');
-    const dockBtn = document.getElementById('dockLoadBtn');
-
-    const bnInput = document.getElementById('bnCompanyInput');
-    const bnSuggest = document.getElementById('bnCompanySuggest');
-    const bnBtn = document.getElementById('bnCompanyBtn');
-
-    if (!dockInput && !bnInput) return;
-
-    const renderList = (host, items, onPick) => {
-      if (!host) return;
-      host.innerHTML = '';
-      if (!items || !items.length) {
-        host.style.display = 'none';
-        return;
-      }
-      items.slice(0, 25).forEach((it) => {
-        const row = document.createElement('div');
-        row.className = 'dockSuggestRow';
-        row.style.cssText = 'padding:8px 10px; cursor:pointer; border-top:1px solid rgba(0,0,0,0.06);';
-        row.innerHTML = `<div style="font-weight:600;">${escapeHtml(it.company || '')}</div>
-          <div style="font-size:12px; opacity:0.7;">строка: ${it.row ?? ''} • ${escapeHtml(it.timestamp || '')}</div>`;
-        row.addEventListener('click', () => onPick(it));
-        host.appendChild(row);
-      });
-      host.style.display = 'block';
-    };
-
-    const doSearch = async (q) => {
-      const qq = String(q || '').trim();
-      if (qq.length < 2) return [];
-      const url = getWebappUrl() + '?action=search&q=' + encodeURIComponent(qq) + '&limit=25';
-      const res = await jsonp(url);
-      if (res && res.ok && Array.isArray(res.items)) return res.items;
-      return [];
-    };
-
-    let tDock = null;
-    let tBn = null;
-
-    const pick = async (it) => {
-      try {
-        if (dockInput) dockInput.value = it.company || '';
-        if (bnInput) bnInput.value = it.company || '';
-        if (dockSuggest) dockSuggest.style.display = 'none';
-        if (bnSuggest) bnSuggest.style.display = 'none';
-
-        await loadCompany(it.company || '');
-      } catch (e) {
-        console.warn('[BN] loadCompany failed', e);
-        try { showStatus('Ошибка загрузки из Apps Script', 'err'); } catch(_) {}
-      }
-    };
-
-    if (dockInput && !dockInput.dataset.bnBound) {
-      dockInput.dataset.bnBound = '1';
-      dockInput.addEventListener('input', () => {
-        clearTimeout(tDock);
-        tDock = setTimeout(async () => {
-          try {
-            const items = await doSearch(dockInput.value);
-            renderList(dockSuggest, items, pick);
-          } catch (e) {
-            renderList(dockSuggest, [], pick);
-          }
-        }, 250);
-      });
-      if (dockBtn) {
-        dockBtn.addEventListener('click', async () => {
-          try {
-            const items = await doSearch(dockInput.value);
-            if (items.length === 1) return pick(items[0]);
-            renderList(dockSuggest, items, pick);
-          } catch (e) {
-            try { showStatus('Ошибка поиска компании', 'err'); } catch(_) {}
-          }
-        });
-      }
-    }
-
-    if (bnInput && !bnInput.dataset.bnBound) {
-      bnInput.dataset.bnBound = '1';
-      bnInput.addEventListener('input', () => {
-        clearTimeout(tBn);
-        tBn = setTimeout(async () => {
-          try {
-            const items = await doSearch(bnInput.value);
-            renderList(bnSuggest, items, pick);
-          } catch (e) {
-            renderList(bnSuggest, [], pick);
-          }
-        }, 250);
-      });
-      if (bnBtn) {
-        bnBtn.addEventListener('click', async () => {
-          try {
-            const items = await doSearch(bnInput.value);
-            if (items.length === 1) return pick(items[0]);
-            renderList(bnSuggest, items, pick);
-          } catch (e) {
-            try { showStatus('Ошибка поиска компании', 'err'); } catch(_) {}
-          }
-        });
-      }
+  async function saveAll(themeScores){
+    try{
+      setStatus('Сохраняю выбор в BN_Log…', 'warn');
+      const payload = buildSavePayload(themeScores);
+      const out = await gsPost('bn_log_append', payload);
+      if(!out || out.ok !== true) throw new Error(out && out.error ? out.error : 'save failed');
+      setStatus(`Сохранено в BN_Log: строка ${out.row || ''} · ${out.timestamp || ''}`, 'ok');
+    }catch(err){
+      console.error('BN save error:', err);
+      setStatus('Ошибка сохранения: ' + (err && err.message ? err.message : err), 'err');
     }
   }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    ensureDockBound();
-    bindHeaderCompanySearch();
-    // самый надежный вариант: явно биндится на реальные элементы на странице
-    bindCompanySearchFallback();
+  // ===== Render all =====
+  function renderAll(){
+    if(!CATALOG) return;
+    const data = getInterview();
+    const themeScores = computeThemeScores(data);
+    renderThemes(themeScores);
+    renderNeeds(themeScores);
+    if(SELECTED_NEED_ID){
+      const item = (CATALOG.items||[]).find(x=>x.id===SELECTED_NEED_ID);
+      if(item) renderNeedPanel(item, themeScores);
+    }
+    // wire save
+    if(els.bnSaveBtn){
+      els.bnSaveBtn.onclick = ()=> saveAll(themeScores);
+    }
+    // wire filters
+    ['fltTriggers','fltCritical','fltMain'].forEach(k=>{
+      const el = els[k];
+      if(el && !el.__bn_bound){
+        el.__bn_bound = true;
+        el.addEventListener('change', ()=> renderNeeds(themeScores));
+      }
+    });
+  }
+
+  // ===== Init =====
+  function initDockCollapse(){
+    if(!els.dockToggle) return;
+    const KEY='itmen_dock_collapsed';
+    const isCollapsed = localStorage.getItem(KEY)==='1';
+    if(isCollapsed) document.body.classList.add('dockCollapsed');
+    els.dockToggle.textContent = document.body.classList.contains('dockCollapsed') ? '▶' : '◀';
+    els.dockToggle.onclick = ()=>{
+      document.body.classList.toggle('dockCollapsed');
+      localStorage.setItem(KEY, document.body.classList.contains('dockCollapsed') ? '1' : '0');
+      els.dockToggle.textContent = document.body.classList.contains('dockCollapsed') ? '▶' : '◀';
+    };
+  }
+
+  async function boot(){
+    initDockCollapse();
     await loadCatalog();
-    bindQuickDock();
+    await loadRules();
 
-// BN filters
-[UI.fltTriggers(), UI.fltCritical(), UI.fltMain()].forEach(el=>{
-  if(!el) return;
-  el.addEventListener('change', ()=>{ try{ renderNeeds(); }catch(e){ console.error(e); } });
-});
+    // initial render without company (neutral)
+    renderAll();
 
-    // Save button (top)
-    const topSave = UI.saveBtn();
-    topSave && topSave.addEventListener('click', saveCurrent);
+    // Company search: dock + inline
+    const doSearchDock = debounce((v)=> searchCompany(v, 'dock'), 250);
+    const doSearchInline = debounce((v)=> searchCompany(v, 'inline'), 250);
 
-    // initial empty render
-    renderThemes();
-    renderNeeds();
-    try{
-      const sumEl = panel.querySelector('#bnStrategicSummary');
-      if(sumEl){
-        const topCauses = (sess.selected_causes||[]).slice(0,4);
-        const topPains = (sess.selected_pains||[]).slice(0,4);
-        const ansCount = sess.answers ? Object.values(sess.answers).filter(x=>String(x||'').trim()).length : 0;
-        sumEl.innerHTML = `<b>Что важно:</b> сила ${Math.round(sess.strength)} · ответов: ${ansCount}`
-          + (sess.is_main?` · <span class="star">★ основная</span>`:'')
-          + (topCauses.length?`<br><b>Причины:</b> ${topCauses.map(esc).join(' · ')}`:'')
-          + (topPains.length?`<br><b>Боли:</b> ${topPains.map(esc).join(' · ')}`:'')
-          + (bn.result?`<br><b>Ожидаемый результат:</b> ${esc(bn.result)}`:'');
-      }
-    }catch(e){ console.error(e); }
+    if(els.dockCompany){
+      els.dockCompany.addEventListener('input', ()=> doSearchDock(els.dockCompany.value));
+    }
+    if(els.bnCompanyInput){
+      els.bnCompanyInput.addEventListener('input', ()=> doSearchInline(els.bnCompanyInput.value));
+    }
+    if(els.dockLoadBtn){
+      els.dockLoadBtn.onclick = ()=> loadCompany({company: els.dockCompany ? els.dockCompany.value : ''});
+    }
+    if(els.bnCompanyBtn){
+      els.bnCompanyBtn.onclick = ()=> loadCompany({company: els.bnCompanyInput ? els.bnCompanyInput.value : ''});
+    }
+  }
 
-    renderSummary();
-  });
-
-  // Mini debug surface (удобно проверить в консоли)
-  window.__BN_DEBUG__ = {
-    version: 'v117',
-    bindCompanySearchFallback,
-    ensureDockBound,
+  // ===== Debug helpers (optional) =====
+  // window.bnDebug() -> prints theme + needs priorities.
+  // window.bnDebugBreakdown() -> prints matched triggers & points per need.
+  window.bnDebug = function(){
+    const data = getInterview();
+    const themeScores = computeThemeScores(data);
+    console.table(Object.entries(themeScores).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({theme:k, priority:v})));
+    const needs = (CATALOG?.needs||[]).map(n=>({
+      name: n.name || n.id || n,
+      theme: n.theme || '',
+      weight: n.weight || ''
+    }));
+    const rows = needs.map(n=>({
+      need:n.name,
+      theme:n.theme,
+      weight:n.weight,
+      priority: needStrength(n, themeScores)
+    })).sort((a,b)=>b.priority-a.priority);
+    console.table(rows);
+    return {themeScores, rows};
   };
 
+  window.bnDebugBreakdown = function(){
+    const data = getInterview();
+    if(!data || !RULES) return {error:'no data or rules'};
+    const out = [];
+    for(const r of (RULES.need_triggers||[])){
+      const trig = normalizeTriggerName(r.trigger);
+      const idxVal = getIndexValueByName(trig, data);
+      const vObj = Number.isFinite(idxVal) ? {kind:'number', value:idxVal} : getQuestionValue(trig, data);
+      const ok = vObj && vObj.kind!=='none' && matchCond(vObj, r.cond);
+      out.push({need:r.need, trigger:trig, cond:r.cond, points:r.points, value:vObj?.value, matched: ok});
+    }
+    console.table(out.filter(x=>x.matched));
+    const byNeed = {};
+    out.filter(x=>x.matched).forEach(x=>{ byNeed[x.need] = (byNeed[x.need]||0) + (toNum(x.points)||0); });
+    console.table(Object.entries(byNeed).sort((a,b)=>b[1]-a[1]).map(([need,sum])=>({need, points:sum})));
+    return {matched: out.filter(x=>x.matched), sums: byNeed};
+  };
+
+  boot().catch(err=>{
+    console.error('BN boot failed:', err);
+    setStatus('Ошибка инициализации BN: ' + (err && err.message ? err.message : err), 'err');
+  });
 })();
