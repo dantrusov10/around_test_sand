@@ -175,6 +175,20 @@
 .bn-company-suggest .item:hover{ background:#f3f3f3;}
 .bn-company-suggest .meta{ color:#777; font-size:12px;}
 
+    /* ===== Fix overflow: themes wrap, needs grid ===== */
+    body{overflow-x:hidden}
+    .themeTabs{display:flex !important; flex-wrap:wrap; overflow:visible !important}
+    .themeTabs .chip{margin:0 !important}
+    .needsTabs{display:grid !important; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; overflow:visible !important}
+    .needsTabs .needRow{border:1px solid rgba(15,23,42,.10); border-radius:16px; background:#fff; box-shadow:0 10px 30px rgba(15,23,42,.04)}
+    .needsTabs .needRow{border-top:none}
+    .needsTabs .needRow:hover{border-color:rgba(239,68,68,.25)}
+
+    /* Make dock not reduce usable width too much on smaller screens */
+    @media (min-width:1101px){
+      .container{max-width: min(1480px, calc(100vw - 44px));}
+    }
+
 
     /* ===== BN small components ===== */
     .chip{border:1px solid rgba(15,23,42,.12);background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer;margin:6px 8px 0 0}
@@ -294,7 +308,7 @@
   const params = new URLSearchParams(location.search);
   const vRaw = params.get('v');
   const vNum = parseInt(String(vRaw||'0'), 10);
-  const BUILD_V = 117; // bump on each release
+  const BUILD_V = 118; // bump on each release
   const V = String((Number.isFinite(vNum) && vNum>0) ? Math.max(vNum, BUILD_V) : BUILD_V);
   const files = [
     'config.js?v=' + encodeURIComponent(V),
