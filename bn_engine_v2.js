@@ -635,24 +635,44 @@
 
     items.forEach((it)=>{
       const row = document.createElement('div');
-      row.className = 'needRow' + (it.id===SELECTED_NEED_ID ? ' active' : '');
+      row.className = 'needCard' + (it.id===SELECTED_NEED_ID ? ' active' : '');
       const strength = clamp(toNum(it.__strength), 0, 100);
-      const star = strength >= 70 ? '<span class="star">★</span>' : '';
-      row.innerHTML = `
+      const company = (window.__BN_COMPANY || '');
+      const keyTitle = (it.name||it.id||'');
+      const primaryOn = isPrimaryNeed(company, keyTitle);
 
-        <div class="needLeft">
-          <div class="needName">${escapeHtml(it.name||it.id||'')} ${star}</div>
-          <div class="needMeta">${escapeHtml((it.zone?it.zone:'') + (it.theme?(' · '+it.theme):''))}</div>
-          <div class="needBar">
-            <div class="miniBar"><i style="width:${Math.max(0,Math.min(100,Number(strength)||0))}%"></i></div>
+      row.innerHTML = `
+        <div class="needHeader">
+          <div>
+            <div class="needTitle">${escapeHtml(keyTitle)}</div>
+            <div class="needMeta">${escapeHtml((it.zone?it.zone+' · ':'') + (it.theme?it.theme:'') + (it.subtheme?(' · '+it.subtheme):''))}</div>
+          </div>
+
+          <div class="needPriorityWrap">
+            <button class="bnStarBtn" data-on="${primaryOn?1:0}" title="Отметить как основную">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 17.3l-6.18 3.25 1.18-6.9L1.99 8.9l6.91-1L12 1.6l3.1 6.3 6.91 1-5 4.75 1.18 6.9z"/>
+              </svg>
+            </button>
+
+            <div class="needPriorityBadge">Приоритет: ${Math.round(strength)}</div>
+            <div class="needPriorityBar"><i style="width:${Math.round(strength)}%"></i></div>
+            <div class="pill">Вес: ${escapeHtml(String(it.weight||1))}</div>
           </div>
         </div>
-        <div class="needRight" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:flex-start">
-          <span class="badge prio ${strength>=70?'crit':''}">Приоритет: ${strength}</span>
-          <span class="badge">Вес: ${Number(it.weight||0)}</span>
-        </div>
-
       `;
+
+      const starBtn = row.querySelector('.bnStarBtn');
+      if(starBtn){
+        starBtn.onclick = (ev) => {
+          ev.stopPropagation();
+          const arr = togglePrimaryNeed(company, keyTitle);
+          starBtn.setAttribute('data-on', arr.includes(keyTitle) ? '1' : '0');
+          // если включен фильтр "только основные" — перерисуем список
+          const flt = document.getElementById('bnFltMain');
+          if(flt && flt.checked) renderNeeds();
+        };
+      }
       row.onclick = ()=>{
         SELECTED_NEED_ID = it.id;
         renderNeedPanel(it, themeScores);

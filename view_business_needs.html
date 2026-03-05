@@ -9,6 +9,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Карта тестирования + ПСИ — Боли и потребности</title>
   <style>
+
+
     :root{
       --brand-red:#ff0000;
       --brand-red-2:#e21d35;
@@ -214,6 +216,77 @@
 .needBar{margin-top:8px}
 .needBar .miniBar{margin-top:0}
 
+
+/* --- BN needs cards UI restore --- */
+#needsList{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap:14px;
+}
+@media (max-width: 1100px){
+  #needsList{ grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+}
+@media (max-width: 700px){
+  #needsList{ grid-template-columns: 1fr; }
+}
+.needCard{
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 16px;
+  background: rgba(255,255,255,.75);
+  padding: 12px 12px 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.06);
+}
+.needHeader{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+.needMeta{
+  color:#6b7280;
+  font-size:12px;
+  margin-top:4px;
+}
+.needPriorityWrap{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:6px;
+  min-width:110px;
+}
+.needPriorityBadge{
+  font-weight:800;
+  font-size:13px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.1);
+  background: rgba(255,255,255,.9);
+}
+.needPriorityBar{
+  width:100%;
+  height:6px;
+  border-radius:999px;
+  background: rgba(0,0,0,.08);
+  overflow:hidden;
+}
+.needPriorityBar > i{
+  display:block;
+  height:100%;
+  width:0%;
+  background: #ef4444;
+}
+.bnStarBtn{
+  width:30px;height:30px;
+  border-radius:10px;
+  border:1px solid rgba(0,0,0,.12);
+  background: rgba(255,255,255,.9);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.bnStarBtn[data-on="1"]{ background: rgba(255,244,199,.95); border-color: rgba(234,179,8,.4); }
+.bnStarBtn svg{ width:16px; height:16px; }
+
+
 </style>
 </head>
 <body>
@@ -291,8 +364,6 @@
             <div class="small">Сортировка — по силе (риск × вес) / ABM.</div>
           </div>
           <div class="filters">
-            <label class="flt"><input type="checkbox" id="bnFltTriggers"> Только с триггерами</label>
-            <label class="flt"><input type="checkbox" id="bnFltCritical"> Только критические</label>
             <label class="flt"><input type="checkbox" id="bnFltMain"> Только “основные” ⭐</label>
           </div>
         </div>
