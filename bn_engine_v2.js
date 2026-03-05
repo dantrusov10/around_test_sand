@@ -39,6 +39,44 @@
       .replaceAll("'","&#039;");
   }
 
+  // Normalize strings for matching (questions/indices coming from Excel vs payload).
+  function normText(s){
+    return String(s||'')
+      .toLowerCase()
+      .replace(/\u00a0/g,' ')
+      .replace(/[“”\"'`]/g,'')
+      .replace(/[()\[\]{}]/g,'')
+      .replace(/[?!,:;•]/g,'')
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+
+  function extractCode(label){
+    // Supports: T1., P10., R3., etc. Returns 't1','p10', ...
+    const m = String(label||'').trim().match(/^\s*([TPR])\s*(\d{1,2})\s*\./i);
+    if(!m) return '';
+    return (m[1] + String(Number(m[2]))).toLowerCase();
+  }
+
+  function normalizeTriggerName(trig){
+    const s = String(trig||'').trim();
+    if(!s) return '';
+    // Common index trigger aliases from sheets
+    if(/^COI\b/i.test(s) || /индекс\s+консистентности\s+данных/i.test(s)) return 'COI';
+    if(/^PSI\b/i.test(s) || /проектн(ая|ой)\s+готовност/i.test(s)) return 'PSI';
+    if(/техническ(ой|ая)\s+зрелост/i.test(s)) return 'Индекс технической зрелости';
+    if(/процессн(ой|ая)\s+зрелост/i.test(s)) return 'Индекс процессной зрелости';
+    if(/серые\s+зоны/i.test(s)) return 'Серые зоны инфраструктуры';
+    if(/лицензионн/i.test(s) && /риск/i.test(s)) return 'Лицензионный риск';
+    if(/операционн/i.test(s) && /(неэффектив|ручн)/i.test(s)) return 'Операционная неэффективность / ручной труд';
+    if(/управляемост/i.test(s) || /отсутствие\s+истории/i.test(s)) return 'Управляемость / отсутствие истории';
+    if(/потенциал\s+возврата\s+бюджета/i.test(s)) return 'Потенциал возврата бюджета';
+    if(/экономическ(ое|ий)\s+давлен/i.test(s)) return 'Индекс экономического давления';
+    // Normalize small wording differences for inputs
+    if(/^Bus\-factor/i.test(s)) return 'Bus-factor ≤2 (есть?)';
+    return s;
+  }
+
   function toNum(v){
     if(v === null || v === undefined) return NaN;
     if(typeof v === 'number') return v;
@@ -235,13 +273,18 @@
 
   function findMaturityAnswer(prefix, questionLabel, data){
     if(!data) return '';
+    const wantCode = extractCode(questionLabel);
+    const wantNorm = normText(questionLabel);
     const max = (prefix==='risk') ? 8 : 10;
     for(let i=1;i<=max;i++){
       const n = String(i).padStart(2,'0');
       const keyL = `${prefix}_${n}_label`;
       const keyV = prefix==='risk' ? `${prefix}_${n}_val` : `${prefix}_${n}_score`;
       const lbl = String(data?.[keyL] ?? '').trim();
-      if(lbl && lbl === String(questionLabel||'').trim()){
+      if(!lbl) continue;
+      const gotCode = extractCode(lbl);
+      const ok = (wantCode && gotCode && wantCode===gotCode) || (!wantCode && normText(lbl)===wantNorm);
+      if(ok){
         const v = String(data?.[keyV] ?? '').trim();
         if(prefix==='risk') return v==='1' ? 'Да' : (v==='0' ? 'Нет' : '');
         if(v==='2') return 'Да';
@@ -293,7 +336,15 @@
       'Документированность (0–2)':'docScore',
       '% устаревших ОС/ПО':'obsoletePct'
     };
-    const key = MAP[q];
+    const qNorm = normText(q);
+    // direct match
+    let key = MAP[q];
+    // fallback: normalized match (helps with small wording variations like missing "(есть?)")
+    if(!key){
+      for(const [k,v] of Object.entries(MAP)){
+        if(normText(k)===qNorm){ key=v; break; }
+      }
+    }
     if(key){
       const raw = (data?.[key] ?? data?.[String(key).toLowerCase()]);
       if(key==='keyPeopleRisk' || key==='docScore'){
@@ -499,10 +550,11 @@
     if(RULES && RULES.need_triggers && data){
       const rows = (RULES.need_triggers||[]).filter(r=> String(r.need||'').trim() === String(item.name||'').trim());
       const byTrig = {};
-      rows.forEach(r=>{ const k=String(r.trigger||'').trim(); (byTrig[k] ||= []).push(r); });
+      rows.forEach(r=>{ const k=normalizeTriggerName(r.trigger); (byTrig[k] ||= []).push(r); });
       Object.entries(byTrig).forEach(([trig, trs])=>{
-        const idxVal = getIndexValueByName(trig, data);
-        const vObj = Number.isFinite(idxVal) ? {kind:'number', value:idxVal} : getQuestionValue(trig, data);
+        const trigName = normalizeTriggerName(trig);
+        const idxVal = getIndexValueByName(trigName, data);
+        const vObj = Number.isFinite(idxVal) ? {kind:'number', value:idxVal} : getQuestionValue(trigName, data);
         if(!vObj || vObj.kind==='none') return;
         for(const r of trs){
           if(matchCond(vObj, r.cond)) { pts += toNum(r.points)||0; break; }
@@ -952,6 +1004,46 @@
       els.bnCompanyBtn.onclick = ()=> loadCompany({company: els.bnCompanyInput ? els.bnCompanyInput.value : ''});
     }
   }
+
+  // ===== Debug helpers (optional) =====
+  // window.bnDebug() -> prints theme + needs priorities.
+  // window.bnDebugBreakdown() -> prints matched triggers & points per need.
+  window.bnDebug = function(){
+    const data = getInterview();
+    const themeScores = computeThemeScores(data);
+    console.table(Object.entries(themeScores).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({theme:k, priority:v})));
+    const needs = (CATALOG?.needs||[]).map(n=>({
+      name: n.name || n.id || n,
+      theme: n.theme || '',
+      weight: n.weight || ''
+    }));
+    const rows = needs.map(n=>({
+      need:n.name,
+      theme:n.theme,
+      weight:n.weight,
+      priority: needStrength(n, themeScores)
+    })).sort((a,b)=>b.priority-a.priority);
+    console.table(rows);
+    return {themeScores, rows};
+  };
+
+  window.bnDebugBreakdown = function(){
+    const data = getInterview();
+    if(!data || !RULES) return {error:'no data or rules'};
+    const out = [];
+    for(const r of (RULES.need_triggers||[])){
+      const trig = normalizeTriggerName(r.trigger);
+      const idxVal = getIndexValueByName(trig, data);
+      const vObj = Number.isFinite(idxVal) ? {kind:'number', value:idxVal} : getQuestionValue(trig, data);
+      const ok = vObj && vObj.kind!=='none' && matchCond(vObj, r.cond);
+      out.push({need:r.need, trigger:trig, cond:r.cond, points:r.points, value:vObj?.value, matched: ok});
+    }
+    console.table(out.filter(x=>x.matched));
+    const byNeed = {};
+    out.filter(x=>x.matched).forEach(x=>{ byNeed[x.need] = (byNeed[x.need]||0) + (toNum(x.points)||0); });
+    console.table(Object.entries(byNeed).sort((a,b)=>b[1]-a[1]).map(([need,sum])=>({need, points:sum})));
+    return {matched: out.filter(x=>x.matched), sums: byNeed};
+  };
 
   boot().catch(err=>{
     console.error('BN boot failed:', err);
