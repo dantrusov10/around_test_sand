@@ -738,126 +738,18 @@ body.mode-product .passportOnly{display:none!important;}
 <div style="height:12px"></div>
 <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
 <div class="toolGrid">
-<a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-<a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-<a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-<a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-<a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-<a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-<a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
-<a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
-
-<a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
+<a class="tool" href="index.html?v=90"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div><div class="tDesc">PSI Control Center</div></div></div></a>
+<a class="tool" href="view_1_indices.html?v=90"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div><div class="tDesc">итоги</div></div></div></a>
+<a class="tool" href="view_2_interview.html?v=90"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div><div class="tDesc">1–3</div></div></div></a>
+<a class="tool" href="view_3_requirements.html?v=90"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div><div class="tDesc">раздел 4</div></div></div></a>
+<a class="tool" href="view_3b_product.html?v=90"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div><div class="tDesc">раздел 6</div></div></div></a>
+<a class="tool" href="view_4_psi.html?v=90"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div><div class="tDesc">раздел 5</div></div></div></a>
+<a class="tool" href="view_5_full.html?v=90"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div><div class="tDesc">всё</div></div></div></a>
+<a class="tool" href="view_6_summary.html?v=90"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div><div class="tDesc">итоги по компании</div></div></div></a>
+<a class="tool" href="view_7_calculator.html?v=90"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div><div class="tDesc">спецификация</div></div></div></a>
+<a class="tool" href="view_business_needs.html?v=90"><div class="tIcon">💢</div><div><div class="tName">Боли и потребности</div><div><div class="tDesc">приоритеты</div></div></div></a>
+<a class="tool" href="view_fast_interview.html?v=90"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div><div class="tDesc">3–5 вопросов</div></div></div></a>
 </div>
-</div>
-</div>
-<div class="container">
-<header>
-<div>
-<h1>Карта тестирования + ПСИ (пилот) — Инферит ИТМен</h1>
-<div class="legend">
-<span class="pill">Тех/Проц: 0 = нет · 1 = частично · 2 = есть</span>
-<span class="pill">Риски: 1 = да · 0 = нет</span>
-<span class="pill">Возможность: влияет на «индекс реализуемости»</span>
-<span class="pill">ПСИ: «Приняли?» = Да/Нет</span>
-</div>
-</div>
-<div class="btns">
-<label style="display:grid;gap:6px;font-size:12px;min-width:180px">Версия PDF
-        <select id="pdfMode" style="padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--field);font-weight:700">
-<option value="internal">Внутренняя</option>
-<option value="client">Клиентская</option>
-</select>
-</label>
-<label style="display:grid;gap:6px;font-size:12px;min-width:180px">Режим интервью
-        <select id="interviewMode" style="padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--field);font-weight:700">
-<option value="quick">Быстрый</option>
-<option value="deep">Глубокий</option>
-</select>
-</label>
-<input id="benchMode" type="hidden" value="client"/>
-<div id="reqStatus" style="align-self:end;color:#b91c1c;font-size:12px;display:none;max-width:260px;line-height:1.2"></div>
-<button class="btn ghost" id="btnLoadCompany">Подгрузить</button>
-<button class="btn" id="btnRecalc">Пересчитать</button>
-<button class="btn ghost" id="btnPrint">Печать / PDF</button>
-<button class="btn ghost" id="btnExportXlsx">Выгрузить Excel</button>
-<button class="btn ghost" id="btnCLevel">Выводы</button>
-</div>
-<!-- KPI moved to header -->
-<div class="kpiBar">
-<div class="kpiGroupTitle">Клиентские индексы</div>
-<div class="stat" id="kPSI">
-<div class="label">PSI 2.0 (итог)</div>
-<div class="value mono" id="psi2Score">—%</div>
-<div class="small" id="psi2Label">—</div>
-</div>
-<div class="stat" id="kCoI">
-<div class="label">Cost of Inaction (₽/год)</div>
-<div class="value mono" id="coiRub">—</div>
-<div class="small">Потери от ручных операций, неиспользуемого ПО/VM и простоев.</div>
-</div>
-<div class="stat" id="kRecover">
-<div class="label">Потенциал возврата бюджета</div>
-<div class="value mono" id="recoverIndex">—%</div>
-<div class="small" id="recoverLabel">Лицензии и виртуальные ресурсы.</div>
-</div>
-<div class="stat" id="kTech">
-<div class="label">Индекс тех. зрелости</div>
-<div class="value mono" id="techIndex">—%</div>
-<div class="small">Готовность по данным/источникам.</div>
-</div>
-<div class="stat" id="kProc">
-<div class="label">Индекс процессной зрелости</div>
-<div class="value mono" id="procIndex">—%</div>
-<div class="small">Предсказуемость внедрения.</div>
-</div>
-<div class="kpiGroupTitle">Внутренние индексы</div>
-<div class="stat" id="kCrit">
-<div class="label">Категория проекта</div>
-<div class="value mono" id="critScore">—%</div>
-<div class="small" id="critLabel">—</div>
-</div>
-<div class="stat" id="kFeas">
-<div class="label">Индекс реализуемости требований к пилоту</div>
-<div class="value mono" id="feasScore">—%</div>
-<div class="small">Средний балл по «возможности» (раздел 4).</div>
-</div>
-<div class="stat" id="kProdFeas">
-<div class="label">Индекс реализуемости требований к продукту</div>
-<div class="value mono" id="prodFeasScore">—%</div>
-<div class="small">Средний балл по «возможности» (раздел 6).</div>
-</div>
-<div class="stat" id="kPain">
-<div class="label">Индекс экономического давления</div>
-<div class="value mono" id="painIndex">—%</div>
-<div class="small" id="painLabel">—</div>
-</div>
-<div class="stat" id="kProb">
-<div class="label">Вероятность сделки</div>
-<div class="value mono" id="probIndex">—%</div>
-<div class="small" id="probLabel">—</div>
-</div>
-<div class="kpiBar riskReady" style="margin-top:8px">
-<div class="kpiGroupTitle">Риск и готовность</div>
-<div class="stat clickable" data-detail="pilot" id="kPilotReady">
-<div class="label">Pilot Readiness Index</div>
-<div class="value mono" id="pilotReady">—%</div>
-<div class="small" id="pilotReadyLabel">—</div>
-</div>
-<div class="stat clickable" data-detail="problem" id="kMainProblem">
-<div class="label">Основная проблема</div>
-<div class="value" id="mainProblem">—</div>
-<div class="small" id="mainProblemHint">—</div>
-</div>
-<div class="stat clickable" data-detail="modules" id="kModules">
-<div class="label">Рекомендуемая конфигурация</div>
-<div class="value" id="recModules">—</div>
-<div class="small">Автоматически по порогам риска.</div>
-</div>
-<div class="stat clickable" data-detail="demo" id="kDemo">
-<div class="label">Приоритет демо</div>
-<div class="value" id="demoFocus">—</div>
-<div class="small" id="demoFocusHint">—</div>
 </div>
 </div>
 </div>
