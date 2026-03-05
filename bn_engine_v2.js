@@ -180,83 +180,84 @@
 
   function computeThemeScores(data){
     const out = {};
-    THEME_KEYS.forEach(t=> out[t]=40); // default
+    THEME_KEYS.forEach(t=> out[t]=0);
     if(!data) return out;
 
-    const grey = signalPct(data,'risk_grey_pct');
-    const lic  = signalPct(data,'risk_lic_pct');
-    const ops  = signalPct(data,'risk_ops_pct');
-    const gov  = signalPct(data,'risk_gov_pct');
-    const pilot= signalPct(data,'pilot_readiness_pct');
+    // Core indices (0..100)
+    const pain  = clamp(signalPct(data,'painIndex'), 0, 100);
+    const risk  = clamp(signalPct(data,'riskIndex'), 0, 100);
+    const obso  = clamp(signalPct(data,'obsolIndex'), 0, 100);
+    const tech  = clamp(signalPct(data,'techIndex'), 0, 100);
+    const proc  = clamp(signalPct(data,'procIndex'), 0, 100);
+    const bus   = clamp(signalPct(data,'busIndex'), 0, 100);
+    const ready = clamp(signalPct(data,'readyIndex'),0, 100);
+    const recov = clamp(signalPct(data,'recoverIndex'),0,100);
+    const prob  = clamp(signalPct(data,'probIndex'),0,100);
 
-    const pain = clamp(signalPct(data,'painIndex'), 0, 100);
-    const risk = clamp(signalPct(data,'riskIndex'), 0, 100);
-    const obso = clamp(signalPct(data,'obsolIndex'), 0, 100);
-    const tech = clamp(signalPct(data,'techIndex'), 0, 100);
-    const proc = clamp(signalPct(data,'procIndex'), 0, 100);
-    const bus  = clamp(signalPct(data,'busIndex'), 0, 100);
-    const ready= clamp(signalPct(data,'readyIndex'), 0, 100);
+    // Useful numeric signals from interview
+    const manualPct   = clamp(signalPct(data,'manualPct'),0,100);
+    const unusedPct   = clamp(signalPct(data,'unusedPct'),0,100);
+    const vmUnusedPct = clamp(signalPct(data,'vmUnusedPct'),0,100);
+    const obsoletePct = clamp(signalPct(data,'obsoletePct'),0,100);
+    const docScore    = clamp(signalPct(data,'docScore'),0,100);
 
-    const overall = clamp((Number.isFinite(risk)?risk:0)*0.5 + (Number.isFinite(pain)?pain:0)*0.5, 0, 100) || 40;
+    const psiBad = (function(){
+      try{
+        const keys = Object.keys(data||{}).filter(k=>/^psi_\d{2}_ok$/i.test(k));
+        if(!keys.length) return 0;
+        let bad=0;
+        keys.forEach(k=>{
+          const v = data[k];
+          const s = String(v===undefined?"":v).trim().toLowerCase();
+          if(v===0 || v===false || s==='нет' || s==='no' || s==='false') bad++;
+        });
+        return (bad/keys.length)*100;
+      }catch(e){ return 0; }
+    })();
 
-    const invTechGap = 100 - (Number.isFinite(tech)?tech:50);
-    const invProcGap = 100 - (Number.isFinite(proc)?proc:50);
-    const invBusGap  = 100 - (Number.isFinite(bus)?bus:50);
-    const invReadyGap= 100 - (Number.isFinite(ready)?ready:50);
-    const invPilotGap= 100 - (Number.isFinite(pilot)?pilot:50);
+    // Gaps (the worse, the higher priority)
+    const gapTech  = 100 - (Number.isFinite(tech)?tech:50);
+    const gapProc  = 100 - (Number.isFinite(proc)?proc:50);
+    const gapBus   = 100 - (Number.isFinite(bus)?bus:50);
+    const gapReady = 100 - (Number.isFinite(ready)?ready:50);
 
-    // Map known explicit risk buckets first; fallback to index gaps.
-    out['Видимость и охват'] = clamp(
-      (Number.isFinite(grey)?grey:NaN), 0, 100
-    );
-    if(!Number.isFinite(out['Видимость и охват'])){
-      out['Видимость и охват'] = clamp(overall*0.6 + invTechGap*0.4, 0, 100);
-    }
+    // Helper: average with NaN-safe
+    const avg = (...xs)=>{
+      const a = xs.filter(v=>Number.isFinite(v));
+      if(!a.length) return 0;
+      return a.reduce((s,v)=>s+v,0)/a.length;
+    };
 
-    out['CMDB и классификация'] = clamp(
-      (Number.isFinite(grey)?grey*0.8:NaN), 0, 100
-    );
-    if(!Number.isFinite(out['CMDB и классификация'])){
-      out['CMDB и классификация'] = clamp(overall*0.5 + invProcGap*0.5, 0, 100);
-    }
+    // Map to your 8 new thematics
+    out['Видимость и единый источник данных'] =
+      clamp(avg(gapTech, gapProc, pain, prob) * 0.85 + manualPct*0.15, 0, 100);
 
-    // network: use netSeg / terminalFarms / adDomains hints if present
-    const netSeg = toNum(data.netSeg ?? data.netseg);
-    const adDomains = toNum(data.adDomains ?? data.addomains);
-    const branches = toNum(data.branches ?? data['Кол-во филиалов']);
-    const netHint = (Number.isFinite(netSeg) && netSeg>0) || (Number.isFinite(adDomains)&&adDomains>1) || (Number.isFinite(branches)&&branches>0);
-    out['Сетевое окружение и топология'] = clamp(netHint ? (overall*0.85) : (overall*0.55), 0, 100);
+    out['Сбор, агрегация и управление качеством данных'] =
+      clamp(avg(pain, gapProc, manualPct, (100-docScore), psiBad) , 0, 100);
 
-    out['Эксплуатация и стабильность'] = clamp(
-      (Number.isFinite(ops)?ops:NaN), 0, 100
-    );
-    if(!Number.isFinite(out['Эксплуатация и стабильность'])){
-      out['Эксплуатация и стабильность'] = clamp(overall*0.5 + obso*0.5, 0, 100);
-    }
+    out['Контроль изменений и конфигурации (Change / Drift)'] =
+      clamp(avg(risk, gapProc, gapTech, prob, psiBad*0.6) , 0, 100);
 
-    out['Изменения и DevOps'] = clamp(overall*0.45 + invProcGap*0.55, 0, 100);
+    out['Контроль технических и киберрисков инфраструктуры'] =
+      clamp(avg(risk, recov, obso, prob) , 0, 100);
 
-    out['SAM и оптимизация ПО'] = clamp(
-      (Number.isFinite(lic)?lic:NaN), 0, 100
-    );
-    if(!Number.isFinite(out['SAM и оптимизация ПО'])){
-      const unusedPct = clamp(signalPct(data,'unusedPct'), 0, 100);
-      out['SAM и оптимизация ПО'] = clamp(overall*0.4 + (Number.isFinite(unusedPct)?unusedPct:50)*0.6, 0, 100);
-    }
+    out['Управление жизненным циклом ИТ-активов и их ответственностью'] =
+      clamp(avg(obso, obsoletePct, gapProc, gapTech) , 0, 100);
 
-    out['Комплаенс, аудит и импортозамещение'] = clamp(
-      (Number.isFinite(gov)?gov:NaN), 0, 100
-    );
-    if(!Number.isFinite(out['Комплаенс, аудит и импортозамещение'])){
-      const docScore = clamp(signalPct(data,'docScore'), 0, 100);
-      const invDocGap = 100 - (Number.isFinite(docScore)?docScore:50);
-      out['Комплаенс, аудит и импортозамещение'] = clamp(overall*0.5 + invDocGap*0.5, 0, 100);
-    }
+    out['Управление программным обеспечением, лицензиями и рисками (SAM + Security + импортозамещение)'] =
+      clamp(avg(risk, unusedPct, obso, prob) , 0, 100);
 
-    out['Стратегия, финансы и управляемость'] = clamp(overall*0.35 + invBusGap*0.35 + invReadyGap*0.2 + invPilotGap*0.1, 0, 100);
+    out['Финансы и бюджет (пересечение SAM + ITAM + FinOps)'] =
+      clamp(avg(gapBus, unusedPct, vmUnusedPct, gapReady) , 0, 100);
 
-    // Fallback: any still NaN
-    THEME_KEYS.forEach(t=>{ if(!Number.isFinite(out[t])) out[t]=40; });
+    out['Отчетность и стратегическое управление'] =
+      clamp(avg(gapBus, gapProc, (100-docScore), bus, psiBad) * 0.9 , 0, 100);
+
+    // Ensure every theme has some non-zero baseline if data exists
+    THEME_KEYS.forEach(k=>{
+      if(!Number.isFinite(out[k])) out[k]=0;
+      out[k]=clamp(out[k],0,100);
+    });
     return out;
   }
 
