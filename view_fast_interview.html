@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data: https:; frame-src https://script.google.com https://script.googleusercontent.com;"/>
+  <script src="config.js"></script>
+  <script src="build_info.js?v=v93"></script>
+  <script src="sheet_keys.js"></script>
+  <title>Карта тестирования + ПСИ — Fast интервью</title>
+  <style>
+    :root{
+      --brand-red:#ff0000;
+      --brand-red-2:#e21d35;
+      --bg:#ffffff;
+      --surface:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#D1D1D1;
+      --field:#E4E4E4;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
+    .container{max-width:1480px;margin:22px auto;padding:0 14px}
+
+    /* QuickDock */
+    .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
+    .quickDock .card{box-shadow:0 18px 50px rgba(15,23,42,.12)}
+    .dockTitle{font-weight:950;font-size:14px;margin:0 0 10px}
+    .dockSearchWrap{position:relative;display:flex;gap:8px;align-items:center}
+    .dockIcon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.7}
+    .dockSearch{flex:1;border:1px solid rgba(15,23,42,.12);background:#f2f4f8;padding:11px 12px 11px 38px;border-radius:12px;outline:none;font-size:14px}
+    .dockLoadBtn{border:1px solid rgba(15,23,42,.12);background:#fff;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer}
+    .dockSuggest{margin-top:8px;border:1px solid rgba(15,23,42,.12);border-radius:12px;overflow:hidden;display:none;background:#fff}
+    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}
+    .dockItem:first-child{border-top:none}
+    .dockItem b{display:block}
+    .toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+    .tool{padding:12px;border:1px solid rgba(15,23,42,.12);border-radius:14px;background:#fff;display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:inherit}
+    .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
+    .tName{font-weight:900;font-size:13px;line-height:1.15}
+    .tDesc{font-size:12px;color:var(--muted);margin-top:3px}
+    @media (max-width:1480px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
+    @media (min-width:1101px){.container{padding-left:360px}}
+
+    header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
+    h1{font-size:20px;margin:0}
+    .sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.35;max-width:920px}
+    .card{background:var(--surface);border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+    .hr{height:1px;background:#e5e7eb;margin:12px -16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:860px){.row{grid-template-columns:1fr}}
+    label{display:grid;gap:6px;font-size:13px}
+    input,select,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--field);color:var(--text)}
+    .btns{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{appearance:none;border:none;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:800;background:var(--brand-red);color:#fff}
+    .btn:hover{background:var(--brand-red-2)}
+    .btn.ghost{background:var(--field);border:1px solid var(--border);color:var(--text);font-weight:700}
+    .btn.ghost:hover{background:#dcdcdc}
+    .small{font-size:12px;color:var(--muted);line-height:1.35}
+    .muted{color:var(--muted);font-size:12px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;color:#475569;font-size:12px}
+    .toast{display:none;margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.08)}
+
+    /* loader overlay */
+    .loader{display:none;position:fixed;inset:0;background:rgba(255,255,255,.75);backdrop-filter: blur(4px);z-index:200;align-items:center;justify-content:center}
+    .spinner{width:44px;height:44px;border-radius:999px;border:4px solid rgba(15,23,42,.15);border-top-color: rgba(255,0,0,.8);animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+  <div class="quickDock" id="quickDock">
+    <div class="card" style="padding:14px">
+      <div class="dockTitle">Быстрый вход</div>
+      <div class="dockSearchWrap">
+        <div class="dockIcon">🔎</div>
+        <input autocomplete="off" class="dockSearch" id="dockCompany" placeholder="Введите компанию"/>
+        <button class="dockLoadBtn" id="dockLoadBtn" type="button">Загрузить</button>
+      </div>
+      <div class="dockSuggest" id="dockSuggest"></div>
+      <div style="height:12px"></div>
+      <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
+      <div class="toolGrid">
+        <a class="tool" href="index.html?v=118"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+        <a class="tool" href="view_1_indices.html?v=118"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+        <a class="tool" href="view_fast_interview.html?v=118"><div class="tIcon">⚡</div><div><div class="tName">Fast</div><div class="tDesc">3–5 вопросов</div></div></a>
+        <a class="tool" href="view_2_interview.html?v=118"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+        <a class="tool" href="view_business_needs.html?v=118"><div class="tIcon">🧩</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
+        <a class="tool" href="view_3_requirements.html?v=118"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+        <a class="tool" href="view_3b_product.html?v=118"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+        <a class="tool" href="view_4_psi.html?v=118"><div class="tIcon">🧾</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+        <a class="tool" href="view_5_full.html?v=118"><div class="tIcon">📄</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+        <a class="tool" href="view_6_summary.html?v=118"><div class="tIcon">🧠</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+        <a class="tool" href="view_7_calculator.html?v=118"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <header>
+      <div>
+        <h1>Fast интервью (3–5 вопросов)</h1>
+        <div class="sub">Для первых касаний: быстро собрать сигналы, автоматически проставить ответы в основное интервью и подсветить их <b>жёлтым</b> (заполнено FAST). Компания: <b id="fastCompany">—</b></div>
+        <div class="toast" id="fastToast">Выбери компанию в «Быстром входе».</div>
+      </div>
+      <div class="btns">
+        <button class="btn" id="fastSaveBtn" type="button">Сохранить FAST в БД</button>
+        <a class="btn ghost" id="goInterview" href="view_2_interview.html?v=118">Открыть полное интервью</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="small" style="margin-bottom:10px">Под капотом мы пишем значения в PSI_Log по текущему Apps Script и сохраняем карту источников полей в payload как <b>_sources</b>. Полное интервью покажет эти поля с жёлтой точкой/подсветкой.</div>
+      <div class="hr"></div>
+
+      <div class="row">
+        <label>
+          <div><b>F0.</b> Есть единый источник правды по устройствам и ПО?</div>
+          <select id="f0_truth">
+            <option value="">—</option>
+            <option value="yes">Да</option>
+            <option value="partial">Частично</option>
+            <option value="no">Нет</option>
+          </select>
+          <div class="muted">Заполнит: tech_01_score (T1) и tech_08_score (T8)</div>
+        </label>
+        <label>
+          <div><b>F1.</b> Как сейчас ведёте учёт устройств/серверов/ПО?</div>
+          <select id="f1_accounting">
+            <option value="">—</option>
+            <option value="auto">Автоматизировано</option>
+            <option value="mixed">Смешанно</option>
+            <option value="manual">Excel / ручной учёт</option>
+            <option value="none">Практически нет учёта</option>
+          </select>
+          <div class="muted">Заполнит: tech_02_score, tech_05_score, proc_05_score, risk_03_val, risk_04_val, manualPct, docScore</div>
+        </label>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <label>
+          <div><b>F2.</b> Масштаб (примерно)</div>
+          <div class="row">
+            <label>
+              <div>Кол-во рабочих мест</div>
+              <input id="f2_workplaces" inputmode="numeric" placeholder="например 5000"/>
+            </label>
+            <label>
+              <div>Кол-во серверов</div>
+              <input id="f2_servers" inputmode="numeric" placeholder="например 200"/>
+            </label>
+          </div>
+          <div class="muted">Заполнит: workplaces, servers</div>
+        </label>
+        <label>
+          <div><b>F4.</b> Инциденты/простои</div>
+          <select id="f4_incidents">
+            <option value="">—</option>
+            <option value="none">Практически нет</option>
+            <option value="sometimes">Иногда</option>
+            <option value="often">Часто</option>
+          </select>
+          <div class="muted">Заполнит: risk_05_val (+ note)</div>
+        </label>
+      </div>
+
+      <div style="margin-top:10px">
+        <div><b>F3.</b> Сложные сегменты инфраструктуры (отметь, что точно есть)</div>
+        <div class="row" style="margin-top:8px">
+          <label class="pill"><input type="checkbox" id="f3_branches"/> Филиалы/площадки</label>
+          <label class="pill"><input type="checkbox" id="f3_closed"/> Закрытый контур</label>
+          <label class="pill"><input type="checkbox" id="f3_vdi"/> VDI</label>
+          <label class="pill"><input type="checkbox" id="f3_terminal"/> Терминальные фермы</label>
+          <label class="pill"><input type="checkbox" id="f3_virt"/> Виртуализация</label>
+          <label class="pill"><input type="checkbox" id="f3_cloud"/> Гибрид/облако</label>
+          <label class="pill"><input type="checkbox" id="f3_netseg"/> Сегментация сети</label>
+        </div>
+        <div class="muted" style="margin-top:8px">Заполнит: tech_09_score, risk_01_val, closed/vdi/terminalFarms/virt/hostingModel/netSeg</div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div><b>F5.</b> Что срочно/зачем делаем проект? (1–2 пункта)</div>
+        <div class="row" style="margin-top:8px">
+          <label class="pill"><input type="checkbox" name="f5_intent" value="audit"/> Аудиты/проверки</label>
+          <label class="pill"><input type="checkbox" name="f5_intent" value="changes"/> Изменения/миграции/DevOps</label>
+          <label class="pill"><input type="checkbox" name="f5_intent" value="fin"/> Снижение затрат/бюджет</label>
+          <label class="pill"><input type="checkbox" name="f5_intent" value="contractors"/> Подрядчики/текучесть</label>
+        </div>
+        <div class="muted" style="margin-top:8px">Заполнит: envNote + (risk_06_val / risk_07_val / risk_08_val)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loader" id="fastLoader"><div class="spinner"></div></div>
+
+  <script src="fast_interview.js?v=151"></script>
+</body>
+</html>

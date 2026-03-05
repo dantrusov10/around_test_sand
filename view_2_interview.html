@@ -78,6 +78,16 @@ input[data-synthetic="1"], select[data-synthetic="1"], textarea[data-synthetic="
   background-repeat:no-repeat;
 }
 
+/* ===== FAST marker (yellow): filled by Fast интервью ===== */
+input[data-fast="1"], select[data-fast="1"], textarea[data-fast="1"]{
+  border-color: rgba(245,158,11,.75) !important;
+  box-shadow: 0 0 0 3px rgba(245,158,11,.16) !important;
+  background-color: var(--field) !important;
+  background-image:
+    radial-gradient(circle at calc(100% - 14px) 14px, rgba(245,158,11,1) 0 4px, rgba(245,158,11,0) 5px);
+  background-repeat:no-repeat;
+}
+
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:860px){.row{grid-template-columns:1fr}}
 .small{font-size:12px;color:var(--muted);line-height:1.35}
@@ -4125,6 +4135,44 @@ function _numFromText(t){
   return m ? m[0] : "";
 }
 
+// Collect field sources (manual / synthetic / fast) and persist inside payload JSON as _sources.
+function collectFieldSources_(){
+  const src = {};
+  // inputs by id
+  document.querySelectorAll('input,select,textarea').forEach(el=>{
+    const id = el.id;
+    if(!id) return;
+    const v = (el.value ?? '').toString().trim();
+    if(!v) return;
+    const o = (el.dataset && el.dataset.origin) ? String(el.dataset.origin) : 'user';
+    if(o==='synthetic') src[id] = 'synthetic';
+    else if(o==='fast') src[id] = 'fast';
+    else src[id] = 'manual';
+  });
+
+  const pad2 = (n)=>String(n).padStart(2,'0');
+  const setRows = (prefix, tbodyId, max, suffix)=>{
+    const rows = Array.from(document.querySelectorAll(`#${tbodyId} tr`));
+    for(let i=1;i<=max;i++){
+      const r = rows[i-1];
+      if(!r) continue;
+      const sel = r.querySelector('select');
+      if(!sel) continue;
+      const v = (sel.value ?? '').toString().trim();
+      if(!v) continue;
+      const o = (sel.dataset && sel.dataset.origin) ? String(sel.dataset.origin) : ((sel.dataset && sel.dataset.synthetic==='1') ? 'synthetic' : 'user');
+      const k = `${prefix}_${pad2(i)}_${suffix}`;
+      if(o==='synthetic') src[k] = 'synthetic';
+      else if(o==='fast') src[k] = 'fast';
+      else src[k] = 'manual';
+    }
+  };
+  setRows('tech','techTbody',10,'score');
+  setRows('proc','procTbody',10,'score');
+  setRows('risk','riskTbody',8,'val');
+  return src;
+}
+
 function buildSheetPayloadExact(){
   // Ensure KPI up to date
   try{ if(typeof recalc==="function") recalc(); }catch(_){}
@@ -4264,6 +4312,13 @@ function buildSheetPayloadExact(){
   // Ensure run_id and timestamp
   if(!out.run_id) out.run_id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
   if(!out.timestamp) out.timestamp = new Date().toISOString();
+
+  // Persist sources map (manual/synthetic/fast) inside payload snapshot.
+  try{
+    const m = collectFieldSources_();
+    out._sources = m;
+    window.__FIELD_SOURCES = m;
+  }catch(_e){}
 
   // Also include full JSON snapshot if someone adds "payload" column later
   out.payload = JSON.stringify(out);
@@ -4637,6 +4692,14 @@ async function gsSearch(q){
       }
     }catch(e){}
 
+    // Field sources map (persisted inside payload JSON as _sources)
+    let __srcMap = {};
+    try{
+      if(payload && typeof payload === 'object' && payload._sources && typeof payload._sources === 'object') __srcMap = payload._sources;
+      if(!__srcMap || typeof __srcMap !== 'object') __srcMap = {};
+      window.__FIELD_SOURCES = __srcMap;
+    }catch(_e){ window.__FIELD_SOURCES = {}; }
+
     // Cache latest loaded snapshot for cross-block saves.
     try{
       if(!window.__ITMEN_LATEST_CACHE || typeof window.__ITMEN_LATEST_CACHE !== 'object') window.__ITMEN_LATEST_CACHE = {};
@@ -4667,6 +4730,25 @@ async function gsSearch(q){
       } else {
         el.value = String(val);
       }
+
+      // apply origin markers (synthetic / fast / manual)
+      try{
+        const src = (__srcMap && __srcMap[id]) ? String(__srcMap[id]) : "";
+        if(src === 'fast'){
+          el.dataset.origin = 'fast';
+          el.dataset.fast = '1';
+          if(el.dataset.synthetic) delete el.dataset.synthetic;
+        } else if(src === 'synthetic'){
+          el.dataset.origin = 'synthetic';
+          el.dataset.synthetic = '1';
+          if(el.dataset.fast) delete el.dataset.fast;
+        } else {
+          if(el.dataset.fast) delete el.dataset.fast;
+          if(el.dataset.synthetic) delete el.dataset.synthetic;
+          // do not force origin to user while loading
+        }
+      }catch(_e){}
+
       el.dispatchEvent(new Event("input", { bubbles:true }));
       el.dispatchEvent(new Event("change", { bubbles:true }));
     });
@@ -4728,6 +4810,12 @@ async function gsSearch(q){
             const sel = row.querySelector("select");
             if(sel){
               sel.value = String(payload[keyS]);
+              try{
+                const src = (__srcMap && __srcMap[keyS]) ? String(__srcMap[keyS]) : "";
+                if(src==='fast'){ sel.dataset.origin='fast'; sel.dataset.fast='1'; if(sel.dataset.synthetic) delete sel.dataset.synthetic; }
+                else if(src==='synthetic'){ sel.dataset.origin='synthetic'; sel.dataset.synthetic='1'; if(sel.dataset.fast) delete sel.dataset.fast; }
+                else { if(sel.dataset.fast) delete sel.dataset.fast; if(sel.dataset.synthetic) delete sel.dataset.synthetic; }
+              }catch(_e){}
               sel.dispatchEvent(new Event("change", { bubbles:true }));
             }
           }
@@ -4753,6 +4841,12 @@ async function gsSearch(q){
             const sel = row.querySelector("select");
             if(sel){
               sel.value = String(payload[keyV]);
+              try{
+                const src = (__srcMap && __srcMap[keyV]) ? String(__srcMap[keyV]) : "";
+                if(src==='fast'){ sel.dataset.origin='fast'; sel.dataset.fast='1'; if(sel.dataset.synthetic) delete sel.dataset.synthetic; }
+                else if(src==='synthetic'){ sel.dataset.origin='synthetic'; sel.dataset.synthetic='1'; if(sel.dataset.fast) delete sel.dataset.fast; }
+                else { if(sel.dataset.fast) delete sel.dataset.fast; if(sel.dataset.synthetic) delete sel.dataset.synthetic; }
+              }catch(_e){}
               sel.dispatchEvent(new Event("change", { bubbles:true }));
             }
           }
@@ -5030,6 +5124,7 @@ const run = debounce(async ()=>{
     .dotRed{background:#ef4444}
     .dotBlue{background:#2563eb}
     .dotGreen{background:#22c55e}
+    .dotYellow{background:#f59e0b}
   `;
   try{
     const st = document.createElement("style");
@@ -5055,8 +5150,8 @@ const run = debounce(async ()=>{
 
   function setDot(dot, state){
     if(!dot) return;
-    dot.classList.remove("dotRed","dotBlue","dotGreen");
-    dot.classList.add(state==="blue" ? "dotBlue" : (state==="green" ? "dotGreen" : "dotRed"));
+    dot.classList.remove("dotRed","dotBlue","dotGreen","dotYellow");
+    dot.classList.add(state==="blue" ? "dotBlue" : (state==="yellow" ? "dotYellow" : (state==="green" ? "dotGreen" : "dotRed")));
   }
 
   function updateOne(el){
@@ -5066,7 +5161,7 @@ const run = debounce(async ()=>{
     const v = (el.value ?? "").toString().trim();
     if(!v){ setDot(dot,"red"); return; }
     const src = el.dataset.origin || "user";
-    setDot(dot, src==="synthetic" ? "blue" : "green");
+    setDot(dot, src==="synthetic" ? "blue" : (src==="fast" ? "yellow" : "green"));
   }
 
   function clearOptionalDefaults(){
@@ -5082,8 +5177,8 @@ const run = debounce(async ()=>{
     document.querySelectorAll("input,select,textarea").forEach(el=>{
       if(!el.id || REQUIRED.has(el.id)) return;
       ensureDot(el);
-      el.addEventListener("input", ()=>{ el.dataset.origin="user"; updateOne(el); }, {passive:true});
-      el.addEventListener("change", ()=>{ el.dataset.origin="user"; updateOne(el); }, {passive:true});
+      el.addEventListener("input", ()=>{ el.dataset.origin="user"; if(el.dataset.fast) delete el.dataset.fast; updateOne(el); }, {passive:true});
+      el.addEventListener("change", ()=>{ el.dataset.origin="user"; if(el.dataset.fast) delete el.dataset.fast; updateOne(el); }, {passive:true});
     });
   }
 
@@ -5100,9 +5195,11 @@ const run = debounce(async ()=>{
       return;
     }
     const synthetic = (sel.dataset.synthetic === "1") || (sel.dataset.origin === "synthetic");
+    const fast = (sel.dataset.fast === "1") || (sel.dataset.origin === "fast");
     dot.classList.remove("dotRed","dotBlue","dotGreen");
-    dot.classList.add(synthetic ? "dotBlue" : "dotGreen");
-    dot.title = synthetic ? "Синтетически заполнено (можно отредактировать)" : "Заполнено менеджером";
+    dot.classList.remove("dotYellow");
+    dot.classList.add(synthetic ? "dotBlue" : (fast ? "dotYellow" : "dotGreen"));
+    dot.title = synthetic ? "Синтетически заполнено (можно отредактировать)" : (fast ? "Заполнено FAST интервью" : "Заполнено менеджером");
   }
 
   function updateAll(){
