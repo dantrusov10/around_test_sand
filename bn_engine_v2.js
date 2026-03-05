@@ -3,7 +3,7 @@
 // Storage: embedded into saved payload JSON under key "business_needs_sessions".
 
 (function(){
-  const WEBAPP_URL = ( (typeof GS_WEBAPP_URL !== 'undefined' && GS_WEBAPP_URL) || window.GS_WEBAPP_URL || '' ).trim();
+  function getWebappUrl(){ return ( (typeof GS_WEBAPP_URL !== 'undefined' && GS_WEBAPP_URL) || window.GS_WEBAPP_URL || window.WEBAPP_URL || '' ).trim(); }
   const URL_V = (() => {
     try { return new URLSearchParams(location.search).get('v') || ''; } catch(e){ return ''; }
   })();
@@ -597,7 +597,7 @@ panel.innerHTML = `
   <div class="needHead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
     <div>
       <div class="needTitle">${esc(bn.name)}</div>
-      <div class="small">Тематика: <b>${esc(bn.theme||'—')}</b> · Зона: <b>${esc(bn.zone||'—')}</b> · Сила: <b>${Math.round(sess.strength)}</b></div>
+      <div class="small">Тематика: <b>${esc(bn.theme||'—')}</b> · Зона: <b>${esc(bn.zone||'—')}</b> · Сила: <b>${Math.round(sess.strength)}</b> · Вес: <b>${bn.weight||1}</b></div>
       <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">
         <label class="pill"><input type="checkbox" id="bnIsMain" ${sess.is_main?'checked':''}/> <span class="star">★</span> Основная</label>
       </div>
@@ -608,145 +608,117 @@ panel.innerHTML = `
     </div>
   </div>
 
-  <div class="workTop">
-    <div class="workBox">
-      <h3>Подробное описание</h3>
-      <div class="blockText">${esc(bn.task || '—')}</div>
-      <div class="hr" style="margin:12px 0"></div>
-      <h3>Комментарий менеджера</h3>
-      <textarea class="qAns" id="bnMgrComment" placeholder="Коротко: что подтвердили / следующий шаг">${esc(sess.manager_comment||'')}</textarea>
-    </div>
+  <div class="needGrid" style="display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:start">
+    <div class="needCol">
+      <div class="block">
+        <details open class="details" id="detDesc">
+          <summary>Подробное описание</summary>
+          <div class="blockText">${esc(bn.task || '—')}</div>
+        </details>
+      </div>
 
-    <div class="workBox">
-      <h3>Вопросы</h3>
-      <div class="qaGrid">
-        ${questions.map((q,idx)=>`<div class="qRow"><div class="qTxt">${esc(q)}</div></div>`).join('')}
+      <div class="block">
+        <details open class="details" id="detMgrComment">
+          <summary>Комментарий менеджера</summary>
+          <textarea class="qAns" id="bnMgrComment" placeholder="Коротко: что подтвердили / следующий шаг">${esc(sess.manager_comment||'')}</textarea>
+        </details>
+      </div>
+
+      <div class="block">
+        <details open class="details" id="detCauses">
+          <summary>Причины (отметь, что подтверждено)</summary>
+          <div class="checkGrid">
+            ${causes.map((c,idx)=>{
+              const id = `c_${bn.id}_${idx}`;
+              return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="cause" value="${esc(c)}" ${isChecked(sess.selected_causes,c)?'checked':''}/> <span>${esc(c)}</span></label>`;
+            }).join('') || '<div class="small">—</div>'}
+          </div>
+        </details>
+      </div>
+
+      <div class="block">
+        <details open class="details" id="detPains">
+          <summary>Боли (что реально болит)</summary>
+          <div class="checkGrid">
+            ${pains.map((p,idx)=>{
+              const id = `p_${bn.id}_${idx}`;
+              return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="pain" value="${esc(p)}" ${isChecked(sess.selected_pains,p)?'checked':''}/> <span>${esc(p)}</span></label>`;
+            }).join('') || '<div class="small">—</div>'}
+          </div>
+        </details>
+      </div>
+
+      <div class="block">
+        <details open class="details" id="detQ">
+          <summary>Вопросы (фиксируем ответы)</summary>
+          <div class="qList">
+            ${questions.map((q,idx)=>{
+              const key = `q${idx+1}`;
+              const val = (sess.answers && sess.answers[key]) ? String(sess.answers[key]) : '';
+              return `<div class="qItem">
+                <div class="qText">${esc(q)}</div>
+                <textarea class="qAnswer" data-qkey="${esc(key)}" placeholder="Ответ (фиксируем как есть)">${esc(val)}</textarea>
+              </div>`;
+            }).join('') || '<div class="small">—</div>'}
+          </div>
+        </details>
       </div>
     </div>
 
-    <div class="workBox">
-      <h3>Ответы</h3>
-      <div class="qaGrid">
-        ${questions.map((q,idx)=>{
-          const key = `q_${idx}`;
-          const val = (sess.answers && sess.answers[key]) ? sess.answers[key] : '';
-          return `<div class="qRow"><textarea class="qAns" data-kind="answer" data-q="${esc(key)}" placeholder="Ответ (фиксируем как есть)">${esc(val)}</textarea></div>`;
-        }).join('')}
-      </div>
-    </div>
-  </div>
-
-  <div class="workBelow">
-    <div class="workBox">
-      <h3>Причины (отметь, что подтверждено)</h3>
-      <div class="checkGrid">
-        ${causes.map((c,idx)=>{
-          const id = `c_${bn.id}_${idx}`;
-          return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="cause" value="${esc(c)}" ${isChecked(sess.selected_causes,c)?'checked':''}/> <span>${esc(c)}</span></label>`;
-        }).join('')}
+    <div class="needCol">
+      <div class="block">
+        <details open class="details" id="detIt">
+          <summary>ITIL комментарий</summary>
+          <div class="blockText">${esc(bn.itil || '—')}</div>
+        </details>
       </div>
 
-      <div class="hr" style="margin:12px 0"></div>
-      <h3>Боли (что реально болит)</h3>
-      <div class="checkGrid">
-        ${pains.map((p,idx)=>{
-          const id = `p_${bn.id}_${idx}`;
-          return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="pain" value="${esc(p)}" ${isChecked(sess.selected_pains,p)?'checked':''}/> <span>${esc(p)}</span></label>`;
-        }).join('')}
+      <div class="block">
+        <details class="details" open id="detMgr">
+          <summary>Подсказки менеджеру</summary>
+          <div class="twoCols">
+            <div>
+              <div class="miniTitle">В каком процессе используется</div>
+              <div class="blockText">${esc(bn.process || '—')}</div>
+            </div>
+            <div>
+              <div class="miniTitle">Какой KPI улучшает</div>
+              <div class="blockText">${esc(bn.kpi || '—')}</div>
+            </div>
+          </div>
+        </details>
       </div>
 
-      <div class="hr" style="margin:12px 0"></div>
-      <h3>ITIL / KPI</h3>
-      <div class="small">${esc((bn.itil||'') + (bn.kpi?(' · KPI: '+bn.kpi):'')) || '—'}</div>
-    </div>
+      <div class="block">
+        <details class="details" open id="detFunc">
+          <summary>Нужный функционал ИТМен</summary>
+          <div class="blockText">${esc(bn.functional || '—')}</div>
+        </details>
+      </div>
 
-    <div class="workBox">
-      <h3>Нужный функционал</h3>
-      <div class="blockText">${esc(bn.functional || '—')}</div>
-      <div class="hr" style="margin:12px 0"></div>
-      <h3>Ожидаемый результат</h3>
-      <div class="blockText">${esc(bn.result || '—')}</div>
-    </div>
-  </div>
+      <div class="block">
+        <details class="details" open id="detRes">
+          <summary>Ожидаемый результат</summary>
+          <div class="blockText">${esc(bn.result || '—')}</div>
+        </details>
+      </div>
 
-  <div class="workOne workBox">
-    <h3>Стратегическое резюме</h3>
-    <div id="bnStrategicSummary" class="blockText"></div>
+      <div class="block">
+        <details class="details" open id="detIntegration">
+          <summary>Интеграции / источники</summary>
+          <div class="blockText">${esc(bn.integrations || bn.integration || '—')}</div>
+        </details>
+      </div>
+
+      <div class="block">
+        <details class="details" open id="detSummary">
+          <summary>Стратегическое резюме</summary>
+          <div id="bnStrategicSummary" class="blockText"></div>
+        </details>
+      </div>
+    </div>
   </div>
 `;
-                return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="cause" value="${esc(c)}" ${isChecked(sess.selected_causes,c)?'checked':''}/> <span>${esc(c)}</span></label>`;
-              }).join('') || '<div class="small">—</div>'}
-            </div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details open class="details" id="detPains">
-            <summary>Боли (что реально болит)</summary>
-            <div class="checkGrid">
-              ${pains.map((p,idx)=>{
-                const id = `p_${bn.id}_${idx}`;
-                return `<label class="checkItem" for="${esc(id)}"><input type="checkbox" id="${esc(id)}" data-kind="pain" value="${esc(p)}" ${isChecked(sess.selected_pains,p)?'checked':''}/> <span>${esc(p)}</span></label>`;
-              }).join('') || '<div class="small">—</div>'}
-            </div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details open class="details" id="detQ">
-            <summary>Вопросы (фиксируем ответы)</summary>
-            <div class="qList">
-              ${questions.map((q,idx)=>{
-                const key = `q${idx+1}`;
-                const val = (sess.answers && sess.answers[key]) ? String(sess.answers[key]) : '';
-                return `<div class="qItem">
-                  <div class="qText">${esc(q)}</div>
-                  <textarea class="qAnswer" data-qkey="${esc(key)}" placeholder="Ответ (фиксируем как есть)">${esc(val)}</textarea>
-                </div>`;
-              }).join('') || '<div class="small">—</div>'}
-            </div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details class="details" open id="detIt">
-            <summary>ITIL комментарий</summary>
-            <div class="blockText">${esc(bn.itil || '—')}</div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details class="details" open id="detMgr">
-            <summary>Подсказки менеджеру</summary>
-            <div class="twoCols">
-              <div>
-                <div class="miniTitle">В каком процессе используется</div>
-                <div class="blockText">${esc(bn.process || '—')}</div>
-              </div>
-              <div>
-                <div class="miniTitle">Какой KPI улучшает</div>
-                <div class="blockText">${esc(bn.kpi || '—')}</div>
-              </div>
-            </div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details class="details" open id="detFunc">
-            <summary>Нужный функционал ИТМен</summary>
-            <div class="blockText">${esc(bn.functional || '—')}</div>
-          </details>
-        </div>
-
-        <div class="block">
-          <details class="details" id="detRes">
-            <summary>Ожидаемый результат</summary>
-            <div class="blockText">${esc(bn.result || '—')}</div>
-          </details>
-        </div>
-
-      </div>
-    `;
 
     // bind inputs
     panel.querySelectorAll('input[type="checkbox"][data-kind]').forEach(ch=>{
@@ -875,7 +847,7 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
   }
 
   async function saveCurrent(){
-    if(!WEBAPP_URL){ setStatus('GS_WEBAPP_URL пустой (config.js).', 'err'); return; }
+    if(!getWebappUrl()){ setStatus('GS_WEBAPP_URL пустой (config.js).', 'err'); return; }
     if(!ACTIVE_ROW){ setStatus('Не выбрана компания.', 'err'); return; }
 
     const payloadObj = tryParsePayload(ACTIVE_ROW);
@@ -884,7 +856,7 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
     payloadObj.__bn_version = VERSION;
 
     // Compose "payload" row (we rely on Apps Script storing payload JSON)
-    const base = WEBAPP_URL;
+    const base = getWebappUrl();
     const url = base + (base.includes('?') ? '&' : '?') + 'action=save';
 
     try{
@@ -964,9 +936,9 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
   }
 
   async function runSearch(q, mySeq){
-    if(!WEBAPP_URL) return;
+    if(!getWebappUrl()) return;
     try{
-      const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
+      const url = getWebappUrl() + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
       const data = await jsonp(url, 45000);
       if(mySeq !== searchSeq) return;
       if(!data || !data.ok){ return; }
@@ -1003,7 +975,7 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
   }
 
   async function loadCompany(company){
-    if(!WEBAPP_URL){ setStatus('GS_WEBAPP_URL пустой (config.js).', 'err'); return; }
+    if(!getWebappUrl()){ setStatus('GS_WEBAPP_URL пустой (config.js).', 'err'); return; }
     ACTIVE_COMPANY = company;
     ACTIVE_ROW = null;
     HEATMAP = null;
@@ -1017,7 +989,7 @@ mgrTa && mgrTa.addEventListener('input', ()=>{
     try{
       // 1) get latest row for company
       // Apps Script router uses action=latest (alias of get). Keep legacy getLatest by also supporting alias on backend.
-      const url = WEBAPP_URL + '?action=latest_bn&company=' + encodeURIComponent(company);
+      const url = getWebappUrl() + '?action=latest_bn&company=' + encodeURIComponent(company);
       const data = await jsonp(url, 45000);
 
 // Apps Script may return either:
@@ -1183,7 +1155,7 @@ ACTIVE_ROW = rowObj;
     suggest.style.display='block';
     suggest.innerHTML = '<div style="padding:8px 10px;color:#666">Ищу в БД…</div>';
 
-    const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
+    const url = getWebappUrl() + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
     const data = await jsonp(url, 45000, 2);
     const items = (data && (data.items || data.item || data.rows || data.row)) ? (data.items || data.rows || []) : [];
     // Normalize: allow server to return {items:[...]} or {item:{...}}
@@ -1289,7 +1261,7 @@ function bindHeaderCompanySearch(){
       return;
     }
     try{
-      const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
+      const url = getWebappUrl() + '?action=search&q=' + encodeURIComponent(q) + '&limit=25';
       const data = await jsonp(url, 45000, 2);
       if(data && data.ok && Array.isArray(data.items)){
         renderSuggest(data.items);
@@ -1361,7 +1333,7 @@ function ensureDockBound() {
     const doSearch = async (q) => {
       const qq = String(q || '').trim();
       if (qq.length < 2) return [];
-      const url = WEBAPP_URL + '?action=search&q=' + encodeURIComponent(qq) + '&limit=25';
+      const url = getWebappUrl() + '?action=search&q=' + encodeURIComponent(qq) + '&limit=25';
       const res = await jsonp(url);
       if (res && res.ok && Array.isArray(res.items)) return res.items;
       return [];
