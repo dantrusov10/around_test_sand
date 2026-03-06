@@ -1390,7 +1390,6 @@ const FEAS_OPTIONS = [
   // Backward-compat: older sheets stored just "Нет"
   { label: "Нет", score: 0.00 },
   { label: "Нет возможности", score: 0.00 },
-  { label: "Нет возможности", score: 0.00 },
   // Backward-compat casing variants
   { label: "Хард код (скоро)", score: 0.70 },
   { label: "Хард код (Скоро)", score: 0.70 },
@@ -2037,7 +2036,7 @@ function ensureBaseTables(){
 function addReqRow(data){
   const tb=document.getElementById("reqTbody");
   const idx=tb.children.length+1;
-  const feasOptions = FEAS_OPTIONS.map(o=>`<option value="${o.label}">${o.label}</option>`).join("");
+  const feasOptions = Array.from(new Map(FEAS_OPTIONS.map(o=>[String(o.label).trim().toLowerCase(), o])).values()).map(o=>`<option value="${o.label}">${o.label}</option>`).join("");
   const tr=document.createElement("tr");
   tr.innerHTML = `
     <td class="right mono">${idx}</td>
@@ -2134,7 +2133,6 @@ const PROD_FEAS_OPTIONS = [
   { label: "Нет", score: 0.00 },
   { label: "Нет возможности", score: 0.00 },
   // Accept both casing variants
-  { label: "Хард код (Скоро)", score: 0.70 },
   { label: "Хард код (скоро)", score: 0.70 },
   { label: "Хард код (не скоро)", score: 0.30 },
   { label: "Требуется скрипт", score: 0.50 },
@@ -2144,7 +2142,7 @@ function addProdReqRow(data){
   const tb=document.getElementById("prodReqTbody");
   if(!tb) return;
   const idx=tb.children.length+1;
-  const feasOptions = PROD_FEAS_OPTIONS.map(o=>`<option value="${o.label}">${o.label}</option>`).join("");
+  const feasOptions = Array.from(new Map(PROD_FEAS_OPTIONS.map(o=>[String(o.label).trim().toLowerCase(), o])).values()).map(o=>`<option value="${o.label}">${o.label}</option>`).join("");
   const tr=document.createElement("tr");
   tr.innerHTML = `
     <td class="right mono">${idx}</td>
