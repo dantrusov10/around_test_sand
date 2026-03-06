@@ -604,19 +604,33 @@
     });
   }
 
+  
+  function _primaryKey(company){ return 'bn_primary::' + String(company||'').trim().toLowerCase(); }
+  function loadPrimaryNeeds(company){
+    try{ const arr = JSON.parse(localStorage.getItem(_primaryKey(company))||'[]'); return Array.isArray(arr)?arr:[]; }catch(e){ return []; }
+  }
+  function savePrimaryNeeds(company, arr){
+    try{ localStorage.setItem(_primaryKey(company), JSON.stringify(Array.isArray(arr)?arr:[])); }catch(e){}
+  }
+  function isPrimaryNeed(company, needTitle){
+    return loadPrimaryNeeds(company).includes(String(needTitle||''));
+  }
+  function togglePrimaryNeed(company, needTitle){
+    const key = String(needTitle||'');
+    const arr = loadPrimaryNeeds(company);
+    const idx = arr.indexOf(key);
+    if(idx>=0) arr.splice(idx,1); else arr.push(key);
+    savePrimaryNeeds(company, arr);
+    return arr;
+  }
+
   // ===== Filters =====
   function passesFilters(item){
-    const trig = !!(els.fltTriggers && els.fltTriggers.checked);
-    const crit = !!(els.fltCritical && els.fltCritical.checked);
     const main = !!(els.fltMain && els.fltMain.checked);
-    if(trig){
-      if(item.trigger !== true) return false;
-    }
-    if(crit){
-      if(Number(item.weight||0) < 3) return false;
-    }
     if(main){
-      if(Number(item.weight||0) < 2) return false;
+      const company = (window.__BN_COMPANY || '');
+      const keyTitle = (item.name||item.id||'');
+      if(!isPrimaryNeed(company, keyTitle)) return false;
     }
     return true;
   }
@@ -670,7 +684,7 @@
           starBtn.setAttribute('data-on', arr.includes(keyTitle) ? '1' : '0');
           // если включен фильтр "только основные" — перерисуем список
           const flt = document.getElementById('bnFltMain');
-          if(flt && flt.checked) renderNeeds();
+          if(flt && flt.checked) renderNeeds(themeScores);
         };
       }
       row.onclick = ()=>{

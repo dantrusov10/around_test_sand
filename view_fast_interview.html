@@ -4,73 +4,12 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Fast интервью — 3–5 вопросов</title>
-  <script src="config.js?v=154"></script>
+  <script src="config.js?v=162"></script>
   <style>
-
-    :root{--bg:#f6f7fb;--card:#fff;--border:#e5e7eb;--text:#0f172a;--muted:#64748b;--brand:#ef4444;--field:#f8fafc}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    .page{max-width:1100px;margin:26px auto;padding:0 16px}
-    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
-    .h1{font-size:22px;font-weight:900;margin:0}
-    .sub{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 25px rgba(15,23,42,.06);padding:16px;overflow:hidden}
-    /* Use minmax(0,1fr) to prevent grid overflow with long labels */
-    .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
-    @media (max-width:900px){.row{grid-template-columns:1fr}}
-    .row > div{min-width:0}
-    label{display:block;font-size:12px;color:var(--muted);font-weight:800;min-width:0}
-    input,select{width:100%;min-width:0;margin-top:6px;border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-size:14px}
-
-    /* better field layout (avoid nested <label>) */
-    .field{display:flex;flex-direction:column;min-width:0}
-    .fLabel{font-size:12px;color:var(--muted);font-weight:800}
-    .help{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.35}
-    .checkList{margin-top:10px;display:grid;grid-template-columns:1fr;gap:10px}
-    .checkItem{display:flex;align-items:flex-start;justify-content:flex-start;gap:10px;font-weight:800;color:var(--text);line-height:1.25;min-width:0}
-    .checkItem input{margin-top:2px;flex:0 0 auto;width:16px;height:16px}
-    .checkItem .txt{display:block;min-width:0}
-    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
-    .btn{border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}
-    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
-    .note{font-size:12px;color:var(--muted);margin-top:10px}
-
-    /* QuickDock (same block as other pages, but we don't touch page layout) */
-    #quickDock{position:fixed;left:18px;top:110px;width:260px;z-index:1000}
-    body.dockCollapsed #quickDock{width:76px}
-    .dock{background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 12px 28px rgba(15,23,42,.08);padding:12px}
-    .dockHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-    .dockTitle{font-weight:900;font-size:14px}
-    .dockToggle{border:1px solid var(--border);background:var(--field);border-radius:10px;width:34px;height:34px;cursor:pointer;font-weight:900}
-    .dockRow{display:flex;gap:8px;align-items:center}
-    .dockRow input{margin-top:0}
-    .dockLoadBtn{border:1px solid var(--border);background:var(--field);border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}
-    .toolGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-    .tool{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:14px;text-decoration:none;color:inherit;background:#fff}
-    .tool small{display:block;color:var(--muted);font-weight:700}
-    .dockSuggest{position:absolute;left:0;right:0;top:64px;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 25px rgba(15,23,42,.12);overflow:hidden;display:none}
-    .dockItem{padding:10px 12px;border-top:1px solid var(--border);cursor:pointer}
-    .dockItem:hover{background:#f8fafc}
-    body.dockCollapsed .dockTitle,body.dockCollapsed .dockRow,body.dockCollapsed .toolGrid{display:none}
-    .contentOffset{margin-left:300px}
-    body.dockCollapsed .contentOffset{margin-left:110px}
-
-    /* Loader */
-    #globalLoader{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:2000}
-    #globalLoader .box{background:#fff;border-radius:18px;padding:16px 18px;border:1px solid var(--border);min-width:320px;display:flex;gap:12px;align-items:center}
-    .spinner{width:20px;height:20px;border:3px solid #e5e7eb;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-  
-
-/* --- QuickDock unified styles (from BN) --- */
-#ffffff;
-      --shadow: 0 10px 30px rgba(0,0,0,.08);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    }
+    :root{--brand-red:#ff0000;--brand-red-2:#e21d35;--bg:#ffffff;--surface:#ffffff;--text:#111827;--muted:#6b7280;--border:#D1D1D1;--field:#E4E4E4;--field-focus:#ffffff;--shadow:0 10px 30px rgba(0,0,0,.08);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
     *{box-sizing:border-box}
     body{margin:0;background:linear-gradient(180deg,#f7f7f8 0%,#ffffff 60%);color:var(--text)}
     .container{max-width:1480px;margin:22px auto;padding:0 14px}
-
-    /* ===== QuickDock (same as other pages) ===== */
     .quickDock{position:fixed;left:16px;top:16px;width:320px;z-index:50}
     .quickDock .card{box-shadow:0 18px 50px rgba(15,23,42,.12)}
     .dockHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -83,80 +22,65 @@
     .dockLoadBtn{border:none;background:var(--brand-red);color:#fff;font-weight:900;border-radius:12px;padding:10px 12px;cursor:pointer}
     .dockLoadBtn:hover{background:var(--brand-red-2)}
     .dockSuggest{margin-top:8px;border:1px solid rgba(15,23,42,.12);border-radius:12px;overflow:hidden;display:none;background:#fff}
-    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}
-    .dockItem:first-child{border-top:none}
-    .dockItem b{display:block}
-
+    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}.dockItem:first-child{border-top:none}.dockItem b{display:block}
     .toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
     .tool{padding:12px;border:1px solid rgba(15,23,42,.12);border-radius:14px;background:#fff;display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:inherit}
-    .tIcon{width:28px;height:28px;border-radius:10px;display:flex;al
-
-
-</style>
+    .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
+    .tName{font-weight:900;font-size:13px;line-height:1.15}.tDesc{font-size:12px;color:var(--muted);margin-top:3px}
+    @media (max-width:1480px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
+    @media (min-width:1101px){.container{padding-left:360px}}
+    body.dockCollapsed .quickDock{width:86px !important; overflow:hidden !important}
+    body.dockCollapsed .quickDock .dockSearchWrap,body.dockCollapsed .quickDock .dockSuggest,body.dockCollapsed .quickDock .dockTitle:not(.dockHeader .dockTitle),body.dockCollapsed .quickDock .dockItem b,body.dockCollapsed .quickDock .dockItem .small{display:none !important}
+    body.dockCollapsed .quickDock .dockHeader{flex-direction:column;justify-content:flex-start;align-items:center;gap:8px;padding-top:8px}
+    body.dockCollapsed .quickDock .dockTitle{width:100%;text-align:center;font-weight:700;font-size:14px;line-height:1.1;white-space:normal}
+    body.dockCollapsed .quickDock .dockToggle{width:44px;height:34px;border-radius:12px;padding:0;display:flex;align-items:center;justify-content:center}
+    body.dockCollapsed .quickDock .toolGrid{grid-template-columns:1fr !important;gap:10px !important}
+    body.dockCollapsed .quickDock a.tool{justify-content:center !important;padding:10px !important;gap:0 !important}
+    body.dockCollapsed .quickDock a.tool > div:not(.tIcon){display:none !important}
+    .page{max-width:1100px;margin:26px auto;padding:0 16px}
+    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.h1{font-size:22px;font-weight:900;margin:0}.sub{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:var(--shadow);padding:16px;overflow:hidden}
+    .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.row>div{min-width:0}@media (max-width:900px){.row{grid-template-columns:1fr}}
+    label{display:block;font-size:12px;color:var(--muted);font-weight:800;min-width:0} input,select{width:100%;min-width:0;margin-top:6px;border:1px solid var(--border);background:#f8fafc;border-radius:12px;padding:10px 12px;font-size:14px}
+    .field{display:flex;flex-direction:column;min-width:0}.fLabel{font-size:12px;color:var(--muted);font-weight:800}
+    .help{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.45}
+    .triggersWrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:10px;align-items:start}@media(max-width:900px){.triggersWrap{grid-template-columns:1fr}}
+    .checkList{display:grid;grid-template-columns:1fr;gap:12px}.checkItem{display:flex;align-items:flex-start;gap:10px;min-width:0}.checkItem input{margin-top:2px;width:16px;height:16px;flex:0 0 auto}.checkItem .txt{display:block;font-size:13px;line-height:1.35;color:#111827;font-weight:800;word-break:break-word}
+    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}.btn{border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--brand-red);border-color:var(--brand-red);color:#fff}
+    .note{font-size:12px;color:var(--muted);margin-top:10px}.contentOffset{margin-left:300px} body.dockCollapsed .contentOffset{margin-left:110px}
+    @media (max-width:1480px){.contentOffset{margin-left:0}}
+  </style>
 </head>
 <body>
 <div class="quickDock" id="quickDock">
-    <div class="card" style="padding:16px">
-      <div class="dockHeader">
-        <div class="dockTitle" style="margin:0">Быстрый вход</div>
-        <button type="button" class="dockToggle" id="dockToggle" aria-label="Свернуть/развернуть панель" title="Свернуть панель">◀</button>
-      </div>
-      <div class="dockSearchWrap dockTop">
-        <div class="dockIcon">🔎</div>
-        <input autocomplete="off" class="dockSearch" id="dockCompany" placeholder="Введите компанию"/>
-        <button class="dockLoadBtn" id="dockLoadBtn" title="Загрузить" type="button">Загрузить</button>
-      </div>
-      <div class="dockSuggest" id="dockSuggest"></div>
-      <div style="height:12px"></div>
-      <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
-      <div class="toolGrid">
-  <a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-  <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-  <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-  <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-  <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-  <a class="tool" href="view_4_psi.html"><div class="tIcon">📄</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-  <a class="tool" href="view_5_full.html"><div class="tIcon">🗺️</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
-  <a class="tool" href="view_6_summary.html"><div class="tIcon">🧾</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
-  <a class="tool" href="view_7_calculator.html"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
-  <a class="tool" href="view_business_needs.html"><div class="tIcon">🧠</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
-  <a class="tool" href="view_fast_interview.html"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div class="tDesc">3–5 вопросов</div></div></a>
-</div>
+  <div class="card" style="padding:16px">
+    <div class="dockHeader">
+      <div class="dockTitle" style="margin:0">Быстрый вход</div>
+      <button type="button" class="dockToggle" id="dockToggle" aria-label="Свернуть/развернуть панель" title="Свернуть панель">◀</button>
     </div>
-  </div>
-
-
-<!-- QuickDock -->
-<div id="quickDock">
-  <div class="dock">
-    <div class="dockHead">
-      <div class="dockTitle">Быстрый вход</div>
-      <button class="dockToggle" id="dockToggle" title="Свернуть/развернуть" type="button">◀</button>
+    <div class="dockSearchWrap dockTop">
+      <div class="dockIcon">🔎</div>
+      <input autocomplete="off" class="dockSearch" id="dockCompany" placeholder="Введите компанию"/>
+      <button class="dockLoadBtn" id="dockLoadBtn" title="Загрузить" type="button">Загрузить</button>
     </div>
-    <div style="position:relative">
-      <div class="dockRow">
-        <input id="dockCompany" placeholder="Введите компанию"/>
-        <button class="dockLoadBtn" id="dockLoadBtn" type="button">Загрузить</button>
-      </div>
-      <div class="dockSuggest" id="dockSuggest"></div>
-    </div>
-    <div style="margin-top:10px;font-weight:900;color:var(--muted);font-size:12px">Инструменты</div>
+    <div class="dockSuggest" id="dockSuggest"></div>
+    <div style="height:12px"></div>
+    <div class="dockTitle" style="margin-bottom:0">Инструменты</div>
     <div class="toolGrid">
-  <a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
-  <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
-  <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
-  <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
-  <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
-  <a class="tool" href="view_4_psi.html"><div class="tIcon">📄</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
-  <a class="tool" href="view_5_full.html"><div class="tIcon">🗺️</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
-  <a class="tool" href="view_6_summary.html"><div class="tIcon">🧾</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
-  <a class="tool" href="view_7_calculator.html"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
-  <a class="tool" href="view_business_needs.html"><div class="tIcon">🧠</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
-  <a class="tool" href="view_fast_interview.html"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div class="tDesc">3–5 вопросов</div></div></a>
-</div>
+      <a class="tool" href="index.html"><div class="tIcon">🏠</div><div><div class="tName">Дашборд</div><div class="tDesc">PSI Control Center</div></div></a>
+      <a class="tool" href="view_1_indices.html"><div class="tIcon">📊</div><div><div class="tName">Индексы</div><div class="tDesc">итоги</div></div></a>
+      <a class="tool" href="view_2_interview.html"><div class="tIcon">🎯</div><div><div class="tName">Интервью</div><div class="tDesc">1–3</div></div></a>
+      <a class="tool" href="view_3_requirements.html"><div class="tIcon">🧪</div><div><div class="tName">Пилот</div><div class="tDesc">раздел 4</div></div></a>
+      <a class="tool" href="view_3b_product.html"><div class="tIcon">🧩</div><div><div class="tName">Продукт</div><div class="tDesc">раздел 6</div></div></a>
+      <a class="tool" href="view_4_psi.html"><div class="tIcon">📄</div><div><div class="tName">ПСИ</div><div class="tDesc">раздел 5</div></div></a>
+      <a class="tool" href="view_5_full.html"><div class="tIcon">🗺️</div><div><div class="tName">Полная карта</div><div class="tDesc">всё</div></div></a>
+      <a class="tool" href="view_6_summary.html"><div class="tIcon">🧾</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
+      <a class="tool" href="view_7_calculator.html"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
+      <a class="tool" href="view_business_needs.html"><div class="tIcon">🧠</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
+      <a class="tool" href="view_fast_interview.html"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div class="tDesc">3–5 вопросов</div></div></a>
+    </div>
   </div>
 </div>
-
 <div class="page contentOffset">
   <div class="top">
     <div>
