@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Fast интервью — 3–5 вопросов</title>
-  <script src="config.js?v=162"></script>
+  <title>Fast интервью — 5 вопросов</title>
+  <script src="config.js?v=166"></script>
   <style>
     :root{--brand-red:#ff0000;--brand-red-2:#e21d35;--bg:#ffffff;--surface:#ffffff;--text:#111827;--muted:#6b7280;--border:#D1D1D1;--field:#E4E4E4;--field-focus:#ffffff;--shadow:0 10px 30px rgba(0,0,0,.08);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
     *{box-sizing:border-box}
@@ -22,11 +22,14 @@
     .dockLoadBtn{border:none;background:var(--brand-red);color:#fff;font-weight:900;border-radius:12px;padding:10px 12px;cursor:pointer}
     .dockLoadBtn:hover{background:var(--brand-red-2)}
     .dockSuggest{margin-top:8px;border:1px solid rgba(15,23,42,.12);border-radius:12px;overflow:hidden;display:none;background:#fff}
-    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}.dockItem:first-child{border-top:none}.dockItem b{display:block}
+    .dockItem{padding:10px 12px;border-top:1px solid rgba(15,23,42,.06);cursor:pointer}
+    .dockItem:first-child{border-top:none}
+    .dockItem b{display:block}
     .toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
     .tool{padding:12px;border:1px solid rgba(15,23,42,.12);border-radius:14px;background:#fff;display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:inherit}
     .tIcon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.18)}
-    .tName{font-weight:900;font-size:13px;line-height:1.15}.tDesc{font-size:12px;color:var(--muted);margin-top:3px}
+    .tName{font-weight:900;font-size:13px;line-height:1.15}
+    .tDesc{font-size:12px;color:var(--muted);margin-top:3px}
     @media (max-width:1480px){.quickDock{position:static;width:auto;margin:0 14px 12px}}
     @media (min-width:1101px){.container{padding-left:360px}}
     body.dockCollapsed .quickDock{width:86px !important; overflow:hidden !important}
@@ -37,18 +40,53 @@
     body.dockCollapsed .quickDock .toolGrid{grid-template-columns:1fr !important;gap:10px !important}
     body.dockCollapsed .quickDock a.tool{justify-content:center !important;padding:10px !important;gap:0 !important}
     body.dockCollapsed .quickDock a.tool > div:not(.tIcon){display:none !important}
-    .page{max-width:1100px;margin:26px auto;padding:0 16px}
-    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.h1{font-size:22px;font-weight:900;margin:0}.sub{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+    .page{max-width:1120px;margin:26px auto;padding:0 16px}
+    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .h1{font-size:22px;font-weight:900;margin:0}
+    .sub{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.45;max-width:860px}
     .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:var(--shadow);padding:16px;overflow:hidden}
-    .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.row>div{min-width:0}@media (max-width:900px){.row{grid-template-columns:1fr}}
-    label{display:block;font-size:12px;color:var(--muted);font-weight:800;min-width:0} input,select{width:100%;min-width:0;margin-top:6px;border:1px solid var(--border);background:#f8fafc;border-radius:12px;padding:10px 12px;font-size:14px}
-    .field{display:flex;flex-direction:column;min-width:0}.fLabel{font-size:12px;color:var(--muted);font-weight:800}
-    .help{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.45}
-    .triggersWrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:10px;align-items:start}@media(max-width:900px){.triggersWrap{grid-template-columns:1fr}}
-    .checkList{display:grid;grid-template-columns:1fr;gap:12px}.checkItem{display:flex;align-items:flex-start;gap:10px;min-width:0}.checkItem input{margin-top:2px;width:16px;height:16px;flex:0 0 auto}.checkItem .txt{display:block;font-size:13px;line-height:1.35;color:#111827;font-weight:800;word-break:break-word}
-    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}.btn{border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--brand-red);border-color:var(--brand-red);color:#fff}
-    .note{font-size:12px;color:var(--muted);margin-top:10px}.contentOffset{margin-left:300px} body.dockCollapsed .contentOffset{margin-left:110px}
+    .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+    .row>div{min-width:0}
+    @media (max-width:900px){.row{grid-template-columns:1fr}}
+    label{display:block;font-size:12px;color:var(--muted);font-weight:800;min-width:0}
+    input,select,textarea{width:100%;min-width:0;margin-top:6px;border:1px solid var(--border);background:#f8fafc;border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit}
+    textarea{min-height:92px;resize:vertical}
+    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+    .btn{border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}
+    .btn.primary{background:var(--brand-red);border-color:var(--brand-red);color:#fff}
+    .btn.soft{background:#fff5f5;border-color:#fecaca;color:#991b1b}
+    .note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.45}
+    .contentOffset{margin-left:300px}
+    body.dockCollapsed .contentOffset{margin-left:110px}
     @media (max-width:1480px){.contentOffset{margin-left:0}}
+    .metaCard{margin-bottom:14px}
+    .qList{display:grid;gap:14px}
+    .qCard{border:1px solid #e5e7eb;border-radius:18px;padding:16px;background:linear-gradient(180deg,#fff 0%,#fcfcfd 100%)}
+    .qHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
+    .qTitle{font-size:17px;font-weight:900;line-height:1.25;margin:0}
+    .qId{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;padding:0 12px;border-radius:999px;background:#111827;color:#fff;font-weight:900;font-size:13px}
+    .qHint{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}
+    .chipGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    @media (max-width:860px){.chipGrid{grid-template-columns:1fr}}
+    .chip{display:flex;gap:10px;align-items:flex-start;border:1px solid #e5e7eb;border-radius:14px;padding:11px 12px;background:#fff;cursor:pointer;transition:.15s ease;min-height:54px}
+    .chip:hover{border-color:#fecaca;background:#fff7f7}
+    .chip input{width:16px;height:16px;margin:2px 0 0;flex:0 0 auto}
+    .chip .txt{display:block;font-size:13px;line-height:1.35;color:#111827;font-weight:800}
+    .commentWrap{margin-top:12px}
+    .commentWrap label{font-size:12px;color:var(--muted);font-weight:800}
+    .inlineNote{margin-top:8px;font-size:12px;color:var(--muted)}
+    .hidden{display:none !important}
+    .summaryBox{margin-top:14px;padding:12px 14px;border-radius:14px;background:#f8fafc;border:1px dashed #d1d5db}
+    .summaryTitle{font-weight:900;font-size:12px;color:#374151;margin-bottom:6px}
+    .summaryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    @media (max-width:860px){.summaryGrid{grid-template-columns:1fr}}
+    .mini{border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;background:#fff}
+    .mini .k{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .mini .v{font-size:16px;font-weight:900;margin-top:4px}
+    #globalLoader{position:fixed;inset:0;background:rgba(255,255,255,.75);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:1000}
+    #globalLoader .box{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px 18px;box-shadow:0 18px 45px rgba(15,23,42,.16)}
+    .spinner{width:22px;height:22px;border:3px solid #e5e7eb;border-top-color:var(--brand-red);border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
@@ -77,22 +115,23 @@
       <a class="tool" href="view_6_summary.html"><div class="tIcon">🧾</div><div><div class="tName">Выводы</div><div class="tDesc">итоги по компании</div></div></a>
       <a class="tool" href="view_7_calculator.html"><div class="tIcon">🧮</div><div><div class="tName">Калькулятор</div><div class="tDesc">спецификация</div></div></a>
       <a class="tool" href="view_business_needs.html"><div class="tIcon">🧠</div><div><div class="tName">Боли и потребности</div><div class="tDesc">BN</div></div></a>
-      <a class="tool" href="view_fast_interview.html"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div class="tDesc">3–5 вопросов</div></div></a>
+      <a class="tool" href="view_fast_interview.html"><div class="tIcon">⚡</div><div><div class="tName">Fast интервью</div><div class="tDesc">5 вопросов</div></div></a>
     </div>
   </div>
 </div>
+
 <div class="page contentOffset">
   <div class="top">
     <div>
       <h1 class="h1">Fast интервью</h1>
-      <div class="sub">3–5 быстрых вопросов для первичной квалификации. После сохранения ответы подтянутся в основное интервью и будут помечены <b>жёлтым</b> (Fast).</div>
+      <div class="sub">Пять безопасных входных вопросов, которые не заставляют клиента уходить в подробный аудит, но позволяют автоматически предзаполнить часть основного интервью. Внешний Apps Script не меняем: на сохранение уходит тот же payload, а под капотом мы считаем score, переводим его в <b>да / частично / нет</b> и записываем только поля основного интервью.</div>
     </div>
     <div>
       <button class="btn" id="btnGoInterview" type="button">Открыть основное интервью →</button>
     </div>
   </div>
 
-  <div class="card">
+  <div class="card metaCard">
     <div class="row">
       <div>
         <label>Название компании
@@ -105,121 +144,114 @@
         </label>
       </div>
     </div>
+    <div class="note">Все вопросы ниже поддерживают <b>мультивыбор</b> и <b>свободный комментарий</b>. Комментарии сохраняются в payload записи, но не ломают существующую структуру листа и скрипта.</div>
+  </div>
 
-    <div class="row" style="margin-top:12px">
-      <div>
-        <label>Кол-во рабочих мест
-          <input id="fi_workplaces" type="number" min="0" step="1" value="0"/>
-        </label>
-      </div>
-      <div>
-        <label>Кол-во серверов
-          <input id="fi_servers" type="number" min="0" step="1" value="0"/>
-        </label>
-      </div>
-    </div>
-
-    <div class="row" style="margin-top:12px">
-      <div>
-        <label>Кол-во филиалов
-          <input id="fi_branches" type="number" min="0" step="1" value="0"/>
-        </label>
-      </div>
-      <div>
-        <label>Закрытый контур
-          <select id="fi_closed"><option value="">—</option><option>Да</option><option>Нет</option></select>
-        </label>
-      </div>
-    </div>
-
-    
-    <div class="row" style="margin-top:12px">
-      <div>
-        <label>% ручных операций (оценка)
-          <input id="fi_manualPct" type="number" min="0" max="100" step="1" value="0"/>
-        </label>
-      </div>
-      <div>
-        <label>Есть ли единый источник достоверной инвентаризации?
-          <select id="fi_t1">
-            <option value="">—</option>
-            <option value="Да">Да</option>
-            <option value="Частично">Частично</option>
-            <option value="Нет">Нет</option>
-          </select>
-        </label>
-      </div>
-    </div>
-
-    <div class="row" style="margin-top:12px">
-      <div>
-        <label>Как собираете и обновляете данные об инфраструктуре?
-          <select id="fi_collect">
-            <option value="">—</option>
-            <option value="Авто">Автоматизировано (агенты/сканеры, без ручного ввода)</option>
-            <option value="Частично">Частично (авто есть, но много ручного / охват не полный)</option>
-            <option value="Ручной">В основном вручную (Excel/ручной ввод)</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <label>Используются ли данные инвентаризации в других системах?
-          <select id="fi_use">
-            <option value="">—</option>
-            <option value="Да">Да (ITSM/ИБ/лицензии/BI)</option>
-            <option value="Частично">Частично</option>
-            <option value="Нет">Нет</option>
-          </select>
-        </label>
-      </div>
-    </div>
-
-    <div class="row" style="margin-top:12px">
-      <div>
-        <label>Охвачены ли сбором данных все сегменты (VDI/филиалы/закрытые контуры)?
-          <select id="fi_cover">
-            <option value="">—</option>
-            <option value="Да">Да</option>
-            <option value="Частично">Частично</option>
-            <option value="Нет">Нет</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <label>Есть ли регламент актуализации данных об устройствах и ПО?
-          <select id="fi_reg">
-            <option value="">—</option>
-            <option value="Да">Да</option>
-            <option value="Частично">Частично</option>
-            <option value="Нет">Нет</option>
-          </select>
-        </label>
-      </div>
-    </div>
-
-    <div class="row" style="margin-top:12px">
-      <div class="field">
-        <div class="fLabel">Триггеры (влияют на риск‑профиль)</div>
-        <div class="checkList">
-          <label class="checkItem"><input type="checkbox" id="fi_r_incidents"/><span class="txt">Есть частые инциденты/простои</span></label>
-          <label class="checkItem"><input type="checkbox" id="fi_r_audits"/><span class="txt">Были внешние проверки за последние 3 года</span></label>
-          <label class="checkItem"><input type="checkbox" id="fi_r_changes"/><span class="txt">Планируются крупные изменения инфраструктуры в 12 месяцев</span></label>
-          <label class="checkItem"><input type="checkbox" id="fi_r_turnover"/><span class="txt">Высокая текучесть ИТ‑персонала / смена подрядчиков</span></label>
+  <div class="card">
+    <div class="qList">
+      <section class="qCard" data-question="Q1">
+        <div class="qHead">
+          <div>
+            <h2 class="qTitle">Как можно описать вашу ИТ-среду сегодня?</h2>
+            <div class="qHint">Можно выбрать несколько вариантов. Это влияет на сигналы по охвату, discovery и единому источнику.</div>
+          </div>
+          <div class="qId">Q1</div>
         </div>
-      </div>
-      <div class="field">
-        <div class="fLabel">Подсказка</div>
-        <div class="help">Эти ответы нужны, чтобы быстро предзаполнить 50–70% сигнального слоя (T/P/R) и корректно посчитать приоритет тематик/задач.</div>
-      </div>
+        <div class="chipGrid" id="q1_options"></div>
+        <div class="commentWrap">
+          <label for="q1_comment">Комментарий клиента</label>
+          <textarea id="q1_comment" placeholder="Например: филиалы есть, но часть живет отдельно; облако только для части сервисов"></textarea>
+        </div>
+      </section>
+
+      <section class="qCard" data-question="Q2">
+        <div class="qHead">
+          <div>
+            <h2 class="qTitle">Если нужно быстро понять, какие устройства и ПО реально есть в инфраструктуре, откуда обычно берут информацию?</h2>
+            <div class="qHint">Вопрос про реальные источники данных. По ответам считаются сигналы T1 / T2 / T3 / T5 / T8 / P4.</div>
+          </div>
+          <div class="qId">Q2</div>
+        </div>
+        <div class="chipGrid" id="q2_options"></div>
+        <div class="commentWrap">
+          <label for="q2_comment">Комментарий клиента</label>
+          <textarea id="q2_comment" placeholder="Например: CMDB есть, но финально всё равно сверяем по Excel; discovery покрывает не все площадки"></textarea>
+        </div>
+      </section>
+
+      <section class="qCard" data-question="Q3">
+        <div class="qHead">
+          <div>
+            <h2 class="qTitle">Какие системы управления ИТ используются сейчас?</h2>
+            <div class="qHint">Выясняем зрелость контура и то, куда уже потенциально могут уходить данные об инвентаризации.</div>
+          </div>
+          <div class="qId">Q3</div>
+        </div>
+        <div class="chipGrid" id="q3_options"></div>
+        <div class="commentWrap">
+          <label for="q3_comment">Комментарий клиента</label>
+          <textarea id="q3_comment" placeholder="Например: ITSM есть, но CMDB внутри не ведется; SAM в зачатке; есть внутренний каталог"></textarea>
+        </div>
+      </section>
+
+      <section class="qCard" data-question="Q4">
+        <div class="qHead">
+          <div>
+            <h2 class="qTitle">Используются ли инструменты автоматического обнаружения инфраструктуры?</h2>
+            <div class="qHint">Отсюда считаются сигналы по T2 / T3 / T4 / T5. Если discovery есть хоть в каком-то виде, раскроется уточнение по инструментам.</div>
+          </div>
+          <div class="qId">Q4</div>
+        </div>
+        <div class="chipGrid" id="q4_options"></div>
+        <div class="commentWrap">
+          <label for="q4_comment">Комментарий клиента</label>
+          <textarea id="q4_comment" placeholder="Например: discovery есть, но только по серверам; филиалы не охвачены; скрипты собирают часть данных"></textarea>
+        </div>
+
+        <div id="q4_tool_wrap" class="hidden" style="margin-top:14px">
+          <div class="summaryBox">
+            <div class="summaryTitle">Уточнение (если discovery есть)</div>
+            <div class="qHint" style="margin-top:0">Какие примерно это инструменты? Можно выбрать несколько вариантов.</div>
+            <div class="chipGrid" id="q4_tool_options" style="margin-top:10px"></div>
+            <div class="commentWrap">
+              <label for="q4_tool_other">Если выбрано «Другое» — укажи название</label>
+              <input id="q4_tool_other" placeholder="Напр.: Ivanti, GLPI Agent, самописный модуль"/>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="qCard" data-question="Q5">
+        <div class="qHead">
+          <div>
+            <h2 class="qTitle">Когда нужно быстро понять состав инфраструктуры, сколько времени обычно занимает собрать актуальную картину?</h2>
+            <div class="qHint">Этот вопрос стабилизирует оценку T1 / T2 / T5 и помогает не завышать зрелость только потому, что у клиента где-то есть отдельная система.</div>
+          </div>
+          <div class="qId">Q5</div>
+        </div>
+        <div class="chipGrid" id="q5_options"></div>
+        <div class="commentWrap">
+          <label for="q5_comment">Комментарий клиента</label>
+          <textarea id="q5_comment" placeholder="Например: по серверной части быстро, по филиалам — долго; для инцидентов зависит от того, кто на смене"></textarea>
+        </div>
+      </section>
     </div>
 
+    <div class="summaryBox">
+      <div class="summaryTitle">Что происходит под капотом</div>
+      <div class="summaryGrid">
+        <div class="mini"><div class="k">Сохранение</div><div class="v" id="summary_save">в те же поля</div><div class="inlineNote">Используем существующие столбцы tech_/proc_ и fast_fields.</div></div>
+        <div class="mini"><div class="k">БД</div><div class="v" id="summary_db">без Apps Script</div><div class="inlineNote">Raw-ответы и комментарии складываем в payload записи.</div></div>
+        <div class="mini"><div class="k">Предзаполнение</div><div class="v" id="summary_prefill">score → ответ</div><div class="inlineNote">Порог: ≥3 = Да, от -2 до 2 = Частично, ≤-3 = Нет.</div></div>
+      </div>
+    </div>
 
     <div class="actions">
-      <button class="btn" id="btnClear" type="button">Очистить</button>
+      <button class="btn soft" id="btnClear" type="button">Очистить</button>
+      <button class="btn" id="btnPreview" type="button">Показать, что заполнится</button>
       <button class="btn primary" id="btnSave" type="button">Сохранить в БД</button>
     </div>
-
-    <div class="note">Под капотом мы сохраняем заполненные поля и список <code>fast_fields</code> — чтобы основное интервью могло подсветить их жёлтым.</div>
+    <div class="note">Fast Interview теперь не пишет боли / причины / потребности напрямую. Он только рассчитывает ответы основного интервью. Это убирает конфликты и сохраняет текущую цепочку: интервью → индексы → тематики → боли / потребности → выводы.</div>
   </div>
 </div>
 
@@ -228,8 +260,557 @@
 <script>
 (function(){
   const WEBAPP_URL = (window.GS_WEBAPP_URL || window.GOOGLE_SHEETS_WEBAPP_URL || "").trim();
+  const MAPPING_ROWS = [
+  {
+    "fastQuestion": "Q1",
+    "fastAnswer": "несколько филиалов",
+    "interviewQuestion": "T9",
+    "score": -1,
+    "comment": "сложнее покрыть discovery"
+  },
+  {
+    "fastQuestion": "Q1",
+    "fastAnswer": "удаленные пользователи",
+    "interviewQuestion": "T4",
+    "score": -1,
+    "comment": "удаленные сегменты"
+  },
+  {
+    "fastQuestion": "Q1",
+    "fastAnswer": "виртуализация",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "часть данных можно собрать"
+  },
+  {
+    "fastQuestion": "Q1",
+    "fastAnswer": "облака",
+    "interviewQuestion": "T4",
+    "score": -1,
+    "comment": "cloud сложнее"
+  },
+  {
+    "fastQuestion": "Q1",
+    "fastAnswer": "облака",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "часть данных доступна"
+  },
+  {
+    "fastQuestion": "Q1",
+    "fastAnswer": "закрытые сегменты",
+    "interviewQuestion": "T9",
+    "score": -2,
+    "comment": "сегменты трудно охватить"
+  },
+  {
+    "fastQuestion": "Q1",
+    "fastAnswer": "дочерние компании",
+    "interviewQuestion": "T1",
+    "score": -1,
+    "comment": "единый источник сложнее"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "Excel",
+    "interviewQuestion": "T1",
+    "score": -3,
+    "comment": "нет достоверности"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "Excel",
+    "interviewQuestion": "T2",
+    "score": -3,
+    "comment": "ручной сбор"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "Excel",
+    "interviewQuestion": "T3",
+    "score": -3,
+    "comment": "нет дедупликации"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "Excel",
+    "interviewQuestion": "T5",
+    "score": -3,
+    "comment": "устаревание"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "CMDB",
+    "interviewQuestion": "T1",
+    "score": 1,
+    "comment": "есть источник"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "Service Desk",
+    "interviewQuestion": "T8",
+    "score": 1,
+    "comment": "интеграция"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "Service Desk",
+    "interviewQuestion": "P4",
+    "score": 1,
+    "comment": "процессы инцидентов"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "Active Directory",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "часть данных"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "Active Directory",
+    "interviewQuestion": "T4",
+    "score": 1,
+    "comment": "partial discovery"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "виртуализация",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "VM inventory"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "несколько систем",
+    "interviewQuestion": "T1",
+    "score": -2,
+    "comment": "нет единого источника"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "несколько систем",
+    "interviewQuestion": "T3",
+    "score": -2,
+    "comment": "дубли"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "через коллег",
+    "interviewQuestion": "T2",
+    "score": -3,
+    "comment": "ручной сбор"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "через коллег",
+    "interviewQuestion": "T5",
+    "score": -2,
+    "comment": "устаревание"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "discovery",
+    "interviewQuestion": "T2",
+    "score": 3,
+    "comment": "автоматический сбор"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "discovery",
+    "interviewQuestion": "T4",
+    "score": 3,
+    "comment": "discovery"
+  },
+  {
+    "fastQuestion": "Q2",
+    "fastAnswer": "discovery",
+    "interviewQuestion": "T5",
+    "score": 2,
+    "comment": "быстрее обновляется"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "ITSM",
+    "interviewQuestion": "P4",
+    "score": 2,
+    "comment": "процессы"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "ITSM",
+    "interviewQuestion": "P3",
+    "score": 1,
+    "comment": "change"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "ITSM",
+    "interviewQuestion": "T8",
+    "score": 1,
+    "comment": "интеграции"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "CMDB",
+    "interviewQuestion": "T1",
+    "score": 1,
+    "comment": "единый источник"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "CMDB",
+    "interviewQuestion": "P3",
+    "score": 1,
+    "comment": "change"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "ITAM",
+    "interviewQuestion": "P7",
+    "score": 3,
+    "comment": "управление активами"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "SAM",
+    "interviewQuestion": "P8",
+    "score": 3,
+    "comment": "лицензии"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "BPM",
+    "interviewQuestion": "P3",
+    "score": 2,
+    "comment": "процессы"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "мониторинг",
+    "interviewQuestion": "P4",
+    "score": 2,
+    "comment": "инциденты"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "безопасность",
+    "interviewQuestion": "P6",
+    "score": 1,
+    "comment": "управление рисками"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "внутренние базы",
+    "interviewQuestion": "T1",
+    "score": -2,
+    "comment": "фрагментация"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "ничего",
+    "interviewQuestion": "P3",
+    "score": -3,
+    "comment": "нет процессов"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "ничего",
+    "interviewQuestion": "P4",
+    "score": -3,
+    "comment": "нет процессов"
+  },
+  {
+    "fastQuestion": "Q3",
+    "fastAnswer": "ничего",
+    "interviewQuestion": "T8",
+    "score": -3,
+    "comment": "нет интеграций"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "нет",
+    "interviewQuestion": "T2",
+    "score": -3,
+    "comment": "ручной сбор"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "нет",
+    "interviewQuestion": "T4",
+    "score": -3,
+    "comment": "нет discovery"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "нет",
+    "interviewQuestion": "T5",
+    "score": -2,
+    "comment": "устаревание"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "один инструмент",
+    "interviewQuestion": "T4",
+    "score": 3,
+    "comment": "discovery"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "один инструмент",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "сбор"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "несколько инструментов",
+    "interviewQuestion": "T4",
+    "score": 1,
+    "comment": "fragmented"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "несколько инструментов",
+    "interviewQuestion": "T3",
+    "score": -2,
+    "comment": "нет дедупликации"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "встроенные средства",
+    "interviewQuestion": "T4",
+    "score": 1,
+    "comment": "partial discovery"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "скрипты",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "скрипты"
+  },
+  {
+    "fastQuestion": "Q4",
+    "fastAnswer": "скрипты",
+    "interviewQuestion": "T4",
+    "score": 1,
+    "comment": "limited discovery"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "SCCM / Intune",
+    "interviewQuestion": "T2",
+    "score": 2,
+    "comment": "полноценный автосбор endpoint/inventory"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "SCCM / Intune",
+    "interviewQuestion": "T4",
+    "score": 2,
+    "comment": "есть зрелый discovery"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "Lansweeper",
+    "interviewQuestion": "T2",
+    "score": 2,
+    "comment": "inventory/discovery"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "Lansweeper",
+    "interviewQuestion": "T4",
+    "score": 2,
+    "comment": "есть discovery"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "Zabbix / мониторинг",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "частичный техсбор"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "Zabbix / мониторинг",
+    "interviewQuestion": "T4",
+    "score": 1,
+    "comment": "ограниченный discovery через мониторинг"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "VMware",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "данные по виртуальной среде"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "VMware",
+    "interviewQuestion": "T4",
+    "score": 1,
+    "comment": "частичный discovery в VM-контуре"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "собственные скрипты",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "частичная автоматизация сбора"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "собственные скрипты",
+    "interviewQuestion": "T4",
+    "score": 1,
+    "comment": "ограниченный discovery"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "другое",
+    "interviewQuestion": "T2",
+    "score": 1,
+    "comment": "есть некий инструмент, требуется комментарий"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "другое",
+    "interviewQuestion": "T4",
+    "score": 1,
+    "comment": "discovery вероятно есть, но тип не уточнен"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "не скажу",
+    "interviewQuestion": "—",
+    "score": 0,
+    "comment": "не влияет на интервью"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "не знаю",
+    "interviewQuestion": "—",
+    "score": 0,
+    "comment": "не влияет на интервью"
+  },
+  {
+    "fastQuestion": "Q4_tool",
+    "fastAnswer": "нет",
+    "interviewQuestion": "—",
+    "score": 0,
+    "comment": "трактовать как отсутствие уточнения"
+  },
+  {
+    "fastQuestion": "Q5",
+    "fastAnswer": "несколько минут",
+    "interviewQuestion": "T1",
+    "score": 3,
+    "comment": "данные доступны"
+  },
+  {
+    "fastQuestion": "Q5",
+    "fastAnswer": "несколько минут",
+    "interviewQuestion": "T5",
+    "score": 3,
+    "comment": "актуальность"
+  },
+  {
+    "fastQuestion": "Q5",
+    "fastAnswer": "до часа",
+    "interviewQuestion": "T1",
+    "score": 1,
+    "comment": "частично"
+  },
+  {
+    "fastQuestion": "Q5",
+    "fastAnswer": "до часа",
+    "interviewQuestion": "T5",
+    "score": 1,
+    "comment": "частично"
+  },
+  {
+    "fastQuestion": "Q5",
+    "fastAnswer": "несколько часов",
+    "interviewQuestion": "T1",
+    "score": 0,
+    "comment": "средне"
+  },
+  {
+    "fastQuestion": "Q5",
+    "fastAnswer": "день и больше",
+    "interviewQuestion": "T1",
+    "score": -3,
+    "comment": "плохая видимость"
+  },
+  {
+    "fastQuestion": "Q5",
+    "fastAnswer": "день и больше",
+    "interviewQuestion": "T5",
+    "score": -3,
+    "comment": "устаревание"
+  },
+  {
+    "fastQuestion": "Q5",
+    "fastAnswer": "несколько систем",
+    "interviewQuestion": "T1",
+    "score": -2,
+    "comment": "фрагментация"
+  },
+  {
+    "fastQuestion": "Q5",
+    "fastAnswer": "спрашивать коллег",
+    "interviewQuestion": "T2",
+    "score": -3,
+    "comment": "ручной сбор"
+  }
+];
 
-  // JSONP helper
+  const QUESTION_DEFS = {
+    Q1: {
+      container: "q1_options",
+      options: ["один офис / площадка","несколько филиалов","удаленные пользователи","локальная серверная инфраструктура","виртуализация","облака","закрытые сегменты","дочерние компании","инфраструктура часто меняется","не знаю"]
+    },
+    Q2: {
+      container: "q2_options",
+      options: ["Excel","CMDB","Service Desk","Active Directory","виртуализация","несколько систем","через коллег","discovery","не знаю"]
+    },
+    Q3: {
+      container: "q3_options",
+      options: ["ITSM","CMDB","ITAM","SAM","BPM","мониторинг","безопасность","внутренние базы","ничего","не знаю"]
+    },
+    Q4: {
+      container: "q4_options",
+      options: ["нет","один инструмент","несколько инструментов","встроенные средства","скрипты","не знаю"]
+    },
+    Q4_tool: {
+      container: "q4_tool_options",
+      options: ["SCCM / Intune","Lansweeper","Zabbix / мониторинг","VMware","собственные скрипты","другое","не скажу","не знаю","нет"]
+    },
+    Q5: {
+      container: "q5_options",
+      options: ["несколько минут","до часа","несколько часов","день и больше","несколько систем","спрашивать коллег","не знаю"]
+    }
+  };
+
+  const INTERVIEW_FIELDS = {
+    T1: { key: "tech_01_score", label: "T1. Есть ли единый источник достоверной информации об устройствах и установленном ПО?" },
+    T2: { key: "tech_02_score", label: "T2. Автоматизирован ли сбор данных об инфраструктуре (без ручного ввода)?" },
+    T3: { key: "tech_03_score", label: "T3. Настроена ли автоматическая идентификация и устранение дублей устройств?" },
+    T4: { key: "tech_04_score", label: "T4. Есть ли автоматическое обнаружение новых устройств в сети?" },
+    T5: { key: "tech_05_score", label: "T5. Обновляются ли данные об устройствах и ПО без ручного вмешательства?" },
+    T8: { key: "tech_08_score", label: "T8. Используются ли данные об инвентаризации в других системах (ITSM, безопасность, лицензирование)?" },
+    T9: { key: "tech_09_score", label: "T9. Охвачены ли сбором данных все сегменты инфраструктуры (VDI, филиалы, изолированные контуры)?" },
+    P3: { key: "proc_03_score", label: "P3. Используются ли данные об инвентаризации при управлении изменениями?" },
+    P4: { key: "proc_04_score", label: "P4. Используются ли данные об инвентаризации при управлении инцидентами?" },
+    P6: { key: "proc_06_score", label: "P6. Проводится ли регулярная сверка фактической инфраструктуры с учетной?" },
+    P7: { key: "proc_07_score", label: "P7. Используются ли данные инвентаризации для оптимизации закупок ПО?" },
+    P8: { key: "proc_08_score", label: "P8. Используются ли данные для контроля лицензионных рисков?" }
+  };
+
+  const $ = (id)=>document.getElementById(id);
+
   function jsonp(url, timeoutMs=15000){
     return new Promise((resolve, reject) => {
       const cb = "cb_" + Math.random().toString(36).slice(2) + "_" + Date.now();
@@ -253,15 +834,15 @@
   }
 
   function showLoader(title, sub){
-    const el = document.getElementById('globalLoader');
+    const el = $("globalLoader");
     if(!el) return;
-    document.getElementById('globalLoaderTitle').textContent = title || 'Загружаю…';
-    document.getElementById('globalLoaderSub').textContent = sub || '';
-    el.style.display='flex';
+    $("globalLoaderTitle").textContent = title || "Загружаю…";
+    $("globalLoaderSub").textContent = sub || "";
+    el.style.display = "flex";
   }
   function hideLoader(){
-    const el = document.getElementById('globalLoader');
-    if(el) el.style.display='none';
+    const el = $("globalLoader");
+    if(el) el.style.display = "none";
   }
 
   function setCompanyInLinks(company){
@@ -274,30 +855,260 @@
     });
   }
 
+  function getCompany(){
+    return ($('fi_company').value || $('dockCompany').value || '').trim();
+  }
+
+  function scoreToInterview(score){
+    if(score >= 3) return 2;
+    if(score <= -3) return 0;
+    return 1;
+  }
+
+  function scoreToLabel(score){
+    if(score >= 3) return "Да";
+    if(score <= -3) return "Нет";
+    return "Частично";
+  }
+
+  function renderOptions(){
+    Object.entries(QUESTION_DEFS).forEach(([qKey, def])=>{
+      const wrap = $(def.container);
+      if(!wrap) return;
+      wrap.innerHTML = "";
+      def.options.forEach((opt, idx)=>{
+        const label = document.createElement("label");
+        label.className = "chip";
+        label.innerHTML = `<input type="checkbox" data-q="${qKey}" value="${String(opt).replace(/"/g,'&quot;')}"><span class="txt">${opt}</span>`;
+        wrap.appendChild(label);
+      });
+    });
+  }
+
+  function selectedAnswers(qKey){
+    return Array.from(document.querySelectorAll(`input[data-q="${qKey}"]:checked`)).map(el=>el.value);
+  }
+
+  function setSelectedAnswers(qKey, values){
+    const set = new Set(Array.isArray(values) ? values : []);
+    document.querySelectorAll(`input[data-q="${qKey}"]`).forEach(el=>{ el.checked = set.has(el.value); });
+  }
+
+  function collectFastState(){
+    return {
+      company: getCompany(),
+      lpr: $('fi_lpr').value.trim(),
+      answers: {
+        Q1: selectedAnswers('Q1'),
+        Q2: selectedAnswers('Q2'),
+        Q3: selectedAnswers('Q3'),
+        Q4: selectedAnswers('Q4'),
+        Q4_tool: selectedAnswers('Q4_tool'),
+        Q5: selectedAnswers('Q5')
+      },
+      comments: {
+        Q1: $('q1_comment').value.trim(),
+        Q2: $('q2_comment').value.trim(),
+        Q3: $('q3_comment').value.trim(),
+        Q4: $('q4_comment').value.trim(),
+        Q4_tool_other: $('q4_tool_other').value.trim(),
+        Q5: $('q5_comment').value.trim()
+      }
+    };
+  }
+
+  function computeInterviewScores(state){
+    const scoreMap = {};
+    const hitMap = {};
+    const reasons = [];
+    MAPPING_ROWS.forEach(rule => {
+      if(!rule || !rule.fastQuestion || !rule.fastAnswer) return;
+      const selected = (((state.answers || {})[rule.fastQuestion]) || []);
+      if(!selected.includes(rule.fastAnswer)) return;
+      const iq = String(rule.interviewQuestion || "").trim();
+      if(!iq || iq === "—") return;
+      scoreMap[iq] = (scoreMap[iq] || 0) + Number(rule.score || 0);
+      hitMap[iq] = (hitMap[iq] || 0) + 1;
+      reasons.push({
+        fastQuestion: rule.fastQuestion,
+        fastAnswer: rule.fastAnswer,
+        interviewQuestion: iq,
+        delta: Number(rule.score || 0),
+        comment: rule.comment || ""
+      });
+    });
+
+    const payloadFields = {};
+    const preview = [];
+    const fastFields = [];
+    Object.entries(scoreMap).forEach(([iq, totalScore])=>{
+      const meta = INTERVIEW_FIELDS[iq];
+      if(!meta) return;
+      const interviewScore = scoreToInterview(totalScore);
+      payloadFields[meta.key] = interviewScore;
+      payloadFields[meta.key.replace("_score","_label")] = meta.label;
+      preview.push({
+        code: iq,
+        key: meta.key,
+        totalScore,
+        interviewScore,
+        interviewLabel: scoreToLabel(totalScore),
+        hits: hitMap[iq] || 0
+      });
+      fastFields.push(meta.key);
+    });
+
+    if(state.lpr){
+      payloadFields.lpr = state.lpr;
+      fastFields.push("lpr");
+    }
+
+    preview.sort((a,b)=> a.code.localeCompare(b.code, 'ru'));
+    return { scoreMap, hitMap, payloadFields, preview, fastFields, reasons };
+  }
+
+  function updateQ4Visibility(){
+    const selected = selectedAnswers('Q4');
+    const shouldShow = selected.some(v => !['нет','не знаю'].includes(v));
+    $('q4_tool_wrap').classList.toggle('hidden', !shouldShow);
+    if(!shouldShow){
+      setSelectedAnswers('Q4_tool', []);
+      $('q4_tool_other').value = '';
+    }
+  }
+
+  function clearForm(){
+    Object.keys(QUESTION_DEFS).forEach(qKey => setSelectedAnswers(qKey, []));
+    ['fi_lpr','q1_comment','q2_comment','q3_comment','q4_comment','q4_tool_other','q5_comment'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    updateQ4Visibility();
+  }
+
+  function buildPayload(){
+    const state = collectFastState();
+    const computed = computeInterviewScores(state);
+    const payload = {
+      company: state.company,
+      lpr: state.lpr || "",
+      fast_fields: JSON.stringify(computed.fastFields),
+      payload: JSON.stringify({
+        fastInterviewVersion: "v2_score_ui_166",
+        threshold: { yes: 3, partialMin: -2, partialMax: 2, no: -3 },
+        state,
+        computed
+      })
+    };
+
+    Object.entries(computed.payloadFields).forEach(([k,v])=>{ payload[k]=v; });
+    return { state, computed, payload };
+  }
+
+  function renderPreview(){
+    const { state, computed } = buildPayload();
+    const rows = computed.preview;
+    if(!rows.length){
+      alert('Пока не набралось ни одного сигнала для предзаполнения. Выбери ответы в Fast Interview.');
+      return;
+    }
+    const lines = rows.map(r => `${r.code} → ${r.interviewLabel} (score: ${r.totalScore}; сигналов: ${r.hits})`);
+    alert("Будут предзаполнены поля основного интервью:\n\n" + lines.join("\n"));
+  }
+
+  async function saveFast(){
+    if(!WEBAPP_URL){
+      alert('Не задан URL Apps Script (GS_WEBAPP_URL)');
+      return;
+    }
+    const company = getCompany();
+    if(!company){
+      alert('Введи название компании');
+      return;
+    }
+
+    const { payload, computed } = buildPayload();
+    if(!computed.preview.length && !payload.lpr){
+      const ok = confirm('По текущим ответам ничего не предзаполнится. Сохранить только компанию / комментарии в payload?');
+      if(!ok) return;
+    }
+
+    const base = WEBAPP_URL;
+    const url = base + (base.includes("?") ? "&" : "?") + "action=save";
+    const body = "action=save&payload=" + encodeURIComponent(JSON.stringify(payload));
+
+    try{
+      showLoader('Сохраняю…', 'Записываю Fast Interview v2 в PSI_Log без изменений Apps Script');
+      if(navigator.sendBeacon){
+        const ok = navigator.sendBeacon(url, new Blob([body], {type:"text/plain;charset=utf-8"}));
+        if(!ok) throw new Error('sendBeacon returned false');
+      } else {
+        await fetch(url, {method:"POST", mode:"no-cors", body, keepalive:true, headers: {"Content-Type":"text/plain;charset=utf-8"}});
+      }
+      hideLoader();
+      const u = new URL('view_2_interview.html', location.href);
+      u.searchParams.set('company', company);
+      location.href = u.toString();
+    }catch(e){
+      hideLoader();
+      console.error(e);
+      alert('Ошибка сохранения. Проверь консоль.');
+    }
+  }
+
+  async function loadExistingFast(company){
+    if(!WEBAPP_URL || !company) return;
+    try{
+      showLoader('Загружаю запись…', 'Ищу последнюю запись компании в Google Sheets');
+      const got = await jsonp(`${WEBAPP_URL}?action=get&company=${encodeURIComponent(company)}`);
+      hideLoader();
+      if(!(got && got.ok && got.item)) return;
+      const item = got.item || {};
+      $('fi_company').value = company;
+      if(item.lpr) $('fi_lpr').value = item.lpr;
+      let raw = null;
+      if(item.payload && typeof item.payload === 'string'){
+        try{ raw = JSON.parse(item.payload); }catch(_e){ raw = null; }
+      }
+      const state = raw && raw.state ? raw.state : null;
+      if(!state) return;
+      if(state.answers){
+        Object.keys(state.answers).forEach(qKey=> setSelectedAnswers(qKey, state.answers[qKey] || []));
+      }
+      if(state.comments){
+        $('q1_comment').value = state.comments.Q1 || '';
+        $('q2_comment').value = state.comments.Q2 || '';
+        $('q3_comment').value = state.comments.Q3 || '';
+        $('q4_comment').value = state.comments.Q4 || '';
+        $('q4_tool_other').value = state.comments.Q4_tool_other || '';
+        $('q5_comment').value = state.comments.Q5 || '';
+      }
+      updateQ4Visibility();
+    }catch(e){
+      hideLoader();
+      console.warn('Не удалось восстановить Fast Interview из payload', e);
+    }
+  }
+
   // Dock toggle
   (function(){
-    const btn = document.getElementById('dockToggle');
-    const dock = document.getElementById('quickDock');
-    if(!btn || !dock) return;
-    const KEY='itmenDockCollapsed';
+    const btn = $('dockToggle');
+    const KEY = 'itmenDockCollapsed';
     function apply(collapsed){
       document.body.classList.toggle('dockCollapsed', !!collapsed);
       btn.textContent = collapsed ? '▶' : '◀';
     }
     const stored = localStorage.getItem(KEY);
-    apply(stored==='1');
+    apply(stored === '1');
     btn.addEventListener('click', ()=>{
       const next = !document.body.classList.contains('dockCollapsed');
-      localStorage.setItem(KEY, next ? '1':'0');
+      localStorage.setItem(KEY, next ? '1' : '0');
       apply(next);
     });
   })();
 
   // Dock search + load
   (function(){
-    const input = document.getElementById('dockCompany');
-    const dd = document.getElementById('dockSuggest');
-    const loadBtn = document.getElementById('dockLoadBtn');
+    const input = $('dockCompany');
+    const dd = $('dockSuggest');
+    const loadBtn = $('dockLoadBtn');
     if(!input || !dd) return;
 
     const getCompanyFromUrl = () => {
@@ -317,6 +1128,7 @@
           const c = el.getAttribute('data-company')||'';
           dd.style.display='none';
           input.value = c;
+          $('fi_company').value = c;
           setCompanyInLinks(c);
           const u = new URL(location.href);
           u.searchParams.set('company', c);
@@ -325,7 +1137,7 @@
       });
     }
 
-    let t=null;
+    let t = null;
     input.addEventListener('input', ()=>{
       const q=input.value.trim();
       clearTimeout(t);
@@ -342,23 +1154,26 @@
     input.addEventListener('blur', ()=>setTimeout(()=>{ dd.style.display='none'; }, 180));
 
     if(loadBtn){
-      loadBtn.addEventListener('click', ()=>{
+      loadBtn.addEventListener('click', async ()=>{
         const c = input.value.trim();
         if(!c) return;
+        $('fi_company').value = c;
+        setCompanyInLinks(c);
         const u = new URL(location.href);
         u.searchParams.set('company', c);
-        location.href = u.toString();
+        history.replaceState(null,'',u.toString());
+        await loadExistingFast(c);
       });
     }
 
-    // apply company from URL
     const c0 = getCompanyFromUrl();
-    if(c0){ input.value = c0; setCompanyInLinks(c0); document.getElementById('fi_company').value = c0; }
+    if(c0){
+      input.value = c0;
+      $('fi_company').value = c0;
+      setCompanyInLinks(c0);
+      loadExistingFast(c0);
+    }
   })();
-
-  // Fast form
-  const $ = (id)=>document.getElementById(id);
-  function getCompany(){ return ($('fi_company').value || $('dockCompany').value || '').trim(); }
 
   $('btnGoInterview').addEventListener('click', ()=>{
     const c = getCompany();
@@ -366,87 +1181,16 @@
     if(c) u.searchParams.set('company', c);
     location.href = u.toString();
   });
+  $('btnClear').addEventListener('click', clearForm);
+  $('btnPreview').addEventListener('click', renderPreview);
+  $('btnSave').addEventListener('click', saveFast);
 
-  $('btnClear').addEventListener('click', ()=>{
-    ['fi_lpr','fi_workplaces','fi_servers','fi_branches','fi_closed','fi_manualPct','fi_t1','fi_collect','fi_use','fi_cover','fi_reg'].forEach(id=>{ const el=$(id); if(!el) return; if(el.tagName==='SELECT') el.value=''; else el.value='0'; });
+  renderOptions();
+  document.addEventListener('change', (e)=>{
+    if(e.target && e.target.matches('input[data-q="Q4"]')) updateQ4Visibility();
   });
-
-  $('btnSave').addEventListener('click', async ()=>{
-    if(!WEBAPP_URL){ alert('Не задан URL Apps Script (GS_WEBAPP_URL)'); return; }
-    const company = getCompany();
-    if(!company){ alert('Введи название компании'); return; }
-
-    const payload = {
-      company,
-      lpr: $('fi_lpr').value.trim(),
-      workplaces: Number($('fi_workplaces').value||0),
-      servers: Number($('fi_servers').value||0),
-      branches: Number($('fi_branches').value||0),
-      closed: $('fi_closed').value,
-      manualPct: Number($('fi_manualPct').value||0),
-
-      // TECH (T)
-      tech_01_label: 'T1. Есть ли единый источник достоверной информации об устройствах и установленном ПО?',
-      tech_01_score: $('fi_t1').value==='Да' ? 2 : ($('fi_t1').value==='Частично' ? 1 : ($('fi_t1').value==='Нет' ? 0 : '')),
-
-      tech_02_label: 'T2. Автоматизирован ли сбор данных об инфраструктуре (без ручного ввода)?',
-      tech_02_score: $('fi_collect').value==='Авто' ? 2 : ($('fi_collect').value==='Частично' ? 1 : ($('fi_collect').value==='Ручной' ? 0 : '')),
-
-      tech_05_label: 'T5. Обновляются ли данные об устройствах и ПО без ручного вмешательства?',
-      tech_05_score: $('fi_collect').value==='Авто' ? 2 : ($('fi_collect').value==='Частично' ? 1 : ($('fi_collect').value==='Ручной' ? 0 : '')),
-
-      tech_08_label: 'T8. Используются ли данные об инвентаризации в других системах (ITSM, безопасность, лицензирование)?',
-      tech_08_score: $('fi_use').value==='Да' ? 2 : ($('fi_use').value==='Частично' ? 1 : ($('fi_use').value==='Нет' ? 0 : '')),
-
-      tech_09_label: 'T9. Охвачены ли сбором данных все сегменты инфраструктуры (VDI, филиалы, изолированные контуры)?',
-      tech_09_score: $('fi_cover').value==='Да' ? 2 : ($('fi_cover').value==='Частично' ? 1 : ($('fi_cover').value==='Нет' ? 0 : '')),
-
-      // PROC (P)
-      proc_05_label: 'P5. Есть ли регламент актуализации данных об устройствах и ПО?',
-      proc_05_score: $('fi_reg').value==='Да' ? 2 : ($('fi_reg').value==='Частично' ? 1 : ($('fi_reg').value==='Нет' ? 0 : '')),
-
-      // RISK (R) yes/no → 1/0
-      risk_05_label: 'Есть частые инциденты/простои (по ощущениям бизнеса)',
-      risk_05_val: $('fi_r_incidents').checked ? 1 : 0,
-
-      risk_06_label: 'Были внешние проверки за последние 3 года',
-      risk_06_val: $('fi_r_audits').checked ? 1 : 0,
-
-      risk_07_label: 'Планируются крупные изменения инфраструктуры в 12 месяцев (миграции/слияния)',
-      risk_07_val: $('fi_r_changes').checked ? 1 : 0,
-
-      risk_08_label: 'Высокая текучесть ИТ-персонала/смена подрядчиков',
-      risk_08_val: $('fi_r_turnover').checked ? 1 : 0,
-    };
-
-    // Mark which ids in the main interview were filled by this fast step
-    const fastIds = ['lpr','workplaces','servers','branches','closed','manualPct','tech_01_score','tech_02_score','tech_05_score','tech_08_score','tech_09_score','proc_05_score','risk_05_val','risk_06_val','risk_07_val','risk_08_val'];
-    payload.fast_fields = JSON.stringify(fastIds);
-
-    try{
-      showLoader('Сохраняю…','Записываю Fast-интервью в PSI_Log через Apps Script');
-      const url = WEBAPP_URL + '?action=save&payload=' + encodeURIComponent(JSON.stringify(payload));
-      const res = await jsonp(url);
-      hideLoader();
-      if(!res || !res.ok){
-        console.error('save failed', res);
-        alert('Не удалось сохранить. Проверь консоль.');
-        return;
-      }
-      // go to main interview
-      const u = new URL('view_2_interview.html', location.href);
-      u.searchParams.set('company', company);
-      location.href = u.toString();
-    }catch(e){
-      hideLoader();
-      console.error(e);
-      alert('Ошибка сохранения. Проверь консоль.');
-    }
-  });
+  updateQ4Visibility();
 })();
 </script>
-
-  </div>
-</div>
 </body>
 </html>
