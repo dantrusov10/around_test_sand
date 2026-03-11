@@ -1345,14 +1345,11 @@ const FEAS_OPTIONS = [
   { label: "Полностью", score: 1.00 },
   { label: "Частично", score: 0.60 },
   // Backward-compat: older sheets stored just "Нет"
-  { label: "Нет", score: 0.00 },
-  { label: "Нет возможности", score: 0.00 },
   { label: "Нет возможности", score: 0.00 },
   // Backward-compat casing variants
-  { label: "Хард код (скоро)", score: 0.70 },
-  { label: "Хард код (Скоро)", score: 0.70 },
-  { label: "Хард код (не скоро)", score: 0.30 },
-  { label: "Требуется скрипт", score: 0.50 },
+  { label: "Хард код (скоро)", score: 0.30 },
+  { label: "Хард код (не скоро)", score: 0.10 },
+  { label: "Требуется скрипт", score: 0.70 },
 ];
 
 function fmtMoney(n){ if(!isFinite(n)) return "—"; return Math.round(n).toLocaleString("ru-RU")+" ₽"; }
@@ -2084,17 +2081,16 @@ function setSelectSmart_(sel, raw, fallback){
 }
 
 
-const PROD_FEAS_OPTIONS = [
+const FEAS_OPTIONS = [
   { label: "—", score: null },
   { label: "Полностью", score: 1.00 },
   { label: "Частично", score: 0.60 },
-  { label: "Нет", score: 0.00 },
+  // Backward-compat: older sheets stored just "Нет"
   { label: "Нет возможности", score: 0.00 },
-  // Accept both casing variants
-  { label: "Хард код (Скоро)", score: 0.70 },
-  { label: "Хард код (скоро)", score: 0.70 },
-  { label: "Хард код (не скоро)", score: 0.30 },
-  { label: "Требуется скрипт", score: 0.50 },
+  // Backward-compat casing variants
+  { label: "Хард код (скоро)", score: 0.30 },
+  { label: "Хард код (не скоро)", score: 0.10 },
+  { label: "Требуется скрипт", score: 0.70 },
 ];
 
 function addProdReqRow(data){
