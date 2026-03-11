@@ -2297,23 +2297,26 @@ function applyQuickSynthetics(){
     sel.dataset.origin = "synthetic";
   };
 
-  // In QUICK mode: default all hidden deep maturity rows to 0 unless user filled
-  if(isQuick){
-    ["techTbody","procTbody","riskTbody"].forEach(tbid=>{
-      const tb=document.getElementById(tbid);
-      if(!tb) return;
-      tb.querySelectorAll("tr").forEach(tr=>{
-        if(tr.dataset.mode !== "deep") return;
-        const sel = tr.querySelector("select");
-        if(!sel) return;
-        const cur = (sel.value ?? "").trim();
-        if(cur !== "" && cur !== "0" && sel.dataset.synthetic !== "1") return;
-        sel.value = "0";
-        sel.dataset.synthetic = "1";
-        sel.dataset.origin = "synthetic";
-      });
+  // In QUICK mode: НЕ проставляем synthetic "Нет" для deep T/P вопросов.
+// T6-T10 и P6-P10 должны оставаться пустыми ("—") и не участвовать в расчетах,
+// пока пользователь их не заполнит вручную.
+// Risk-синтетика ниже остается отдельной логикой.
+if(isQuick){
+  ["riskTbody"].forEach(tbid=>{
+    const tb=document.getElementById(tbid);
+    if(!tb) return;
+    tb.querySelectorAll("tr").forEach(tr=>{
+      if(tr.dataset.mode !== "deep") return;
+      const sel = tr.querySelector("select");
+      if(!sel) return;
+      const cur = (sel.value ?? "").trim();
+      if(cur !== "" && cur !== "0" && sel.dataset.synthetic !== "1") return;
+      sel.value = "0";
+      sel.dataset.synthetic = "1";
+      sel.dataset.origin = "synthetic";
     });
-  }
+  });
+}
 
   // Read passport values for synthetic logic
   const workplaces = Number(document.getElementById("workplaces")?.value || 0);
