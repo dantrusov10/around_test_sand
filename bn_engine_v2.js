@@ -701,7 +701,7 @@
     }
   }
 
-  function renderChecklist(title, items, set, onChange){
+  function renderChecklist(title, items, set, onChange, description, conclusion){
     const safeItems = Array.isArray(items) ? items : [];
     const html = safeItems.length ? safeItems.map((txt, idx)=>{
       const checked = set.has(String(txt)) ? 'checked' : '';
@@ -714,11 +714,20 @@
       `;
     }).join('') : '<div class="muted">—</div>';
 
+    const descHtml = String(description||'').trim()
+      ? `<div class="infoCard"><div class="miniTitle">Описание</div><div class="blockText">${escapeHtml(String(description||''))}</div></div>`
+      : '';
+    const conclusionHtml = String(conclusion||'').trim()
+      ? `<div class="infoCard infoCardConclusion"><div class="miniTitle">Вывод</div><div class="blockText">${escapeHtml(String(conclusion||''))}</div></div>`
+      : '';
+
     const wrap = document.createElement('div');
     wrap.className = 'block';
     wrap.innerHTML = `
       <div class="blockTitle">${escapeHtml(title)}</div>
+      ${descHtml}
       <div class="checkGrid">${html}</div>
+      ${conclusionHtml}
     `;
     // bind events
     wrap.querySelectorAll('input[type="checkbox"]').forEach((inp)=>{
@@ -804,8 +813,8 @@
     const two = document.createElement('div');
     two.className = 'twoCols';
     const onPickChange = ()=>{ /* no-op for now */ };
-    two.appendChild(renderChecklist('Причины (мультивыбор)', it.causes, pick.causes, onPickChange));
-    two.appendChild(renderChecklist('Боли (мультивыбор)', it.pains, pick.pains, onPickChange));
+    two.appendChild(renderChecklist('Причины (мультивыбор)', it.causes, pick.causes, onPickChange, it.cause_description, it.cause_result));
+    two.appendChild(renderChecklist('Боли (мультивыбор)', it.pains, pick.pains, onPickChange, it.pain_description, it.pain_result));
     els.needPanel.appendChild(two);
 
     // Details blocks

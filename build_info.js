@@ -4,3 +4,5 @@ window.BUILD_INFO = {
   built_at: "2026-03-04T09:58:30Z"
 };
 console.log("✅ BUILD v118 loaded | built_at 2026-03-04T09:58:30Z");
+
+// BN causes/pains descriptions + conclusions sync from Итоговый подход.xlsx
