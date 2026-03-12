@@ -1043,6 +1043,53 @@
         await fetch(url, {method:"POST", mode:"no-cors", body, keepalive:true, headers: {"Content-Type":"text/plain;charset=utf-8"}});
       }
       hideLoader();
+
+      /* -------- NEW: log fast interview -------- */
+      try{
+        const fastPayload = {
+          company: company,
+          run_id: String(Date.now()),
+          q1_answers: state.answers.Q1,
+          q1_comment: state.comments.Q1,
+
+          q2_answers: state.answers.Q2,
+          q2_comment: state.comments.Q2,
+
+          q3_answers: state.answers.Q3,
+          q3_comment: state.comments.Q3,
+
+          q4_answers: state.answers.Q4,
+          q4_tools: state.answers.Q4_tool,
+          q4_comment: state.comments.Q4,
+
+          q5_answers: state.answers.Q5,
+          q5_comment: state.comments.Q5,
+
+          score_map: computed.scoreMap,
+          fast_payload_json: {
+            state,
+            computed
+          }
+        };
+
+        const fastUrl = base + (base.includes("?") ? "&" : "?") + "action=fast_log_append";
+        const fastBody = "action=fast_log_append&payload=" + encodeURIComponent(JSON.stringify(fastPayload));
+
+        if(navigator.sendBeacon){
+          navigator.sendBeacon(fastUrl, new Blob([fastBody], {type:"text/plain;charset=utf-8"}));
+        } else {
+          await fetch(fastUrl, {
+            method:"POST",
+            mode:"no-cors",
+            body: fastBody,
+            keepalive:true,
+            headers:{"Content-Type":"text/plain;charset=utf-8"}
+          });
+        }
+      }catch(e){
+        console.warn('fast_log_append failed', e);
+      }
+
       const u = new URL('view_2_interview.html', location.href);
       u.searchParams.set('company', company);
       location.href = u.toString();
