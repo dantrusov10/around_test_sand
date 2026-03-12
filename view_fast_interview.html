@@ -1013,92 +1013,116 @@
     alert("Будут предзаполнены поля основного интервью:\n\n" + lines.join("\n"));
   }
 
-  async function saveFast(){
-    if(!WEBAPP_URL){
-      alert('Не задан URL Apps Script (GS_WEBAPP_URL)');
-      return;
-    }
-    const company = getCompany();
-    if(!company){
-      alert('Введи название компании');
-      return;
-    }
-
-    const { payload, computed } = buildPayload();
-    if(!computed.preview.length && !payload.lpr){
-      const ok = confirm('По текущим ответам ничего не предзаполнится. Сохранить только компанию / комментарии в payload?');
-      if(!ok) return;
-    }
-
-    const base = WEBAPP_URL;
-    const url = base + (base.includes("?") ? "&" : "?") + "action=save";
-    const body = "action=save&payload=" + encodeURIComponent(JSON.stringify(payload));
-
-    try{
-      showLoader('Сохраняю…', 'Записываю Fast Interview v2 в PSI_Log без изменений Apps Script');
-      if(navigator.sendBeacon){
-        const ok = navigator.sendBeacon(url, new Blob([body], {type:"text/plain;charset=utf-8"}));
-        if(!ok) throw new Error('sendBeacon returned false');
-      } else {
-        await fetch(url, {method:"POST", mode:"no-cors", body, keepalive:true, headers: {"Content-Type":"text/plain;charset=utf-8"}});
-      }
-      hideLoader();
-
-      /* -------- NEW: log fast interview -------- */
-      try{
-        const fastPayload = {
-          company: company,
-          run_id: String(Date.now()),
-          q1_answers: state.answers.Q1,
-          q1_comment: state.comments.Q1,
-
-          q2_answers: state.answers.Q2,
-          q2_comment: state.comments.Q2,
-
-          q3_answers: state.answers.Q3,
-          q3_comment: state.comments.Q3,
-
-          q4_answers: state.answers.Q4,
-          q4_tools: state.answers.Q4_tool,
-          q4_comment: state.comments.Q4,
-
-          q5_answers: state.answers.Q5,
-          q5_comment: state.comments.Q5,
-
-          score_map: computed.scoreMap,
-          fast_payload_json: {
-            state,
-            computed
-          }
-        };
-
-        const fastUrl = base + (base.includes("?") ? "&" : "?") + "action=fast_log_append";
-        const fastBody = "action=fast_log_append&payload=" + encodeURIComponent(JSON.stringify(fastPayload));
-
-        if(navigator.sendBeacon){
-          navigator.sendBeacon(fastUrl, new Blob([fastBody], {type:"text/plain;charset=utf-8"}));
-        } else {
-          await fetch(fastUrl, {
-            method:"POST",
-            mode:"no-cors",
-            body: fastBody,
-            keepalive:true,
-            headers:{"Content-Type":"text/plain;charset=utf-8"}
-          });
-        }
-      }catch(e){
-        console.warn('fast_log_append failed', e);
-      }
-
-      const u = new URL('view_2_interview.html', location.href);
-      u.searchParams.set('company', company);
-      location.href = u.toString();
-    }catch(e){
-      hideLoader();
-      console.error(e);
-      alert('Ошибка сохранения. Проверь консоль.');
-    }
+ <script>
+async function saveFast(){
+  if(!WEBAPP_URL){
+    alert('Не задан URL Apps Script (GS_WEBAPP_URL)');
+    return;
   }
+
+  const company = getCompany();
+  if(!company){
+    alert('Введи название компании');
+    return;
+  }
+
+  const { state, computed, payload } = buildPayload();
+
+  if(!computed.preview.length && !payload.lpr){
+    const ok = confirm('По текущим ответам ничего не предзаполнится. Сохранить только компанию / комментарии в payload?');
+    if(!ok) return;
+  }
+
+  try{
+    showLoader('Сохраняю…', 'Сначала пишу PSI_Log, затем Fast_Interview_Log');
+
+    /* 1. обычное сохранение в PSI */
+    const psiUrl = WEBAPP_URL + (WEBAPP_URL.includes("?") ? "&" : "?") + "action=save";
+    const psiBody = "action=save&payload=" + encodeURIComponent(JSON.stringify(payload));
+
+    if(navigator.sendBeacon){
+      const okPsi = navigator.sendBeacon(
+        psiUrl,
+        new Blob([psiBody], { type: "text/plain;charset=utf-8" })
+      );
+      if(!okPsi) throw new Error("PSI saveBeacon returned false");
+    } else {
+      await fetch(psiUrl, {
+        method: "POST",
+        mode: "no-cors",
+        body: psiBody,
+        keepalive: true,
+        headers: { "Content-Type": "text/plain;charset=utf-8" }
+      });
+    }
+
+    /* 2. отдельное сохранение Fast Interview */
+    const fastPayload = {
+      company: company,
+      run_id: String(Date.now()),
+      lpr: state.lpr || "",
+
+      q1_answers: state.answers.Q1 || [],
+      q1_comment: state.comments.Q1 || "",
+
+      q2_answers: state.answers.Q2 || [],
+      q2_comment: state.comments.Q2 || "",
+
+      q3_answers: state.answers.Q3 || [],
+      q3_comment: state.comments.Q3 || "",
+
+      q4_answers: state.answers.Q4 || [],
+      q4_tools: state.answers.Q4_tool || [],
+      q4_comment: state.comments.Q4 || "",
+      q4_tool_other: state.comments.Q4_tool_other || "",
+
+      q5_answers: state.answers.Q5 || [],
+      q5_comment: state.comments.Q5 || "",
+
+      score_map: computed.scoreMap || {},
+      fast_payload_json: {
+        state,
+        computed
+      }
+    };
+
+    const fastUrl = WEBAPP_URL + (WEBAPP_URL.includes("?") ? "&" : "?") + "action=fast_log_append";
+    const fastBody = "action=fast_log_append&payload=" + encodeURIComponent(JSON.stringify(fastPayload));
+
+    if(navigator.sendBeacon){
+      const okFast = navigator.sendBeacon(
+        fastUrl,
+        new Blob([fastBody], { type: "text/plain;charset=utf-8" })
+      );
+      console.log("fast_log_append beacon sent:", okFast);
+    } else {
+      await fetch(fastUrl, {
+        method: "POST",
+        mode: "no-cors",
+        body: fastBody,
+        keepalive: true,
+        headers: { "Content-Type": "text/plain;charset=utf-8" }
+      });
+      console.log("fast_log_append fetch sent");
+    }
+
+    /* 3. небольшая пауза, чтобы второй запрос точно успел уйти */
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    hideLoader();
+
+    /* 4. редирект */
+    const u = new URL('view_2_interview.html', location.href);
+    u.searchParams.set('company', company);
+    location.href = u.toString();
+
+  } catch(e){
+    hideLoader();
+    console.error("saveFast error:", e);
+    alert('Ошибка сохранения. Проверь консоль.');
+  }
+}
+</script>
 
   async function loadExistingFast(company){
     if(!WEBAPP_URL || !company) return;
