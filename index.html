@@ -410,12 +410,22 @@ body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
       <div>
         <div class="h1">PSI Control Center</div>
         </div>
-      <div class="period" aria-label="Период">
-        <button class="pill active" data-days="30">30д</button>
-        <button class="pill" data-days="90">90д</button>
-        <button class="pill" data-days="180">6м</button>
-        <button class="pill" data-days="365">1г</button>
-        <button class="pill" data-days="0">всё</button>
+      <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end">
+        <div class="period" aria-label="Период">
+          <button class="pill" data-days="7">7д</button>
+          <button class="pill active" data-days="30">30д</button>
+          <button class="pill" data-days="90">90д</button>
+          <button class="pill" data-days="180">6м</button>
+          <button class="pill" data-days="365">1г</button>
+          <button class="pill" data-days="0">всё</button>
+          <button class="pill" data-days="custom" id="customPeriodBtn">период</button>
+        </div>
+        <div id="customPeriodBox" style="display:none; gap:8px; align-items:center; flex-wrap:wrap">
+          <input id="dateFrom" type="date" style="padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:700">
+          <span class="muted" style="font-size:12px">—</span>
+          <input id="dateTo" type="date" style="padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:700">
+          <button id="applyCustomPeriod" class="btn ghost" style="padding:8px 10px; font-size:12px">Применить</button>
+        </div>
       </div>
     </header>
 
@@ -468,12 +478,14 @@ body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
         <div class="sectionTitle">Портфельная аналитика</div>
 
         <div class="summary">
-          <div class="kpi"><div class="kpiVal" id="kpiRuns">—</div><div class="kpiLbl">Записей (runs)</div></div>
-          <div class="kpi"><div class="kpiVal" id="kpiCompanies">—</div><div class="kpiLbl">Компаний</div></div>
+          <div class="kpi"><div class="kpiVal" id="kpiRuns">—</div><div class="kpiLbl">Кол-во записей (интервью)</div></div>
+          <div class="kpi"><div class="kpiVal" id="kpiFastRuns">—</div><div class="kpiLbl">Кол-во фаст интервью</div></div>
+          <div class="kpi"><div class="kpiVal" id="kpiBnRuns">—</div><div class="kpiLbl">Кол-во БП</div></div>
+          <div class="kpi"><div class="kpiVal" id="kpiCalcRuns">—</div><div class="kpiLbl">Кол-во КП</div></div>
+          <div class="kpi"><div class="kpiVal" id="kpiCompanies">—</div><div class="kpiLbl">Кол-во уникальных интервью</div></div>
+          <div class="kpi"><div class="kpiVal" id="kpiUniqueFast">—</div><div class="kpiLbl">Кол-во уникальных фаст интервью</div></div>
+          <div class="kpi"><div class="kpiVal" id="kpiUniqueBn">—</div><div class="kpiLbl">Кол-во уникальных БП</div></div>
           <div class="kpi"><div class="kpiVal" id="kpiAvgPsi">—</div><div class="kpiLbl">Средний PSI (последний по компании)</div></div>
-          <div class="kpi"><div class="kpiVal" id="kpiPortfolioReady">—</div><div class="kpiLbl">Индекс зрелости портфеля</div></div>
-          <div class="kpi"><div class="kpiVal" id="kpiWinProb">—</div><div class="kpiLbl">Portfolio Win Probability</div></div>
-          <div class="kpi"><div class="kpiVal" id="kpiSynthRatio">—</div><div class="kpiLbl">Доля синтетики (средняя)</div></div>
         </div>
 
         <div class="charts">
@@ -487,27 +499,13 @@ body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
           </div>
         </div>
 
-        
-        <div style="height:12px"></div>
-        <div class="sectionTitle">Реальные данные vs синтетика</div>
-        <div class="charts" style="grid-template-columns: 1fr 1fr; margin-top:10px">
-          <div class="chartCard">
-            <div class="sectionTitle" style="margin:0 0 8px">Топ‑5 “настоящих” кейсов (минимум синтетики)</div>
-            <div id="topReal" class="muted" style="font-size:13px">—</div>
-          </div>
-          <div class="chartCard">
-            <div class="sectionTitle" style="margin:0 0 8px">Топ‑5 “фантазий” (максимум синтетики)</div>
-            <div id="topFantasy" class="muted" style="font-size:13px">—</div>
-          </div>
-        </div>
-
         <div style="height:12px"></div>
         <div class="sectionTitle">Heatmap по отраслям</div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px">
           <select id="industryFilter" style="padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:800">
             <option value="">Все отрасли</option>
           </select>
-          <div class="muted" style="font-size:13px">Бюджет = workplaces × 1300</div>
+          <div class="muted" style="font-size:13px">Расчет по уникальным клиентам. Бюджет = workplaces × 1300</div>
         </div>
         <div class="tableWrap">
           <table>
@@ -517,47 +515,66 @@ body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
         </div>
 
         <div style="height:12px"></div>
-        <div class="sectionTitle">“Горячая зона”</div>
+        <div class="sectionTitle">Последние полные интервью</div>
         <div class="tableWrap">
           <table>
-            <thead><tr><th>Компания</th><th>Вероятность</th><th>Готовность</th><th>Риск</th><th>Отрасль</th><th>Бюджет</th></tr></thead>
-            <tbody id="hotTbody"></tbody>
-          </table>
-        </div>
-
-<div style="height:12px"></div>
-        <div class="sectionTitle">Последние компании</div>
-        <div class="tableWrap">
-          <table>
-            <thead><tr><th>Компания</th><th>PSI</th><th>Готовность</th><th>Риск</th><th>Обновлено (МСК)</th></tr></thead>
+            <thead><tr><th>Компания</th><th>PSI</th><th>Готовность</th><th>Риск</th><th>Sales</th><th>Pre-Sales</th><th>Обновлено (МСК)</th></tr></thead>
             <tbody id="latestTbody"></tbody>
           </table>
         </div>
 
         <div style="height:12px"></div>
-        <div class="sectionTitle">Аналитика по менеджерам</div>
-        <div class="tabs">
-          <button class="tabBtn active" data-tab="sales">Sales</button>
-          <button class="tabBtn" data-tab="presale">Pre‑Sales</button>
-          <button class="tabBtn" data-tab="pairs">Связки</button>
+        <div class="sectionTitle">Последние фаст интервью</div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>Компания</th><th>Sales</th><th>Pre-Sales</th><th>Обновлено (МСК)</th></tr></thead>
+            <tbody id="latestFastTbody"></tbody>
+          </table>
         </div>
 
-        <div id="tab_sales" class="tableWrap">
-          <table><thead><tr>
-            <th>Sales</th><th>Записей</th><th>PSI</th><th>Готовн.</th><th>Вероятн.</th><th>Синтетика</th><th>Cold</th><th>Warm</th><th>Hot</th><th>Conv</th>
-          </tr></thead><tbody id="salesTbody"></tbody></table>
+        <div style="height:12px"></div>
+        <div class="sectionTitle">Последние БП</div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>Компания</th><th>Ключевая тематика</th><th>Ключевая боль</th><th>Sales</th><th>Pre-Sales</th><th>Дата</th></tr></thead>
+            <tbody id="latestBnTbody"></tbody>
+          </table>
         </div>
 
-        <div id="tab_presale" class="tableWrap" style="display:none">
-          <table><thead><tr>
-            <th>Pre‑Sales</th><th>Записей</th><th>PSI</th><th>Готовн.</th><th>Вероятн.</th><th>Синтетика</th><th>Cold</th><th>Warm</th><th>Hot</th><th>Conv</th>
-          </tr></thead><tbody id="presaleTbody"></tbody></table>
+        <div style="height:12px"></div>
+        <div class="sectionTitle">Последние КП</div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>Компания</th><th>Кол-во конечных точек</th><th>Менеджер</th><th>Сумма</th><th>Дата</th></tr></thead>
+            <tbody id="latestCalcTbody"></tbody>
+          </table>
         </div>
 
-        <div id="tab_pairs" class="tableWrap" style="display:none">
-          <table><thead><tr>
-            <th>Связка</th><th>Записей</th><th>PSI</th><th>Готовн.</th><th>Вероятн.</th><th>Синтетика</th><th>Cold</th><th>Warm</th><th>Hot</th><th>Conv</th>
-          </tr></thead><tbody id="pairsTbody"></tbody></table>
+        <div style="height:12px"></div>
+        <div class="sectionTitle">Требования к продукту</div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>Компания</th><th>Pre-Sales</th><th>Вероятность</th><th>Кол-во требований</th><th>Дата</th></tr></thead>
+            <tbody id="prodReqTbody"></tbody>
+          </table>
+        </div>
+
+        <div style="height:12px"></div>
+        <div class="sectionTitle">Требования к пилоту</div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>Компания</th><th>Pre-Sales</th><th>Вероятность</th><th>Кол-во требований</th><th>Дата</th></tr></thead>
+            <tbody id="pilotReqTbody"></tbody>
+          </table>
+        </div>
+
+        <div style="height:12px"></div>
+        <div class="sectionTitle">ПСИ</div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>Компания</th><th>Pre-Sales</th><th>Вероятность</th><th>Кол-во требований</th><th>Дата</th></tr></thead>
+            <tbody id="psiReqTbody"></tbody>
+          </table>
         </div>
 
         <div id="errBox" class="hintErr"></div>
@@ -740,40 +757,18 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
       }
     }
 
-    function renderManagers(mgr){
-      const sales = (mgr && (mgr.sales || mgr.bySales)) || [];
-      const presale = (mgr && (mgr.presale || mgr.byPresale)) || [];
-      const pairs = (mgr && (mgr.pairs || mgr.byPairs)) || [];
-
-      const fill = (tbodyId, arr, nameKey) => {
-        const tbody = document.getElementById(tbodyId);
-        const list = Array.isArray(arr) ? arr : [];
-        tbody.innerHTML = list.slice(0,20).map(it => {
-          const funnel = it.funnel || {};
-          const cold = funnel.cold ?? 0, warm = funnel.warm ?? 0, hot = funnel.hot ?? 0;
-          const conv = it.conv ?? it.conversion ?? null;
-          const name = it[nameKey] ?? it.key ?? "—";
-          const runs = it.runs ?? it.count ?? "—";
-          return "<tr>"
-            + "<td><b>"+escapeHtml(name)+"</b></td>"
-            + "<td>"+escapeHtml(String(runs))+"</td>"
-            + "<td>"+fmtPct(it.avg_psi)+"</td>"
-            + "<td>"+fmtPct(it.avg_ready)+"</td>"
-            + "<td>"+fmtPct(it.avg_prob)+"</td>"
-            + "<td>"+fmtSynth(it.avg_synth)+"</td>"
-            + "<td>"+escapeHtml(String(cold))+"</td>"
-            + "<td>"+escapeHtml(String(warm))+"</td>"
-            + "<td>"+escapeHtml(String(hot))+"</td>"
-            + "<td>"+(conv==null ? "—" : (Number(conv).toFixed(1)+"%"))+"</td>"
-            + "</tr>";
-        }).join("") || "<tr><td colspan=\"10\" class=\"muted\" style=\"padding:14px\">Нет данных</td></tr>";
-      };
-
-      fill("salesTbody", sales, "name");
-      fill("presaleTbody", presale, "name");
-      fill("pairsTbody", pairs, "key");
+    function fmtMoney(v){
+      const n = Number(v);
+      if(!isFinite(n)) return "—";
+      return Math.round(n).toLocaleString("ru-RU") + " ₽";
     }
-
+    function fmtText(v){ return escapeHtml((v==null || v==="") ? "—" : String(v)); }
+    function tbodyFromRows(tbodyId, rows, cols, emptyText){
+      const tb = document.getElementById(tbodyId);
+      const list = Array.isArray(rows) ? rows : [];
+      tb.innerHTML = list.map(r => "<tr>" + cols.map(fn => "<td>" + fn(r) + "</td>").join("") + "</tr>").join("")
+        || `<tr><td colspan="${cols.length}" class="muted" style="padding:14px">${escapeHtml(emptyText || "Нет данных")}</td></tr>`;
+    }
 
     function num(v){ const n = Number(v); return isFinite(n) ? n : null; }
     function budgetFrom(r){
@@ -781,82 +776,79 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
       if(w==null) return null;
       return w * 1300;
     }
-    function pickLatestPerCompany(data){
-      // Prefer server-provided arrays if present
-      const cand = data.latestByCompany || data.latest_by_company || data.perCompany || data.companiesLatest || data.company_latest || data.companies_latest || data.latest_records || data.latestRecords;
-      if(Array.isArray(cand) && cand.length) return cand;
 
-      // Fallback: if server sends raw runs list, group by company+timestamp
-      const runs = (Array.isArray(data.runs)?data.runs:null) || data.items || data.rows || data.all || data.data || data.latest_records || data.latestRecords;
-      if(Array.isArray(runs) && runs.length){
-        const m = new Map();
-        for(const r of runs){
-          const name = (r.company||"").trim();
-          if(!name) continue;
-          const ts = r.timestamp || r.ts || r.updated || "";
-          const prev = m.get(name);
-          if(!prev || (ts && (!prev.timestamp || ts > prev.timestamp))) m.set(name, {...r, company:name, timestamp:ts});
-        }
-        return Array.from(m.values());
+    function renderIndustryHeatmap(rows){
+      const indMap = new Map();
+      for(const r of (rows||[])){
+        const ind = String(r.industry || r.segment || "—").trim() || "—";
+        const psi = num(r.psi);
+        const bud = budgetFrom(r);
+        const cur = indMap.get(ind) || {industry:ind, count:0, psiSum:0, psiN:0, budSum:0, budN:0};
+        cur.count += 1;
+        if(psi!=null){ cur.psiSum += psi; cur.psiN += 1; }
+        if(bud!=null){ cur.budSum += bud; cur.budN += 1; }
+        indMap.set(ind, cur);
       }
-      // Last-resort: use data.latest (can be truncated to 10)
-      return Array.isArray(data.latest) ? data.latest : [];
+      const all = Array.from(indMap.values()).map(x => ({
+        industry:x.industry,
+        count:x.count,
+        avgPsi:x.psiN ? x.psiSum/x.psiN : null,
+        avgBudget:x.budN ? x.budSum/x.budN : null
+      })).sort((a,b) => (b.count||0) - (a.count||0) || String(a.industry).localeCompare(String(b.industry)));
+
+      const sel = document.getElementById("industryFilter");
+      const current = sel.value;
+      sel.innerHTML = '<option value="">Все отрасли</option>' + [...new Set(all.map(x=>x.industry))].sort((a,b)=>a.localeCompare(b)).map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+      if(current && all.some(x=>x.industry===current)) sel.value = current;
+
+      const render = () => {
+        const v = sel.value;
+        const list = v ? all.filter(x=>x.industry===v) : all;
+        tbodyFromRows("industryTbody", list, [
+          r => "<b>"+fmtText(r.industry)+"</b>",
+          r => fmtText(r.count),
+          r => r.avgPsi==null ? "—" : Math.round(r.avgPsi) + "%",
+          r => fmtMoney(r.avgBudget)
+        ], "Нет данных");
+      };
+      sel.onchange = render;
+      render();
     }
 
-    async function loadStats(days){
+    async function loadStats(filterValue){
       try{
-        const url = WEBAPP_URL + "?action=stats&period=" + encodeURIComponent(String(days||0));
-        const data = await jsonp(url);
-        if(!data || !data.ok){ showErr("Нет данных для аналитики. Проверьте, что в Apps Script развернута версия с action=stats."); return; }
+        let url = WEBAPP_URL + "?action=stats";
+        if(filterValue === "custom"){
+          const dateFrom = document.getElementById("dateFrom").value;
+          const dateTo = document.getElementById("dateTo").value;
+          if(!dateFrom || !dateTo){
+            showErr("Укажите обе даты для произвольного периода.");
+            return;
+          }
+          url += "&date_from=" + encodeURIComponent(dateFrom) + "&date_to=" + encodeURIComponent(dateTo);
+        }else{
+          url += "&period=" + encodeURIComponent(String(filterValue || 0));
+        }
+
+        const data = await jsonp(url, 20000);
+        if(!data || !data.ok){
+          showErr("Нет данных для аналитики. Проверьте, что в Apps Script опубликован action=stats.");
+          return;
+        }
         clearErr();
 
         const s = data.summary || {};
-        const runsVal = (s.runs ?? data.runs ?? data.total_rows ?? data.totalRows ?? "—");
-        const companiesVal = (s.companies ?? data.companies ?? data.latest_companies ?? data.latestCompanies ?? "—");
-        document.getElementById("kpiRuns").textContent = runsVal;
-        document.getElementById("kpiCompanies").textContent = companiesVal;
-
-        const latestCompanies = pickLatestPerCompany(data);
-        if(!latestCompanies || !latestCompanies.length){
-          showErr("Данных для графиков нет: убедитесь, что Apps Script action=stats возвращает список latest/rows. Синхронизация форм не гарантирует выдачу аналитики.");
-        }
-        // Avg PSI by latest record per company
-        const psiVals = latestCompanies.map(r => num(r.psi ?? r.psi_total ?? r.psiTotal)).filter(v => v!=null);
-        const avgPsi = psiVals.length ? (psiVals.reduce((a,b)=>a+b,0)/psiVals.length) : null;
-        document.getElementById("kpiAvgPsi").textContent = (avgPsi!=null) ? (Math.round(avgPsi) + "%") : "—";
-
-        // Portfolio Readiness Index (avg readyIndex)
-        const readyVals = latestCompanies.map(r => num(r.readyIndex ?? r.ready ?? r.ready_index)).filter(v => v!=null);
-        const avgReady = readyVals.length ? (readyVals.reduce((a,b)=>a+b,0)/readyVals.length) : null;
-        const readyEl = document.getElementById("kpiPortfolioReady");
-        if(avgReady==null) readyEl.textContent="—";
-        else{
-          const tag = avgReady < 40 ? "сырой" : (avgReady < 60 ? "рабочий" : "зрелый");
-          readyEl.textContent = Math.round(avgReady) + "% · " + tag;
-        }
-
-        // Portfolio Win Probability = weighted avg probability by budget (workplaces*1300)
-        const probRows = latestCompanies.map(r => {
-          const p = num(r.probability ?? r.prob ?? r.probIndex ?? r.prob_index);
-          const b = budgetFrom(r);
-          return {p, w:(b!=null && b>0)? b : 1};
-        }).filter(x => x.p!=null);
-        const winProb = probRows.length ? (probRows.reduce((a,x)=>a + x.p*x.w,0) / probRows.reduce((a,x)=>a + x.w,0)) : null;
-        document.getElementById("kpiWinProb").textContent = (winProb!=null) ? (Math.round(winProb) + "%") : "—";
-
-        // Synthetic Ratio = synthetic_count / total_fields
-        const synthRows = latestCompanies.map(r => {
-          const sc = num(r.synthetic_count ?? r.synth ?? r.benchCount ?? r.bench_count);
-          const tf = num(r.total_fields ?? r.totalFields ?? r.fields_total);
-          if(sc==null || tf==null || tf<=0) return null;
-          return {company:r.company||"—", ratio: sc/tf, sc, tf, sales:(r.sales||"").trim(), presale:(r.presale||r.preSales||"").trim()};
-        }).filter(Boolean);
-        const avgSynth = synthRows.length ? (synthRows.reduce((a,x)=>a+x.ratio,0)/synthRows.length) : null;
-        document.getElementById("kpiSynthRatio").textContent = (avgSynth!=null) ? (Math.round(avgSynth*100) + "%") : "—";
-
+        document.getElementById("kpiRuns").textContent = s.full_interviews_runs ?? s.runs ?? "—";
+        document.getElementById("kpiFastRuns").textContent = s.fast_interviews_runs ?? "—";
+        document.getElementById("kpiBnRuns").textContent = s.bn_runs ?? "—";
+        document.getElementById("kpiCalcRuns").textContent = s.calc_runs ?? "—";
+        document.getElementById("kpiCompanies").textContent = s.unique_full_companies ?? s.companies ?? "—";
+        document.getElementById("kpiUniqueFast").textContent = s.unique_fast_companies ?? "—";
+        document.getElementById("kpiUniqueBn").textContent = s.unique_bn_companies ?? "—";
+        document.getElementById("kpiAvgPsi").textContent = s.avg_psi_latest==null ? "—" : (Math.round(Number(s.avg_psi_latest)) + "%");
 
         ensureCharts();
-        const series = data.series || { labels:[], psi:[], prob:[] };
+        const series = data.series || {};
         psiChart.data.labels = series.labels || [];
         psiChart.data.datasets[0].data = series.psi || [];
         psiChart.update();
@@ -865,120 +857,85 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
         probChart.data.datasets[0].data = series.prob || [];
         probChart.update();
 
-        const tb = document.getElementById("latestTbody");
-        const latestUnique = (latestCompanies||[]).slice(0,10);
-        tb.innerHTML = latestUnique.map(r =>
-          "<tr>"
-            + "<td><b>"+escapeHtml(r.company || "—")+"</b></td>"
-            + "<td>"+fmtPct(r.psi)+"</td>"
-            + "<td>"+fmtPct(r.ready)+"</td>"
-            + "<td>"+escapeHtml(String(r.risk ?? "—"))+"</td>"
-            + "<td>"+fmtMsk(r.timestamp)+"</td>"
-          + "</tr>"
-        ).join("") || "<tr><td colspan=\"5\" class=\"muted\" style=\"padding:14px\">Нет данных</td></tr>";
+        renderIndustryHeatmap(data.latest_full_interviews || []);
 
-        renderManagers(data.managers || data.byManagers || null);
-        // Top-5 real vs fantasy
-        if(synthRows.length){
-          const real = [...synthRows].sort((a,b)=>a.ratio-b.ratio).slice(0,5);
-          const fant = [...synthRows].sort((a,b)=>b.ratio-a.ratio).slice(0,5);
-          const fmtList = (arr) => arr.map(x => `• <b>${escapeHtml(x.company)}</b> — ${(x.ratio*100).toFixed(0)}%`).join("<br>") || "—";
-          document.getElementById("topReal").innerHTML = fmtList(real);
-          document.getElementById("topFantasy").innerHTML = fmtList(fant);
-        }else{
-          document.getElementById("topReal").textContent = "—";
-          document.getElementById("topFantasy").textContent = "—";
-        }
+        tbodyFromRows("latestTbody", (data.latest_full_interviews||[]).slice(0,10), [
+          r => "<b>"+fmtText(r.company)+"</b>",
+          r => fmtPct(r.psi),
+          r => fmtPct(r.ready),
+          r => fmtText(r.risk),
+          r => fmtText(r.sales_manager),
+          r => fmtText(r.presale_manager),
+          r => fmtMsk(r.timestamp)
+        ], "Нет данных");
 
-        // Industry heatmap
-        const indMap = new Map();
-        for(const r of latestCompanies){
-          const ind = (r.industry || r.segment || r.ind || "—").trim() || "—";
-          const psi = num(r.psi ?? r.psi_total ?? r.psiTotal);
-          const b = budgetFrom(r);
-          const cur = indMap.get(ind) || {industry:ind, count:0, psiSum:0, psiN:0, budSum:0, budN:0};
-          cur.count++;
-          if(psi!=null){ cur.psiSum += psi; cur.psiN++; }
-          if(b!=null){ cur.budSum += b; cur.budN++; }
-          indMap.set(ind, cur);
-        }
-        const indListAll = Array.from(indMap.values()).map(x => ({
-          industry:x.industry,
-          count:x.count,
-          avgPsi: x.psiN ? x.psiSum/x.psiN : null,
-          avgBudget: x.budN ? x.budSum/x.budN : null
-        })).sort((a,b)=> (b.avgBudget||0) - (a.avgBudget||0));
+        tbodyFromRows("latestFastTbody", (data.latest_fast_interviews||[]).slice(0,10), [
+          r => "<b>"+fmtText(r.company)+"</b>",
+          r => fmtText(r.sales_manager),
+          r => fmtText(r.presale_manager),
+          r => fmtMsk(r.timestamp)
+        ], "Нет данных");
 
-        const sel = document.getElementById("industryFilter");
-        const current = sel.value;
-        // fill options once
-        if(sel.options.length <= 1){
-          const inds = [...new Set(indListAll.map(x=>x.industry))].sort((a,b)=>a.localeCompare(b));
-          for(const i of inds){
-            const opt = document.createElement("option");
-            opt.value = i; opt.textContent = i;
-            sel.appendChild(opt);
-          }
-        }
-        if(current && !indMap.has(current)) sel.value = "";
+        tbodyFromRows("latestBnTbody", (data.latest_bn||[]).slice(0,10), [
+          r => "<b>"+fmtText(r.company)+"</b>",
+          r => fmtText(r.key_thematic),
+          r => fmtText(r.key_pain),
+          r => fmtText(r.sales_manager),
+          r => fmtText(r.presale_manager),
+          r => fmtMsk(r.timestamp)
+        ], "Нет данных");
 
-        const renderIndustry = () => {
-          const v = sel.value;
-          const list = v ? indListAll.filter(x=>x.industry===v) : indListAll;
-          const tbody = document.getElementById("industryTbody");
-          tbody.innerHTML = list.map(x => 
-            `<tr><td><b>${escapeHtml(x.industry)}</b></td><td>${x.count}</td><td>${x.avgPsi==null?"—":Math.round(x.avgPsi)+"%"}</td><td>${x.avgBudget==null?"—":Math.round(x.avgBudget).toLocaleString("ru-RU")} ₽</td></tr>`
-          ).join("") || `<tr><td colspan="4" class="muted" style="padding:14px">Нет данных</td></tr>`;
-        };
-        sel.onchange = renderIndustry;
-        renderIndustry();
+        tbodyFromRows("latestCalcTbody", (data.latest_calc||[]).slice(0,10), [
+          r => "<b>"+fmtText(r.company)+"</b>",
+          r => fmtText(r.workplaces),
+          r => fmtText(r.manager),
+          r => fmtMoney(r.amount),
+          r => fmtMsk(r.timestamp)
+        ], "Нет данных");
 
-        // Hot zone
-        const hot = latestCompanies.map(r => {
-          const prob = num(r.probability ?? r.prob ?? r.probIndex ?? r.prob_index);
-          const ready = num(r.readyIndex ?? r.ready ?? r.ready_index);
-          const risk = num(r.riskIndex ?? r.risk ?? r.risk_index);
-          const ind = (r.industry || "—").trim() || "—";
-          const bud = budgetFrom(r);
-          return {company:r.company||"—", prob, ready, risk, ind, bud};
-        }).filter(x => x.prob!=null && x.ready!=null && x.risk!=null)
-          .filter(x => x.prob > 70 && x.ready > 60 && x.risk < 2)
-          .sort((a,b)=> (b.bud||0)-(a.bud||0));
+        tbodyFromRows("prodReqTbody", (data.product_requirements||[]).slice(0,20), [
+          r => "<b>"+fmtText(r.company)+"</b>",
+          r => fmtText(r.presale_manager),
+          r => fmtPct(r.probability),
+          r => fmtText(r.count),
+          r => fmtMsk(r.timestamp)
+        ], "Нет данных");
 
-        const hotTb = document.getElementById("hotTbody");
-        hotTb.innerHTML = hot.map(x =>
-          `<tr><td><b>${escapeHtml(x.company)}</b></td><td>${Math.round(x.prob)}%</td><td>${Math.round(x.ready)}%</td><td>${x.risk}</td><td>${escapeHtml(x.ind)}</td><td>${x.bud==null?"—":Math.round(x.bud).toLocaleString("ru-RU")} ₽</td></tr>`
-        ).join("") || `<tr><td colspan="6" class="muted" style="padding:14px">Нет компаний в “горячей зоне”</td></tr>`;
+        tbodyFromRows("pilotReqTbody", (data.pilot_requirements||[]).slice(0,20), [
+          r => "<b>"+fmtText(r.company)+"</b>",
+          r => fmtText(r.presale_manager),
+          r => fmtPct(r.probability),
+          r => fmtText(r.count),
+          r => fmtMsk(r.timestamp)
+        ], "Нет данных");
+
+        tbodyFromRows("psiReqTbody", (data.psi_requirements||[]).slice(0,20), [
+          r => "<b>"+fmtText(r.company)+"</b>",
+          r => fmtText(r.presale_manager),
+          r => fmtPct(r.probability),
+          r => fmtText(r.count),
+          r => fmtMsk(r.timestamp)
+        ], "Нет данных");
 
       }catch(e){
-        showErr("Аналитика: не удалось обратиться к Apps Script (action=stats). Убедитесь, что деплой с stats опубликован и доступен.");
+        console.error(e);
+        showErr("Аналитика: не удалось обратиться к Apps Script (action=stats).");
       }
     }
 
-    // tabs
-    document.querySelectorAll(".tabBtn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        const tab = btn.getAttribute("data-tab");
-        document.getElementById("tab_sales").style.display = (tab==="sales") ? "block" : "none";
-        document.getElementById("tab_presale").style.display = (tab==="presale") ? "block" : "none";
-        document.getElementById("tab_pairs").style.display = (tab==="pairs") ? "block" : "none";
-      });
-    });
-
-    // period buttons
-    let currentDays = 30;
+    let currentFilter = 30;
     document.querySelectorAll(".pill").forEach(p => {
       p.addEventListener("click", () => {
         document.querySelectorAll(".pill").forEach(x => x.classList.remove("active"));
         p.classList.add("active");
-        currentDays = Number(p.getAttribute("data-days") || "30");
-        loadStats(currentDays);
+        const raw = p.getAttribute("data-days") || "30";
+        currentFilter = raw === "custom" ? "custom" : Number(raw);
+        document.getElementById("customPeriodBox").style.display = (raw === "custom") ? "flex" : "none";
+        if(raw !== "custom") loadStats(currentFilter);
       });
     });
-
-    loadStats(currentDays);
+    document.getElementById("applyCustomPeriod").addEventListener("click", () => loadStats("custom"));
+    loadStats(currentFilter);
   </script>
 
 <script>
