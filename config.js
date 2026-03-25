@@ -4,7 +4,7 @@
 // Put your *current* Apps Script WebApp /exec URL here after each deployment.
 
 // ✅ Актуальный URL (обновляй после каждого деплоя WebApp)
-window.GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxh5bObQ36tb_CtBLjhY4twOxOU0aTprWeCTMAk31afOjLUwqwC6HPWvlqVstf8mUOpSA/exec";
+window.GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyOwxDKMIjtnOLBBH6FYgCXsvVPgX4Vh_PYnWsXV-C3I0-YO9tSA-JZLstK-i_r0jTeAg/exec";
 
 // Backward-compatible aliases used by older pages/builds
 window.GOOGLE_SHEETS_WEBAPP_URL = window.GS_WEBAPP_URL;
