@@ -217,14 +217,17 @@
     .biEmpty{padding:18px;border:1px dashed var(--line);border-radius:14px;background:#fafbff;color:var(--muted);font-size:13px;text-align:center}
     .biModal{position:fixed;inset:0;display:none;z-index:100001;background:rgba(15,23,42,.38);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:18px}
     .biModal.open{display:flex}
-    .biDialog{width:min(1120px,96vw);max-height:92vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 22px 56px rgba(15,23,42,.18)}
-    .biDialogHead{position:sticky;top:0;background:#fff;z-index:2;padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}
-    .biDialogBody{padding:16px;display:grid;grid-template-columns:380px 1fr;gap:16px}
+    .biDialog{width:min(1120px,96vw);max-height:92vh;overflow:visible;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 22px 56px rgba(15,23,42,.18);position:relative;z-index:100002;display:flex;flex-direction:column}
+    .biDialogHead{position:sticky;top:0;background:#fff;z-index:5;padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .biDialogBody{padding:16px;display:grid;grid-template-columns:380px 1fr;gap:16px;overflow:visible}
     @media (max-width: 980px){.biDialogBody{grid-template-columns:1fr}.biGrid{grid-template-columns:1fr}.biCard,[data-w]{grid-column:span 1!important}}
     .formCard{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
     .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.formGrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
     .field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;font-weight:900;color:var(--muted)}
     .field input,.field select,.field textarea{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font:inherit}
+    .biModal, .biDialog, .biDialogBody, .formCard, .field{overflow:visible !important}
+    .biDialogBody > *{position:relative;z-index:1}
+    .field select{position:relative;z-index:100010}
     .field textarea{min-height:82px;resize:vertical}
     .chips{display:flex;flex-wrap:wrap;gap:8px}.checkChip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);padding:7px 9px;border-radius:999px;background:#fff;font-size:12px;font-weight:800}
     .filterList{display:flex;flex-direction:column;gap:10px}.filterRow{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fafbff}
