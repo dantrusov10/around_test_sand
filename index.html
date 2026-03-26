@@ -1069,6 +1069,25 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
   <script>
     const BI = { schema:null, widgets:[], dashboards:[], editWidget:null, charts:{} };
 
+    
+    function biParseMaybeJson(v, fallback){
+      if(v===undefined || v===null || v==='') return fallback;
+      if(Array.isArray(v) || (typeof v === 'object' && v !== null)) return v;
+      try{ return JSON.parse(v); }catch(_e){ return fallback; }
+    }
+    function biNormalizeWidgetConfig(widget){
+      const w = Object.assign({}, widget||{});
+      w.selected_sources = biParseMaybeJson(w.selected_sources, biParseMaybeJson(w.selected_sources_json, []));
+      w.rows = biParseMaybeJson(w.rows, biParseMaybeJson(w.rows_json, []));
+      w.columns = biParseMaybeJson(w.columns, biParseMaybeJson(w.columns_json, []));
+      w.values = biParseMaybeJson(w.values, biParseMaybeJson(w.values_json, []));
+      w.filters = biParseMaybeJson(w.filters, biParseMaybeJson(w.filters_json, []));
+      w.sort = biParseMaybeJson(w.sort, biParseMaybeJson(w.sort_json, []));
+      w.format = biParseMaybeJson(w.format, biParseMaybeJson(w.format_json, {}));
+      w.color = biParseMaybeJson(w.color, biParseMaybeJson(w.color_json, {}));
+      return w;
+    }
+
     function currentGlobalPeriod(){
       if(currentFilter === 'custom'){
         return {date_from: document.getElementById('dateFrom').value || '', date_to: document.getElementById('dateTo').value || ''};
@@ -1133,7 +1152,9 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
     function biWidgetPayloadFromForm(){
       const visual = document.getElementById('biVisual').value;
       const selectedSources = [...document.querySelectorAll('#biSources input:checked')].map(i=>i.value);
+      const rows = document.getElementById('biRows').value ? [document.getElementById('biRows').value] : [];
       const columns = getColumnsSelectedValues();
+      const values = [{field: document.getElementById('biValue').value || 'record_count', agg: document.getElementById('biAgg').value || 'count'}];
       const filters = [...document.querySelectorAll('#biFilterList .filterRow')].map((row, idx)=>({
         filter_id: row.dataset.filterId || '',
         field_key: row.querySelector('.flt-field').value,
@@ -1146,7 +1167,10 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
         is_required: false,
         note: ''
       })).filter(f=>f.field_key);
-      return {
+      const sort = [{field: (visual==='line'?'date':(document.getElementById('biRows').value || 'date')), dir: visual==='line' ? 'asc' : 'desc'}];
+      const format = {};
+      const color = {accent: document.getElementById('biAccent').value || '#2563eb'};
+      const widget = {
         widget_id: BI.editWidget && BI.editWidget.widget_id ? BI.editWidget.widget_id : '',
         dashboard_id: 'db_main',
         widget_title: document.getElementById('biTitle').value.trim() || 'Новый виджет',
@@ -1154,16 +1178,24 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
         visual_type: visual,
         source_mode: document.getElementById('biSourceMode').value,
         selected_sources: selectedSources.length ? selectedSources : ['PSI_Log'],
+        selected_sources_json: JSON.stringify(selectedSources.length ? selectedSources : ['PSI_Log']),
         join_mode: 'by_company',
         record_mode: document.getElementById('biRecordMode').value,
-        rows: document.getElementById('biRows').value ? [document.getElementById('biRows').value] : [],
+        rows: rows,
+        rows_json: JSON.stringify(rows),
         columns: visual === 'table' ? columns : [],
-        values: [{field: document.getElementById('biValue').value || 'record_count', agg: document.getElementById('biAgg').value || 'count'}],
+        columns_json: JSON.stringify(visual === 'table' ? columns : []),
+        values: values,
+        values_json: JSON.stringify(values),
         filters: filters,
-        sort: [{field: (visual==='line'?'date':(document.getElementById('biRows').value || 'date')), dir: visual==='line' ? 'asc' : 'desc'}],
+        filters_json: JSON.stringify(filters),
+        sort: sort,
+        sort_json: JSON.stringify(sort),
         limit_n: Number(document.getElementById('biLimit').value||10) || 10,
-        format: {},
-        color: {accent: document.getElementById('biAccent').value || '#2563eb'},
+        format: format,
+        format_json: JSON.stringify(format),
+        color: color,
+        color_json: JSON.stringify(color),
         use_global_period: document.getElementById('biUseGlobal').checked,
         ignore_global_period: false,
         layout_x: BI.editWidget ? (BI.editWidget.layout_x||0) : 0,
@@ -1175,6 +1207,8 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
         is_system_widget: false,
         is_active: true
       };
+      console.log('BI payload widget', widget);
+      return widget;
     }
     function fillBiSelects(){
       const visualSel = document.getElementById('biVisual');
@@ -1235,7 +1269,7 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
       document.getElementById('biPreviewHost').innerHTML = '<div class="smallMuted">Нажми «Предпросмотр», чтобы увидеть результат.</div>';
       if(!BI.schema) return;
       if(!document.getElementById('biVisual').options.length) fillBiSelects();
-      const w = widget || {};
+      const w = biNormalizeWidgetConfig(widget || {});
       document.getElementById('biTitle').value = w.widget_title || '';
       document.getElementById('biVisual').value = w.visual_type || 'table';
       document.getElementById('biSourceMode').value = w.source_mode || 'single';
@@ -1272,7 +1306,13 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
       const res = (result && result.result) ? result.result : result;
       if(!res){ host.innerHTML = '<div class="smallMuted">Нет данных</div>'; return; }
       if(res.type === 'table'){
-        host.innerHTML = `<div class="tableWrap"><table><thead><tr>${(res.columns||[]).map(c=>`<th>${escapeHtml(c.label)}</th>`).join('')}</tr></thead><tbody>${(res.rows||[]).map(r=>`<tr>${(res.columns||[]).map(c=>`<td>${escapeHtml((r[c.key]===undefined||r[c.key]===null||r[c.key]==='')?'—':String(r[c.key]))}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${(res.columns||[]).length||1}" class="muted">Нет данных</td></tr>`}</tbody></table></div>`;
+        let cols = Array.isArray(res.columns) ? res.columns : [];
+        let rows = Array.isArray(res.rows) ? res.rows : [];
+        if(!cols.length && rows.length){
+          const first = rows.find(r=>r && Object.keys(r).length) || rows[0] || {};
+          cols = Object.keys(first).map(k=>({key:k,label:biFieldLabel(k)}));
+        }
+        host.innerHTML = `<div class="tableWrap"><table><thead><tr>${(cols||[]).map(c=>`<th>${escapeHtml(c.label)}</th>`).join('')}</tr></thead><tbody>${(rows||[]).map(r=>`<tr>${(cols||[]).map(c=>`<td>${escapeHtml((r[c.key]===undefined||r[c.key]===null||r[c.key]==='')?'—':String(r[c.key]))}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${(cols||[]).length||1}" class="muted">Нет данных</td></tr>`}</tbody></table></div>`;
         return;
       }
       if(res.type === 'kpi'){
