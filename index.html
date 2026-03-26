@@ -232,6 +232,7 @@
     .field textarea{min-height:82px;resize:vertical}
     .chips{display:flex;flex-wrap:wrap;gap:8px}.checkChip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);padding:7px 9px;border-radius:999px;background:#fff;font-size:12px;font-weight:800}
     .filterList{display:flex;flex-direction:column;gap:10px}.filterRow{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fafbff}
+    .pickWrap{position:relative}.pickHidden{display:none}.pickBtn{width:100%;min-height:44px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;font:inherit;font-weight:800;color:var(--text);cursor:pointer}.pickBtn.muted{color:#94a3b8;font-weight:700}.pickMenu{position:absolute;left:0;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px rgba(15,23,42,.18);padding:6px;display:none;z-index:100500;max-height:260px;overflow:auto}.pickMenu.open{display:block}.pickItem{padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:700}.pickItem:hover{background:#f3f6fb}.pickItem.active{background:#eaf2ff;color:#1d4ed8}.pickCheckList{display:flex;flex-direction:column;gap:4px;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff;padding:8px}.pickCheck{display:flex;align-items:center;gap:8px;padding:6px 4px;font-weight:700}
     .previewBox{border:1px solid var(--line);border-radius:14px;padding:12px;min-height:360px;background:#fff}
     .biFoot{padding:14px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center;position:sticky;bottom:0;background:#fff}
     .kpiBig{display:flex;align-items:center;justify-content:center;height:100%;min-height:150px;font-size:32px;font-weight:950}
@@ -655,16 +656,16 @@ body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
                   <div id="biSources" class="chips"></div>
                 </div>
                 <div class="formGrid" style="margin-top:10px">
-                  <div class="field"><label>Строки / измерение</label><select id="biRows"></select></div>
+                  <div class="field"><label>Строки / измерение</label><div class="pickWrap"><input id="biRows" class="pickHidden"><button type="button" class="pickBtn muted" id="biRowsBtn"><span class="pickLabel">Выберите поле</span><span>▾</span></button><div class="pickMenu" id="biRowsMenu"></div></div></div>
                   <div class="field"><label>Агрегация</label><select id="biAgg"></select></div>
                 </div>
                 <div class="formGrid" style="margin-top:10px">
-                  <div class="field"><label>Значение / метрика</label><select id="biValue"></select></div>
+                  <div class="field"><label>Значение / метрика</label><div class="pickWrap"><input id="biValue" class="pickHidden"><button type="button" class="pickBtn muted" id="biValueBtn"><span class="pickLabel">Выберите метрику</span><span>▾</span></button><div class="pickMenu" id="biValueMenu"></div></div></div>
                   <div class="field"><label>Лимит</label><input id="biLimit" type="number" min="1" max="200" value="10"></div>
                 </div>
                 <div class="field" style="margin-top:10px">
                   <label>Колонки таблицы</label>
-                  <select id="biColumns" multiple size="7"></select>
+                  <div id="biColumns" class="pickCheckList"></div>
                 </div>
                 <div class="formGrid3" style="margin-top:10px">
                   <div class="field"><label>Ширина виджета</label><select id="biW"><option>3</option><option selected>4</option><option>6</option><option>8</option><option>12</option></select></div>
@@ -1087,10 +1088,52 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
       const f = ((BI.schema&&BI.schema.fields)||[]).find(x=>x.field_key===key);
       return f ? f.field_label : key;
     }
+    function setPickerValue(hiddenId, btnId, value, label){
+      const hidden = document.getElementById(hiddenId);
+      const btn = document.getElementById(btnId);
+      if(hidden) hidden.value = value || '';
+      if(btn){
+        btn.querySelector('.pickLabel').textContent = label || 'Выберите';
+        btn.classList.toggle('muted', !value);
+      }
+    }
+    function buildSinglePicker(hiddenId, btnId, menuId, options, currentValue, placeholder){
+      const hidden = document.getElementById(hiddenId);
+      const btn = document.getElementById(btnId);
+      const menu = document.getElementById(menuId);
+      if(!hidden || !btn || !menu) return;
+      const items = (options||[]).map(o=>({value:String(o.value||''), label:String(o.label||o.value||'')}));
+      menu.innerHTML = items.map(o=>`<div class="pickItem ${o.value===String(currentValue||'')?'active':''}" data-value="${escapeHtml(o.value)}" data-label="${escapeHtml(o.label)}">${escapeHtml(o.label)}</div>`).join('');
+      const active = items.find(o=>o.value===String(currentValue||''));
+      setPickerValue(hiddenId, btnId, active?active.value:'', active?active.label:(placeholder||'Выберите'));
+      menu.querySelectorAll('.pickItem').forEach(el=>{
+        el.onclick = ()=>{
+          menu.querySelectorAll('.pickItem').forEach(x=>x.classList.remove('active'));
+          el.classList.add('active');
+          setPickerValue(hiddenId, btnId, el.dataset.value, el.dataset.label);
+          menu.classList.remove('open');
+        };
+      });
+      btn.onclick = (e)=>{
+        e.preventDefault(); e.stopPropagation();
+        document.querySelectorAll('.pickMenu.open').forEach(m=>{ if(m!==menu) m.classList.remove('open'); });
+        menu.classList.toggle('open');
+      };
+    }
+    function getColumnsSelectedValues(){
+      return [...document.querySelectorAll('#biColumns input:checked')].map(x=>x.value);
+    }
+    function buildColumnsCheckList(options, selected){
+      const host = document.getElementById('biColumns');
+      if(!host) return;
+      const sel = new Set(selected||[]);
+      host.innerHTML = (options||[]).map(o=>`<label class="pickCheck"><input type="checkbox" value="${escapeHtml(o.value)}" ${sel.has(String(o.value))?'checked':''}> <span>${escapeHtml(o.label)}</span></label>`).join('');
+    }
+    function closeAllPickers(){ document.querySelectorAll('.pickMenu.open').forEach(m=>m.classList.remove('open')); }
     function biWidgetPayloadFromForm(){
       const visual = document.getElementById('biVisual').value;
       const selectedSources = [...document.querySelectorAll('#biSources input:checked')].map(i=>i.value);
-      const columns = [...document.getElementById('biColumns').selectedOptions].map(o=>o.value);
+      const columns = getColumnsSelectedValues();
       const filters = [...document.querySelectorAll('#biFilterList .filterRow')].map((row, idx)=>({
         filter_id: row.dataset.filterId || '',
         field_key: row.querySelector('.flt-field').value,
@@ -1140,12 +1183,12 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
       const aggSel = document.getElementById('biAgg');
       const colsSel = document.getElementById('biColumns');
       visualSel.innerHTML = (BI.schema.visual_types||[]).map(v=>`<option value="${escapeHtml(v.key)}">${escapeHtml(v.label)}</option>`).join('');
-      const dims = (BI.schema.fields||[]).filter(f=>f.is_dimension || f.field_key==='date');
-      const mets = (BI.schema.fields||[]).filter(f=>f.is_metric || f.field_key==='record_count' || f.field_key==='unique_company_count');
-      rowSel.innerHTML = dims.map(f=>`<option value="${escapeHtml(f.field_key)}">${escapeHtml(f.field_label)}</option>`).join('');
-      valSel.innerHTML = mets.map(f=>`<option value="${escapeHtml(f.field_key)}">${escapeHtml(f.field_label)}</option>`).join('');
+      const dims = (BI.schema.fields||[]).filter(f=>f.is_dimension || f.field_key==='date').map(f=>({value:f.field_key,label:f.field_label}));
+      const mets = (BI.schema.fields||[]).filter(f=>f.is_metric || f.field_key==='record_count' || f.field_key==='unique_company_count').map(f=>({value:f.field_key,label:f.field_label}));
+      buildSinglePicker('biRows','biRowsBtn','biRowsMenu', dims, document.getElementById('biRows').value || 'company', 'Выберите поле');
+      buildSinglePicker('biValue','biValueBtn','biValueMenu', mets, document.getElementById('biValue').value || 'record_count', 'Выберите метрику');
       aggSel.innerHTML = (BI.schema.aggs||[]).map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
-      colsSel.innerHTML = (BI.schema.fields||[]).map(f=>`<option value="${escapeHtml(f.field_key)}">${escapeHtml(f.field_label)}</option>`).join('');
+      buildColumnsCheckList((BI.schema.fields||[]).map(f=>({value:f.field_key,label:f.field_label})), []);
       document.getElementById('biSources').innerHTML = (BI.schema.sources||[]).map(s => `<label class="checkChip"><input type="checkbox" value="${escapeHtml(s.key)}"> ${escapeHtml(s.label)}</label>`).join('');
     }
     function addBiFilterRow(filter){
@@ -1155,7 +1198,7 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
       row.dataset.filterId = filter && filter.filter_id ? filter.filter_id : '';
       row.innerHTML = `
         <div class="formGrid">
-          <div class="field"><label>Поле</label><select class="flt-field">${(BI.schema.fields||[]).filter(f=>f.is_filterable).map(f=>`<option value="${escapeHtml(f.field_key)}">${escapeHtml(f.field_label)}</option>`).join('')}</select></div>
+          <div class="field"><label>Поле</label><div class="pickWrap"><input class="flt-field pickHidden"><button type="button" class="pickBtn muted flt-field-btn"><span class="pickLabel">Выберите поле</span><span>▾</span></button><div class="pickMenu flt-field-menu"></div></div></div>
           <div class="field"><label>Оператор</label><select class="flt-op">${(BI.schema.operators||[]).map(o=>`<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('')}</select></div>
         </div>
         <div class="formGrid" style="margin-top:8px">
@@ -1168,6 +1211,13 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
         </div>`;
       host.appendChild(row);
       row.querySelector('.flt-del').onclick = ()=>row.remove();
+      const fOpts = (BI.schema.fields||[]).filter(f=>f.is_filterable).map(f=>({value:f.field_key,label:f.field_label}));
+      const fHidden = row.querySelector('.flt-field');
+      const fBtn = row.querySelector('.flt-field-btn');
+      const fMenu = row.querySelector('.flt-field-menu');
+      const uid = 'flt_' + Math.random().toString(36).slice(2);
+      fHidden.id = uid + '_hidden'; fBtn.id = uid + '_btn'; fMenu.id = uid + '_menu';
+      buildSinglePicker(fHidden.id, fBtn.id, fMenu.id, fOpts, (filter&&filter.field_key)||'', 'Выберите поле');
       if(filter){
         row.querySelector('.flt-field').value = filter.field_key || '';
         row.querySelector('.flt-op').value = filter.operator || 'eq';
@@ -1192,6 +1242,7 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
       document.getElementById('biRecordMode').value = w.record_mode || 'all_records';
       document.getElementById('biRows').value = (w.rows&&w.rows[0]) || 'company';
       document.getElementById('biValue').value = (w.values&&w.values[0]&&w.values[0].field) || 'record_count';
+      fillBiSelects();
       document.getElementById('biAgg').value = (w.values&&w.values[0]&&w.values[0].agg) || 'count';
       document.getElementById('biLimit').value = w.limit_n || 10;
       document.getElementById('biW').value = String(w.layout_w || 4);
@@ -1199,7 +1250,7 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
       document.getElementById('biAccent').value = (w.color && w.color.accent) || '#2563eb';
       document.getElementById('biUseGlobal').checked = !!(widget ? w.use_global_period : true);
       [...document.querySelectorAll('#biSources input')].forEach(i => i.checked = (w.selected_sources||['PSI_Log']).includes(i.value));
-      [...document.getElementById('biColumns').options].forEach(o=>{ o.selected = (w.columns||[]).includes(o.value); });
+      buildColumnsCheckList((BI.schema.fields||[]).map(f=>({value:f.field_key,label:f.field_label})), (w.columns||[]));
       (w.filters||[]).forEach(addBiFilterRow);
       if(!(w.filters||[]).length) addBiFilterRow({field_key:'date', operator:'between', use_global_period:true});
     }
@@ -1287,7 +1338,9 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
     document.getElementById('btnBiAddFilter').addEventListener('click', ()=>addBiFilterRow({}));
     document.getElementById('btnBiRefresh').addEventListener('click', ()=>biFetchList().catch(console.error));
     document.getElementById('btnBiSaveLayout').addEventListener('click', ()=>biSaveLayout().catch(err=>{console.error(err); alert('Не удалось сохранить layout'); }));
-    ['biVisual','biSourceMode','biRecordMode'].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{ if(id==='biVisual'){ const isTable=document.getElementById('biVisual').value==='table'; document.getElementById('biColumns').disabled=!isTable; } }));
+    ['biVisual','biSourceMode','biRecordMode'].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{ if(id==='biVisual'){ const isTable=document.getElementById('biVisual').value==='table'; document.getElementById('biColumns').style.opacity = isTable ? '1' : '.55'; document.getElementById('biColumns').style.pointerEvents = isTable ? 'auto' : 'none'; } }));
+
+    document.addEventListener('click', (e)=>{ if(!e.target.closest('.pickWrap')) closeAllPickers(); });
     Promise.resolve().then(async ()=>{ try{ await biFetchSchema(); await biFetchList(); }catch(err){ console.error('BI init failed', err); } });
   </script>
 
