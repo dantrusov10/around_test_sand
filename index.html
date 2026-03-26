@@ -545,7 +545,7 @@ body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
         <div class="sectionTitle">Последние КП</div>
         <div class="tableWrap">
           <table>
-            <thead><tr><th>Компания</th><th>Кол-во конечных точек</th><th>Менеджер</th><th>Сумма</th><th>Дата</th></tr></thead>
+            <thead><tr><th>Компания</th><th>Кол-во конечных точек</th><th>Менеджер</th><th>Сумма last</th><th>Кол-во КП</th><th>Сумма max</th><th>Сумма min</th><th>Дата</th></tr></thead>
             <tbody id="latestCalcTbody"></tbody>
           </table>
         </div>
@@ -889,7 +889,10 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
           r => "<b>"+fmtText(r.company)+"</b>",
           r => fmtText(r.workplaces),
           r => fmtText(r.manager),
-          r => fmtMoney(r.amount),
+          r => fmtMoney(r.amount_last ?? r.amount),
+          r => fmtText(r.calc_count),
+          r => fmtMoney(r.amount_max),
+          r => fmtMoney(r.amount_min),
           r => fmtMsk(r.timestamp)
         ], "Нет данных");
 
