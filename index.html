@@ -198,6 +198,41 @@
     .miniRow{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:6px}
     .miniStat{font-size:12px; color:var(--muted)}
     .miniStat b{color:var(--text)}
+
+
+    /* BI Builder */
+    .biToolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0 10px}
+    .biGrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-items:start}
+    .biCard{grid-column:span 4;grid-row:span 4;min-height:180px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff;position:relative;overflow:hidden}
+    .biCard[data-w="6"]{grid-column:span 6}.biCard[data-w="8"]{grid-column:span 8}.biCard[data-w="12"]{grid-column:span 12}.biCard[data-w="3"]{grid-column:span 3}
+    .biCard[data-h="3"]{min-height:180px}.biCard[data-h="4"]{min-height:240px}.biCard[data-h="5"]{min-height:300px}.biCard[data-h="6"]{min-height:360px}.biCard[data-h="7"]{min-height:420px}
+    .biCard.dragging{opacity:.55;border-style:dashed}
+    .biHead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
+    .biTitle{font-weight:950;font-size:14px;line-height:1.15}
+    .biMeta{font-size:11px;color:var(--muted);margin-top:3px}
+    .biActions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .iconBtn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 8px;font-size:12px;cursor:pointer}
+    .iconBtn:hover{transform:translateY(-1px)}
+    .biBody{height:calc(100% - 34px);overflow:auto}
+    .biEmpty{padding:18px;border:1px dashed var(--line);border-radius:14px;background:#fafbff;color:var(--muted);font-size:13px;text-align:center}
+    .biModal{position:fixed;inset:0;display:none;z-index:100001;background:rgba(15,23,42,.38);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:18px}
+    .biModal.open{display:flex}
+    .biDialog{width:min(1120px,96vw);max-height:92vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 22px 56px rgba(15,23,42,.18)}
+    .biDialogHead{position:sticky;top:0;background:#fff;z-index:2;padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .biDialogBody{padding:16px;display:grid;grid-template-columns:380px 1fr;gap:16px}
+    @media (max-width: 980px){.biDialogBody{grid-template-columns:1fr}.biGrid{grid-template-columns:1fr}.biCard,[data-w]{grid-column:span 1!important}}
+    .formCard{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+    .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.formGrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;font-weight:900;color:var(--muted)}
+    .field input,.field select,.field textarea{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font:inherit}
+    .field textarea{min-height:82px;resize:vertical}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}.checkChip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);padding:7px 9px;border-radius:999px;background:#fff;font-size:12px;font-weight:800}
+    .filterList{display:flex;flex-direction:column;gap:10px}.filterRow{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fafbff}
+    .previewBox{border:1px solid var(--line);border-radius:14px;padding:12px;min-height:360px;background:#fff}
+    .biFoot{padding:14px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center;position:sticky;bottom:0;background:#fff}
+    .kpiBig{display:flex;align-items:center;justify-content:center;height:100%;min-height:150px;font-size:32px;font-weight:950}
+    .smallMuted{font-size:11px;color:var(--muted)}
+    .resizeBar{display:flex;gap:6px;align-items:center;margin-top:8px}
   
 .benchWrap{display:none!important;}
 /* === v41 unified width + floating company dropdown === */
@@ -577,6 +612,91 @@ body.dockCollapsed .quickDock a.tool .toolText{display:none !important}
           </table>
         </div>
 
+        <div style="height:16px"></div>
+        <div class="biToolbar">
+          <div>
+            <div class="sectionTitle" style="margin:0">BI-конструктор</div>
+            <div class="muted" style="font-size:12px">Новые кастомные виджеты поверх 4 листов БД: полные интервью, фаст-интервью, БП и КП.</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="btnBiRefresh" class="btn ghost">Обновить BI</button>
+            <button id="btnBiSaveLayout" class="btn ghost">Сохранить layout</button>
+            <button id="btnBiAdd" class="btn">Добавить виджет</button>
+          </div>
+        </div>
+        <div id="biBoard" class="biGrid"></div>
+        <div id="biEmpty" class="biEmpty" style="display:none">Пока нет сохранённых BI-виджетов. Нажми «Добавить виджет» и собери первый отчёт.</div>
+
+        <div id="biModal" class="biModal">
+          <div class="biDialog">
+            <div class="biDialogHead">
+              <div>
+                <div style="font-weight:950;font-size:16px" id="biModalTitle">Новый BI-виджет</div>
+                <div class="muted" style="font-size:12px">MVP-конструктор с join по company и режимом «все записи / последняя по компании».</div>
+              </div>
+              <button class="btn ghost" id="btnBiClose">Закрыть</button>
+            </div>
+            <div class="biDialogBody">
+              <div class="formCard">
+                <div class="formGrid">
+                  <div class="field"><label>Название</label><input id="biTitle" placeholder="Например: КП по отраслям"></div>
+                  <div class="field"><label>Тип визуала</label><select id="biVisual"></select></div>
+                </div>
+                <div class="formGrid" style="margin-top:10px">
+                  <div class="field"><label>Режим источника</label><select id="biSourceMode"><option value="single">Один источник</option><option value="combined">Комбинированный</option></select></div>
+                  <div class="field"><label>Режим записей</label><select id="biRecordMode"><option value="all_records">Все записи</option><option value="latest_per_company">Последняя запись по компании</option></select></div>
+                </div>
+                <div class="field" style="margin-top:10px">
+                  <label>Источники</label>
+                  <div id="biSources" class="chips"></div>
+                </div>
+                <div class="formGrid" style="margin-top:10px">
+                  <div class="field"><label>Строки / измерение</label><select id="biRows"></select></div>
+                  <div class="field"><label>Агрегация</label><select id="biAgg"></select></div>
+                </div>
+                <div class="formGrid" style="margin-top:10px">
+                  <div class="field"><label>Значение / метрика</label><select id="biValue"></select></div>
+                  <div class="field"><label>Лимит</label><input id="biLimit" type="number" min="1" max="200" value="10"></div>
+                </div>
+                <div class="field" style="margin-top:10px">
+                  <label>Колонки таблицы</label>
+                  <select id="biColumns" multiple size="7"></select>
+                </div>
+                <div class="formGrid3" style="margin-top:10px">
+                  <div class="field"><label>Ширина виджета</label><select id="biW"><option>3</option><option selected>4</option><option>6</option><option>8</option><option>12</option></select></div>
+                  <div class="field"><label>Высота</label><select id="biH"><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option></select></div>
+                  <div class="field"><label>Цвет акцента</label><input id="biAccent" type="color" value="#2563eb"></div>
+                </div>
+                <div class="field" style="margin-top:10px">
+                  <label><input id="biUseGlobal" type="checkbox" checked> Использовать глобальный фильтр периода сверху</label>
+                </div>
+                <div class="field" style="margin-top:10px">
+                  <label>Фильтры</label>
+                  <div id="biFilterList" class="filterList"></div>
+                  <button id="btnBiAddFilter" type="button" class="btn ghost" style="margin-top:8px">Добавить фильтр</button>
+                </div>
+              </div>
+              <div class="previewBox">
+                <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
+                  <div>
+                    <div class="sectionTitle" style="margin:0">Предпросмотр</div>
+                    <div class="smallMuted">Считается через новый action=dashboard_run.</div>
+                  </div>
+                  <button id="btnBiPreview" class="btn secondary">Предпросмотр</button>
+                </div>
+                <div id="biPreviewHost" style="margin-top:10px"></div>
+              </div>
+            </div>
+            <div class="biFoot">
+              <div class="smallMuted">Drag-and-drop карточек работает на главной после сохранения виджетов.</div>
+              <div style="display:flex;gap:8px">
+                <button id="btnBiCancel" class="btn ghost">Отмена</button>
+                <button id="btnBiSave" class="btn">Сохранить виджет</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="errBox" class="hintErr"></div>
       </div>
     </div>
@@ -939,6 +1059,229 @@ console.log("✅ Using Google Sheets WebApp URL:", WEBAPP_URL);
     });
     document.getElementById("applyCustomPeriod").addEventListener("click", () => loadStats("custom"));
     loadStats(currentFilter);
+  </script>
+
+  <script>
+    const BI = { schema:null, widgets:[], dashboards:[], editWidget:null, charts:{} };
+
+    function currentGlobalPeriod(){
+      if(currentFilter === 'custom'){
+        return {date_from: document.getElementById('dateFrom').value || '', date_to: document.getElementById('dateTo').value || ''};
+      }
+      if(Number(currentFilter) > 0){
+        const now = new Date();
+        const from = new Date(now.getTime() - Number(currentFilter)*24*60*60*1000);
+        return {date_from: from.toISOString().slice(0,10), date_to: now.toISOString().slice(0,10)};
+      }
+      return {date_from:'', date_to:''};
+    }
+    function biFieldOptions(includeMetrics=true){
+      const fields = (BI.schema && BI.schema.fields) ? BI.schema.fields : [];
+      return fields.filter(f => includeMetrics ? true : f.is_dimension);
+    }
+    function biFieldLabel(key){
+      const f = ((BI.schema&&BI.schema.fields)||[]).find(x=>x.field_key===key);
+      return f ? f.field_label : key;
+    }
+    function biWidgetPayloadFromForm(){
+      const visual = document.getElementById('biVisual').value;
+      const selectedSources = [...document.querySelectorAll('#biSources input:checked')].map(i=>i.value);
+      const columns = [...document.getElementById('biColumns').selectedOptions].map(o=>o.value);
+      const filters = [...document.querySelectorAll('#biFilterList .filterRow')].map((row, idx)=>({
+        filter_id: row.dataset.filterId || '',
+        field_key: row.querySelector('.flt-field').value,
+        field_label: biFieldLabel(row.querySelector('.flt-field').value),
+        operator: row.querySelector('.flt-op').value,
+        value_type: row.querySelector('.flt-global').checked ? 'global_period' : 'literal',
+        value_1: row.querySelector('.flt-v1').value,
+        value_2: row.querySelector('.flt-v2').value,
+        use_global_period: row.querySelector('.flt-global').checked,
+        is_required: false,
+        note: ''
+      })).filter(f=>f.field_key);
+      return {
+        widget_id: BI.editWidget && BI.editWidget.widget_id ? BI.editWidget.widget_id : '',
+        dashboard_id: 'db_main',
+        widget_title: document.getElementById('biTitle').value.trim() || 'Новый виджет',
+        widget_type: 'custom',
+        visual_type: visual,
+        source_mode: document.getElementById('biSourceMode').value,
+        selected_sources: selectedSources.length ? selectedSources : ['PSI_Log'],
+        join_mode: 'by_company',
+        record_mode: document.getElementById('biRecordMode').value,
+        rows: document.getElementById('biRows').value ? [document.getElementById('biRows').value] : [],
+        columns: visual === 'table' ? columns : [],
+        values: [{field: document.getElementById('biValue').value || 'record_count', agg: document.getElementById('biAgg').value || 'count'}],
+        filters: filters,
+        sort: [{field: (visual==='line'?'date':(document.getElementById('biRows').value || 'date')), dir: visual==='line' ? 'asc' : 'desc'}],
+        limit_n: Number(document.getElementById('biLimit').value||10) || 10,
+        format: {},
+        color: {accent: document.getElementById('biAccent').value || '#2563eb'},
+        use_global_period: document.getElementById('biUseGlobal').checked,
+        ignore_global_period: false,
+        layout_x: BI.editWidget ? (BI.editWidget.layout_x||0) : 0,
+        layout_y: BI.editWidget ? (BI.editWidget.layout_y||0) : BI.widgets.length,
+        layout_w: Number(document.getElementById('biW').value||4),
+        layout_h: Number(document.getElementById('biH').value||4),
+        scale_pct: 100,
+        show_header: true,
+        is_system_widget: false,
+        is_active: true
+      };
+    }
+    function fillBiSelects(){
+      const visualSel = document.getElementById('biVisual');
+      const rowSel = document.getElementById('biRows');
+      const valSel = document.getElementById('biValue');
+      const aggSel = document.getElementById('biAgg');
+      const colsSel = document.getElementById('biColumns');
+      visualSel.innerHTML = (BI.schema.visual_types||[]).map(v=>`<option value="${escapeHtml(v.key)}">${escapeHtml(v.label)}</option>`).join('');
+      const dims = (BI.schema.fields||[]).filter(f=>f.is_dimension || f.field_key==='date');
+      const mets = (BI.schema.fields||[]).filter(f=>f.is_metric || f.field_key==='record_count' || f.field_key==='unique_company_count');
+      rowSel.innerHTML = dims.map(f=>`<option value="${escapeHtml(f.field_key)}">${escapeHtml(f.field_label)}</option>`).join('');
+      valSel.innerHTML = mets.map(f=>`<option value="${escapeHtml(f.field_key)}">${escapeHtml(f.field_label)}</option>`).join('');
+      aggSel.innerHTML = (BI.schema.aggs||[]).map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+      colsSel.innerHTML = (BI.schema.fields||[]).map(f=>`<option value="${escapeHtml(f.field_key)}">${escapeHtml(f.field_label)}</option>`).join('');
+      document.getElementById('biSources').innerHTML = (BI.schema.sources||[]).map(s => `<label class="checkChip"><input type="checkbox" value="${escapeHtml(s.key)}"> ${escapeHtml(s.label)}</label>`).join('');
+    }
+    function addBiFilterRow(filter){
+      const host = document.getElementById('biFilterList');
+      const row = document.createElement('div');
+      row.className = 'filterRow';
+      row.dataset.filterId = filter && filter.filter_id ? filter.filter_id : '';
+      row.innerHTML = `
+        <div class="formGrid">
+          <div class="field"><label>Поле</label><select class="flt-field">${(BI.schema.fields||[]).filter(f=>f.is_filterable).map(f=>`<option value="${escapeHtml(f.field_key)}">${escapeHtml(f.field_label)}</option>`).join('')}</select></div>
+          <div class="field"><label>Оператор</label><select class="flt-op">${(BI.schema.operators||[]).map(o=>`<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('')}</select></div>
+        </div>
+        <div class="formGrid" style="margin-top:8px">
+          <div class="field"><label>Значение 1</label><input class="flt-v1" placeholder="Например: retail"></div>
+          <div class="field"><label>Значение 2</label><input class="flt-v2" placeholder="Для between"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px">
+          <label class="smallMuted"><input type="checkbox" class="flt-global"> Использовать глобальный период</label>
+          <button type="button" class="iconBtn flt-del">Удалить</button>
+        </div>`;
+      host.appendChild(row);
+      row.querySelector('.flt-del').onclick = ()=>row.remove();
+      if(filter){
+        row.querySelector('.flt-field').value = filter.field_key || '';
+        row.querySelector('.flt-op').value = filter.operator || 'eq';
+        row.querySelector('.flt-v1').value = filter.value_1 || '';
+        row.querySelector('.flt-v2').value = filter.value_2 || '';
+        row.querySelector('.flt-global').checked = !!filter.use_global_period;
+      }
+    }
+    function openBiModal(widget){
+      BI.editWidget = widget || null;
+      document.getElementById('biModal').classList.add('open');
+      document.getElementById('biModalTitle').textContent = widget ? 'Редактирование BI-виджета' : 'Новый BI-виджет';
+      document.getElementById('biFilterList').innerHTML = '';
+      document.getElementById('biPreviewHost').innerHTML = '<div class="smallMuted">Нажми «Предпросмотр», чтобы увидеть результат.</div>';
+      if(!BI.schema) return;
+      if(!document.getElementById('biVisual').options.length) fillBiSelects();
+      const w = widget || {};
+      document.getElementById('biTitle').value = w.widget_title || '';
+      document.getElementById('biVisual').value = w.visual_type || 'table';
+      document.getElementById('biSourceMode').value = w.source_mode || 'single';
+      document.getElementById('biRecordMode').value = w.record_mode || 'all_records';
+      document.getElementById('biRows').value = (w.rows&&w.rows[0]) || 'company';
+      document.getElementById('biValue').value = (w.values&&w.values[0]&&w.values[0].field) || 'record_count';
+      document.getElementById('biAgg').value = (w.values&&w.values[0]&&w.values[0].agg) || 'count';
+      document.getElementById('biLimit').value = w.limit_n || 10;
+      document.getElementById('biW').value = String(w.layout_w || 4);
+      document.getElementById('biH').value = String(w.layout_h || 4);
+      document.getElementById('biAccent').value = (w.color && w.color.accent) || '#2563eb';
+      document.getElementById('biUseGlobal').checked = !!(widget ? w.use_global_period : true);
+      [...document.querySelectorAll('#biSources input')].forEach(i => i.checked = (w.selected_sources||['PSI_Log']).includes(i.value));
+      [...document.getElementById('biColumns').options].forEach(o=>{ o.selected = (w.columns||[]).includes(o.value); });
+      (w.filters||[]).forEach(addBiFilterRow);
+      if(!(w.filters||[]).length) addBiFilterRow({field_key:'date', operator:'between', use_global_period:true});
+    }
+    function closeBiModal(){ document.getElementById('biModal').classList.remove('open'); BI.editWidget=null; }
+    async function biFetchSchema(){ BI.schema = await jsonp(WEBAPP_URL + '?action=dashboard_schema', 20000); fillBiSelects(); }
+    async function biFetchList(){
+      const data = await jsonp(WEBAPP_URL + '?action=dashboard_list', 20000);
+      BI.widgets = data.widgets || []; BI.dashboards = data.dashboards || [];
+      renderBiBoard();
+    }
+    async function biRunWidget(widget){
+      const period = currentGlobalPeriod();
+      const payload = {widget:widget, date_from:period.date_from, date_to:period.date_to};
+      const url = WEBAPP_URL + '?action=dashboard_run&payload=' + encodeURIComponent(JSON.stringify(payload));
+      return jsonp(url, 30000);
+    }
+    function destroyBiChart(id){ if(BI.charts[id]){ try{ BI.charts[id].destroy(); }catch(_e){} delete BI.charts[id]; } }
+    function renderBiResult(host, widget, result, chartId){
+      const res = (result && result.result) ? result.result : result;
+      if(!res){ host.innerHTML = '<div class="smallMuted">Нет данных</div>'; return; }
+      if(res.type === 'table'){
+        host.innerHTML = `<div class="tableWrap"><table><thead><tr>${(res.columns||[]).map(c=>`<th>${escapeHtml(c.label)}</th>`).join('')}</tr></thead><tbody>${(res.rows||[]).map(r=>`<tr>${(res.columns||[]).map(c=>`<td>${escapeHtml((r[c.key]===undefined||r[c.key]===null||r[c.key]==='')?'—':String(r[c.key]))}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${(res.columns||[]).length||1}" class="muted">Нет данных</td></tr>`}</tbody></table></div>`;
+        return;
+      }
+      if(res.type === 'kpi'){
+        host.innerHTML = `<div class="kpiBig">${escapeHtml(res.value===null||res.value===undefined?'—':String(Math.round(Number(res.value||0)*100)/100))}</div><div class="smallMuted" style="text-align:center">${escapeHtml(res.label||'')}</div>`;
+        return;
+      }
+      host.innerHTML = `<canvas id="${chartId}" style="width:100%!important;height:100%!important;min-height:220px"></canvas>`;
+      const ctx = document.getElementById(chartId); destroyBiChart(chartId);
+      BI.charts[chartId] = new Chart(ctx, {
+        type: res.type === 'pie' ? 'doughnut' : (res.type === 'line' ? 'line' : 'bar'),
+        data:{ labels:res.labels||[], datasets:[{ label: res.metric_label || '', data:res.values||[] }] },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:res.type==='pie'}}, scales: res.type==='pie'?{}:{y:{beginAtZero:true}} }
+      });
+    }
+    async function renderBiBoard(){
+      const board = document.getElementById('biBoard'); const empty = document.getElementById('biEmpty');
+      board.innerHTML = '';
+      if(!BI.widgets.length){ empty.style.display='block'; return; }
+      empty.style.display='none';
+      BI.widgets.forEach((widget, idx)=>{
+        const card = document.createElement('div');
+        card.className = 'biCard'; card.draggable = true;
+        card.dataset.id = widget.widget_id; card.dataset.w = String(widget.layout_w||4); card.dataset.h = String(widget.layout_h||4);
+        card.innerHTML = `<div class="biHead"><div><div class="biTitle">${escapeHtml(widget.widget_title||'Виджет')}</div><div class="biMeta">${escapeHtml(widget.visual_type||'table')} · ${(widget.selected_sources||[]).map(biFieldLabel).join(', ') || (widget.selected_sources||[]).join(', ')}</div></div><div class="biActions"><button class="iconBtn bi-shrink">−</button><button class="iconBtn bi-grow">＋</button><button class="iconBtn bi-edit">⚙</button><button class="iconBtn bi-del">✕</button></div></div><div class="biBody"><div class="smallMuted">Загрузка…</div></div>`;
+        board.appendChild(card);
+        const host = card.querySelector('.biBody');
+        biRunWidget(widget).then(data=>renderBiResult(host, widget, data, 'chart_'+widget.widget_id)).catch(err=>{ host.innerHTML = '<div class="smallMuted">Ошибка загрузки BI</div>'; console.error(err); });
+        card.querySelector('.bi-edit').onclick = ()=>openBiModal(widget);
+        card.querySelector('.bi-del').onclick = async ()=>{ if(!confirm('Удалить виджет?')) return; await jsonp(WEBAPP_URL + '?action=dashboard_delete&payload=' + encodeURIComponent(JSON.stringify({widget_id:widget.widget_id})), 20000); await biFetchList(); };
+        card.querySelector('.bi-grow').onclick = ()=>{ widget.layout_w = Math.min(12, Number(widget.layout_w||4)+1); card.dataset.w = String(widget.layout_w); };
+        card.querySelector('.bi-shrink').onclick = ()=>{ widget.layout_w = Math.max(3, Number(widget.layout_w||4)-1); card.dataset.w = String(widget.layout_w); };
+        card.addEventListener('dragstart', ev=>{ card.classList.add('dragging'); ev.dataTransfer.setData('text/plain', widget.widget_id); });
+        card.addEventListener('dragend', ()=>card.classList.remove('dragging'));
+        card.addEventListener('dragover', ev=>ev.preventDefault());
+        card.addEventListener('drop', ev=>{ ev.preventDefault(); const srcId = ev.dataTransfer.getData('text/plain'); if(!srcId || srcId===widget.widget_id) return; const from = BI.widgets.findIndex(w=>w.widget_id===srcId); const to = BI.widgets.findIndex(w=>w.widget_id===widget.widget_id); if(from<0||to<0) return; const [m] = BI.widgets.splice(from,1); BI.widgets.splice(to,0,m); renderBiBoard(); });
+      });
+    }
+    async function biPreviewFromForm(){
+      const widget = biWidgetPayloadFromForm();
+      const period = currentGlobalPeriod();
+      const payload = {widget:widget, date_from:period.date_from, date_to:period.date_to};
+      const data = await jsonp(WEBAPP_URL + '?action=dashboard_run&payload=' + encodeURIComponent(JSON.stringify(payload)), 30000);
+      renderBiResult(document.getElementById('biPreviewHost'), widget, data, 'chart_preview_bi');
+    }
+    async function biSaveFromForm(){
+      const widget = biWidgetPayloadFromForm();
+      const filters = widget.filters || [];
+      await jsonp(WEBAPP_URL + '?action=dashboard_save&payload=' + encodeURIComponent(JSON.stringify({widget, filters})), 30000);
+      closeBiModal(); await biFetchList();
+    }
+    async function biSaveLayout(){
+      const payload = {widgets: BI.widgets.map((w,idx)=>({widget_id:w.widget_id, layout_x:0, layout_y:idx, layout_w:w.layout_w||4, layout_h:w.layout_h||4}))};
+      await jsonp(WEBAPP_URL + '?action=dashboard_reorder&payload=' + encodeURIComponent(JSON.stringify(payload)), 30000);
+      await biFetchList();
+    }
+    document.getElementById('btnBiAdd').addEventListener('click', ()=>openBiModal(null));
+    document.getElementById('btnBiClose').addEventListener('click', closeBiModal);
+    document.getElementById('btnBiCancel').addEventListener('click', closeBiModal);
+    document.getElementById('btnBiPreview').addEventListener('click', ()=>biPreviewFromForm().catch(err=>{console.error(err); document.getElementById('biPreviewHost').innerHTML='<div class="smallMuted">Ошибка предпросмотра</div>'; }));
+    document.getElementById('btnBiSave').addEventListener('click', ()=>biSaveFromForm().catch(err=>{console.error(err); alert('Не удалось сохранить виджет'); }));
+    document.getElementById('btnBiAddFilter').addEventListener('click', ()=>addBiFilterRow({}));
+    document.getElementById('btnBiRefresh').addEventListener('click', ()=>biFetchList().catch(console.error));
+    document.getElementById('btnBiSaveLayout').addEventListener('click', ()=>biSaveLayout().catch(err=>{console.error(err); alert('Не удалось сохранить layout'); }));
+    ['biVisual','biSourceMode','biRecordMode'].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{ if(id==='biVisual'){ const isTable=document.getElementById('biVisual').value==='table'; document.getElementById('biColumns').disabled=!isTable; } }));
+    Promise.resolve().then(async ()=>{ try{ await biFetchSchema(); await biFetchList(); }catch(err){ console.error('BI init failed', err); } });
   </script>
 
 <script>
